@@ -1,3 +1,35 @@
+<script setup>
+import { reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { useEstimatesStore } from '@/store/estimates'
+import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
+import { useToast } from 'vue-toastification'
+
+const router = useRouter()
+const toast = useToast()
+const store = useEstimatesStore()
+
+const estimate = reactive({
+  name: '',
+  client_name: '',
+  client_company: '',
+  client_contact: '',
+  responsible: '',
+  notes: '',
+  items: [] // создаём как новый объект, чтобы не ломался v-model
+})
+
+async function submit() {
+  const created = await store.createEstimate(estimate)
+  toast.success('Смета успешно создана!')
+  router.push(`/estimates/${created.id}`)
+}
+
+function cancel() {
+  router.push('/estimates')
+}
+</script>
+
 <template>
   <form @submit.prevent="submit" class="space-y-4">
 
@@ -33,32 +65,12 @@
 
     <EstimateItemsEditor v-model="estimate.items" />
 
-    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Сохранить</button>
+    <div class="flex gap-4 pt-4">
+      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Сохранить</button>
+      <button type="button" @click="cancel" class="bg-gray-200 text-black px-4 py-2 rounded">Отмена</button>
+    </div>
   </form>
 </template>
-  
-  <script setup>
-  import { reactive } from 'vue'
-  import { useEstimatesStore } from '@/store/estimates'
-  import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
-  
-  const store = useEstimatesStore()
-  
-  const estimate = reactive({
-    name: '',
-    client_name: '',
-    client_company: '',
-    client_contact: '',
-    responsible: '',
-    notes: '',
-    items: []
-  })
-  
-  async function submit() {
-    await store.createEstimate(estimate)
-    Object.keys(estimate).forEach(k => estimate[k] = k === 'items' ? [] : '') // очистка
-  }
-  </script>
   
   <style scoped>
   .input {

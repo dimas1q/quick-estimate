@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <h2 class="text-lg font-semibold">Услуги</h2>
-    
+
     <div class="grid grid-cols-7 gap-2 font-semibold text-sm text-gray-600">
       <div>Название</div>
       <div>Описание</div>
@@ -19,10 +19,10 @@
       <input v-model="item.unit" class="input" placeholder="Ед. изм." />
       <input v-model.number="item.unit_price" type="number" class="input" placeholder="Цена" />
       <input v-model.number="item.discount" type="number" class="input" placeholder="Скидка" />
-      <button @click="removeItem(index)" class="text-red-600 hover:underline">Удалить</button>
+      <button type="button" @click="removeItem(index)" class="text-red-600 hover:underline">Удалить</button>
     </div>
 
-    <button @click="addItem" class="bg-gray-200 px-3 py-1 rounded">+ Добавить строку</button>
+    <button type="button" @click="addItem" class="bg-gray-200 px-3 py-1 rounded">+ Добавить услугу</button>
   </div>
 </template>
 

@@ -15,6 +15,13 @@ export const useEstimatesStore = defineStore('estimates', {
     async createEstimate(data) {
       await axios.post('http://localhost:8000/api/estimates/', data)
       await this.fetchEstimates()
+    },
+
+    async createEstimate(data) {
+      const res = await axios.post('http://localhost:8000/api/estimates/', data)
+      this.fetchEstimates() // необязательно, но можно
+      return res.data // для получения id
     }
+    
   }
 })
