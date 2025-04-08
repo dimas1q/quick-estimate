@@ -1,13 +1,18 @@
 <script setup>
-import { reactive } from 'vue'
+import { reactive, watch, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
 
-const router = useRouter()
-const toast = useToast()
+const props = defineProps({
+  initial: Object
+})
+const emit = defineEmits(['updated'])
+
 const store = useEstimatesStore()
+const toast = useToast()
+const router = useRouter()
 
 const estimate = reactive({
   name: '',
@@ -16,13 +21,34 @@ const estimate = reactive({
   client_contact: '',
   responsible: '',
   notes: '',
-  items: [] // создаём как новый объект, чтобы не ломался v-model
+  items: []
 })
 
+// если передали initial — заполним
+watch(() => props.initial, (value) => {
+  if (value) {
+    Object.assign(estimate, {
+      name: value.name || '',
+      client_name: value.client_name || '',
+      client_company: value.client_company || '',
+      client_contact: value.client_contact || '',
+      responsible: value.responsible || '',
+      notes: value.notes || '',
+      items: value.items?.map(item => ({ ...item })) || []
+    })
+  }
+}, { immediate: true })
+
 async function submit() {
-  const created = await store.createEstimate(estimate)
-  toast.success('Смета успешно создана!')
-  router.push(`/estimates/${created.id}`)
+  let result
+  if (props.initial?.id) {
+    result = await store.updateEstimate(props.initial.id, estimate)
+    emit('updated', result)
+  } else {
+    result = await store.createEstimate(estimate)
+    toast.success('Смета создана')
+    router.push(`/estimates/${result.id}`)
+  }
 }
 
 function cancel() {
@@ -32,35 +58,10 @@ function cancel() {
 
 <template>
   <form @submit.prevent="submit" class="space-y-4">
-
-    <div>
-      <label class="block font-semibold mb-1">Название сметы</label>
-      <input v-model="estimate.name" class="input" required />
-    </div>
-
-    <div>
-      <label class="block font-semibold mb-1">Имя клиента</label>
-      <input v-model="estimate.client_name" class="input" />
-    </div>
-
-    <div>
-      <label class="block font-semibold mb-1">Компания клиента</label>
-      <input v-model="estimate.client_company" class="input" />
-    </div>
-
-    <div>
-      <label class="block font-semibold mb-1">Контакты</label>
-      <input v-model="estimate.client_contact" class="input" />
-    </div>
-
-    <div>
-      <label class="block font-semibold mb-1">Ответственный</label>
-      <input v-model="estimate.responsible" class="input" />
-    </div>
-
-    <div>
-      <label class="block font-semibold mb-1">Заметки</label>
-      <textarea v-model="estimate.notes" class="input" />
+    <div v-for="(label, key) in fieldLabels" :key="key">
+      <label class="block font-semibold mb-1">{{ label }}</label>
+      <input v-if="key !== 'notes'" v-model="estimate[key]" class="input" />
+      <textarea v-else v-model="estimate.notes" class="input" />
     </div>
 
     <EstimateItemsEditor v-model="estimate.items" />
@@ -71,10 +72,27 @@ function cancel() {
     </div>
   </form>
 </template>
-  
-  <style scoped>
-  .input {
-    @apply border p-2 w-full rounded mb-2;
+
+<script>
+export default {
+  data() {
+    return {
+      fieldLabels: {
+        name: 'Название сметы',
+        client_name: 'Имя клиента',
+        client_company: 'Компания клиента',
+        client_contact: 'Контакты',
+        responsible: 'Ответственный',
+        notes: 'Заметки'
+      }
+    }
   }
-  </style>
+}
+</script>
+  
+<style scoped>
+.input {
+  @apply border p-2 w-full rounded mb-2;
+}
+</style>
   

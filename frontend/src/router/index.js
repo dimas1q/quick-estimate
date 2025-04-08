@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import EstimatesPage from '@/pages/EstimatesPage.vue'
 import EstimatesCreatePage from '@/pages/EstimatesCreatePage.vue'
+import EstimateDetailsPage from '@/pages/EstimateDetailsPage.vue'
 
 const routes = [
   {
@@ -17,12 +18,7 @@ const routes = [
         component: EstimatesPage
       },
       { path: 'estimates/create', component: EstimatesCreatePage },
-      {
-        path: 'estimates/:id',
-        component: {
-          template: '<div>Детали сметы: TODO</div>'
-        }
-      },
+      { path: 'estimates/:id', component: EstimateDetailsPage },
       {
         path: 'templates',
         component: {
