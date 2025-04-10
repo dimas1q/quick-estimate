@@ -34,7 +34,11 @@ watch(() => props.initial, (value) => {
       client_contact: value.client_contact || '',
       responsible: value.responsible || '',
       notes: value.notes || '',
-      items: value.items?.map(item => ({ ...item })) || []
+      items: value.items?.map(item => ({
+        ...item,
+        category_input: item.category || ''
+      })) || [],
+      vat_enabled: value.vat_enabled ?? true
     })
   }
 }, { immediate: true })
@@ -43,7 +47,7 @@ async function submit() {
   let result
   if (props.initial?.id) {
     result = await store.updateEstimate(props.initial.id, estimate)
-    emit('updated', result)
+    emit('updated')
   } else {
     result = await store.createEstimate(estimate)
     toast.success('Смета создана')
@@ -52,8 +56,9 @@ async function submit() {
 }
 
 function cancel() {
-  router.push('/estimates')
+  router.back()
 }
+
 </script>
 
 <template>
@@ -64,12 +69,18 @@ function cancel() {
       <textarea v-else v-model="estimate.notes" class="input" />
     </div>
 
-    <EstimateItemsEditor v-model="estimate.items" />
+    <div class="flex items-center gap-2">
+      <input type="checkbox" v-model="estimate.vat_enabled" id="vat" />
+      <label for="vat" class="text-sm">Включить НДС</label>
+    </div>
+
+    <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
 
     <div class="flex gap-4 pt-4">
       <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Сохранить</button>
       <button type="button" @click="cancel" class="bg-gray-200 text-black px-4 py-2 rounded">Отмена</button>
     </div>
+
   </form>
 </template>
 
@@ -89,10 +100,9 @@ export default {
   }
 }
 </script>
-  
+
 <style scoped>
 .input {
   @apply border p-2 w-full rounded mb-2;
 }
 </style>
-  

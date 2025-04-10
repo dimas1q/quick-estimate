@@ -14,11 +14,12 @@ class EstimateBase(BaseModel):
 class EstimateCreate(EstimateBase):
     pass
     items: Optional[List[EstimateItemCreate]] = []
+    vat_enabled: bool = True
 
 class EstimateOut(EstimateBase):
     id: int
     date: datetime
     items: List[EstimateItemOut]
-
+    vat_enabled: bool = True
     class Config:
         orm_mode = True

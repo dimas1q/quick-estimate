@@ -56,7 +56,6 @@ async def get_estimate(estimate_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Смета не найдена")
     return estimate
 
-
 @router.put("/{estimate_id}", response_model=EstimateOut)
 async def update_estimate(
     estimate_id: int, updated_data: EstimateCreate, db: AsyncSession = Depends(get_db)
