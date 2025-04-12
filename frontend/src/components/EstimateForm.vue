@@ -6,7 +6,11 @@ import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
 
 const props = defineProps({
-  initial: Object
+  initial: Object,
+  mode: {
+    type: String,
+    default: 'create' // or 'edit' or 'copy'
+  }
 })
 const emit = defineEmits(['updated'])
 
@@ -28,24 +32,24 @@ const estimate = reactive({
 watch(() => props.initial, (value) => {
   if (value) {
     Object.assign(estimate, {
-      name: value.name || '',
+      name: props.mode === 'copy' ? `Копия: ${value.name}` : value.name,
       client_name: value.client_name || '',
       client_company: value.client_company || '',
       client_contact: value.client_contact || '',
       responsible: value.responsible || '',
       notes: value.notes || '',
-      items: value.items?.map(item => ({
+      vat_enabled: value.vat_enabled ?? true,
+      items: (value.items || []).map(item => ({
         ...item,
         category_input: item.category || ''
-      })) || [],
-      vat_enabled: value.vat_enabled ?? true
+      }))
     })
   }
 }, { immediate: true })
 
 async function submit() {
   let result
-  if (props.initial?.id) {
+  if (props.mode === 'edit') {
     result = await store.updateEstimate(props.initial.id, estimate)
     emit('updated')
   } else {
@@ -71,7 +75,7 @@ function cancel() {
 
     <div class="flex items-center gap-2">
       <input type="checkbox" v-model="estimate.vat_enabled" id="vat" />
-      <label for="vat" class="text-sm">Включить НДС</label>
+      <label for="vat" class="text-sm font-semibold">Включить НДС</label>
     </div>
 
     <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
@@ -82,7 +86,7 @@ function cancel() {
     </div>
 
   </form>
-</template>
+</template> 
 
 <script>
 export default {

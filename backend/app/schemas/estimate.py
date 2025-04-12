@@ -19,6 +19,7 @@ class EstimateCreate(EstimateBase):
 class EstimateOut(EstimateBase):
     id: int
     date: datetime
+    updated_at: Optional[datetime] = None
     items: List[EstimateItemOut]
     vat_enabled: bool = True
     class Config:

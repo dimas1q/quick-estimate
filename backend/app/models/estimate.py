@@ -8,6 +8,7 @@ class Estimate(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     date = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     client_name = Column(String)
     client_company = Column(String)
     client_contact = Column(String)

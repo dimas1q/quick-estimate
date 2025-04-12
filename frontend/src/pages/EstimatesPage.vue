@@ -12,7 +12,7 @@
 
     <div v-for="e in store.estimates" :key="e.id" class="border p-4 rounded shadow-sm space-y-1">
       <div class="font-semibold text-lg">{{ e.name }}</div>
-      <div class="text-sm text-gray-600">Клиент: {{ e.client_name || '—' }}</div>
+      <div class="text-sm">Клиент: {{ e.client_name || '—' }}</div>
       <div class="text-sm">Ответственный: {{ e.responsible || '—' }}</div>
       <div class="text-xs text-gray-500">Создана: {{ new Date(e.date).toLocaleString() }}</div>
 
@@ -29,7 +29,6 @@
   <script setup>
   import { onMounted } from 'vue'
   import { useEstimatesStore } from '@/store/estimates'
-  import EstimateForm from '@/components/EstimateForm.vue'
   
   const store = useEstimatesStore()
   onMounted(() => store.fetchEstimates())

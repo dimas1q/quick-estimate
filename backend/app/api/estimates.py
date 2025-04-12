@@ -8,16 +8,20 @@ from sqlalchemy import delete
 from app.models.estimate import Estimate
 from app.models.item import EstimateItem
 from app.schemas.estimate import EstimateCreate, EstimateOut
+from app.schemas.changelog import ChangeLogOut
 from app.core.database import SessionLocal
+from app.models.changelog import EstimateChangeLog
 
 from typing import List
 
 router = APIRouter()
 
+
 # Получаем сессию к БД через Depends
 async def get_db():
     async with SessionLocal() as session:
         yield session
+
 
 @router.post("/", response_model=EstimateOut)
 async def create_estimate(estimate: EstimateCreate, db: AsyncSession = Depends(get_db)):
@@ -29,11 +33,21 @@ async def create_estimate(estimate: EstimateCreate, db: AsyncSession = Depends(g
     for item in items_data:
         db.add(EstimateItem(**item.dict(), estimate_id=new_estimate.id))
 
+    db.add(
+        EstimateChangeLog(
+            estimate_id=new_estimate.id,
+            action="Создание",
+            description=f"Создана смета: {new_estimate.name}",
+        )
+    )
+
     await db.commit()
 
     # загружаем estimate с items без ошибок greenlet
     result = await db.execute(
-        select(Estimate).options(selectinload(Estimate.items)).where(Estimate.id == new_estimate.id)
+        select(Estimate)
+        .options(selectinload(Estimate.items))
+        .where(Estimate.id == new_estimate.id)
     )
     new_estimate = result.scalar_one()
     return new_estimate
@@ -56,6 +70,17 @@ async def get_estimate(estimate_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Смета не найдена")
     return estimate
 
+
+@router.get("/{estimate_id}/logs", response_model=List[ChangeLogOut])
+async def get_logs(estimate_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(EstimateChangeLog)
+        .where(EstimateChangeLog.estimate_id == estimate_id)
+        .order_by(EstimateChangeLog.timestamp.asc())
+    )
+    return result.scalars().all()
+
+
 @router.put("/{estimate_id}", response_model=EstimateOut)
 async def update_estimate(
     estimate_id: int, updated_data: EstimateCreate, db: AsyncSession = Depends(get_db)
@@ -75,6 +100,14 @@ async def update_estimate(
     )
     for item in updated_data.items:
         db.add(EstimateItem(**item.dict(), estimate_id=estimate_id))
+
+    db.add(
+        EstimateChangeLog(
+            estimate_id=estimate_id,
+            action="Обновление",
+            description="Смета была обновлена",
+        )
+    )
 
     await db.commit()
 

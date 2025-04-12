@@ -4,9 +4,11 @@ import axios from 'axios'
 export const useEstimatesStore = defineStore('estimates', {
   state: () => ({
     estimates: [],
+    copiedEstimate: null
   }),
 
   actions: {
+    
     async fetchEstimates() {
       const res = await axios.get('http://localhost:8000/api/estimates/')
       this.estimates = res.data
@@ -32,6 +34,14 @@ export const useEstimatesStore = defineStore('estimates', {
       const res = await axios.put(`http://localhost:8000/api/estimates/${id}`, data)
       await this.fetchEstimates()
       return res.data
+    },
+
+    setCopiedEstimate(estimate) {
+      this.copiedEstimate = estimate
+    },
+
+    clearCopiedEstimate() {
+      this.copiedEstimate = null
     }
     
   }

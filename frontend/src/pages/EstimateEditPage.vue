@@ -1,7 +1,7 @@
 <template>
     <div v-if="estimate">
         <h1 class="text-2xl font-bold mb-4">Редактирование сметы {{ estimate?.name }}</h1>
-        <EstimateForm :initial="estimate" @updated="onUpdated"/>
+        <EstimateForm :initial="estimate" mode="edit" @updated="onUpdated" />
     </div>
 </template>
 

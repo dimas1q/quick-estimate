@@ -5,11 +5,15 @@
 
             <div class="space-x-2">
                 <RouterLink :to="`/estimates/${estimate.id}/edit`"
-                    class="bg-yellow-400 text-black px-4 py-2 rounded inline-flex items-center justify-center min-w-[120px]">
+                    class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium">
                     ✏️ Редактировать
                 </RouterLink>
+                <button @click="copyEstimate"
+                    class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium">
+                    📄 Копировать
+                </button>
                 <button @click="confirmDelete"
-                    class="bg-red-500 text-white px-4 py-2 rounded inline-flex items-center justify-center min-w-[120px]">
+                    class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium">
                     🗑️ Удалить
                 </button>
             </div>
@@ -24,6 +28,21 @@
             <p><strong>Контакты:</strong> {{ estimate.client_contact }}</p>
             <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
             <p><strong>Заметки:</strong> {{ estimate.notes }}</p>
+
+            <p class="text-sm text-gray-600">
+                НДС:
+                <span class="font-semibold">
+                    {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}
+                </span>
+            </p>
+
+            <p class="text-sm text-gray-600">
+                Дата создания: {{ new Date(estimate.date).toLocaleString() }}
+            </p>
+
+            <p class="text-sm text-gray-600">
+                Последнее обновление: {{ new Date(estimate.updated_at).toLocaleString() }}
+            </p>
 
             <h2 class="font-semibold text-lg mt-6">Услуги</h2>
             <ul class="space-y-2">
@@ -65,6 +84,15 @@
         </p>
     </div>
 
+    <div class="mt-8 border-t pt-4 text-sm">
+        <h3 class="font-semibold text-gray-700 mb-2">История изменений</h3>
+        <ul class="space-y-2">
+            <li v-for="log in logs" :key="log.id" class="text-gray-600">
+                🕓 {{ new Date(log.timestamp).toLocaleString() }} — {{ log.action }}: {{ log.description }}
+            </li>
+        </ul>
+    </div>
+
     <!-- Модалка -->
     <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded shadow max-w-sm w-full text-center">
@@ -83,6 +111,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import EstimateForm from '@/components/EstimateForm.vue'
 import { useToast } from 'vue-toastification'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
@@ -92,13 +121,21 @@ const toast = useToast()
 const estimate = ref(null)
 const showConfirm = ref(false)
 const editing = ref(false)
+const logs = ref([])
 
 onMounted(async () => {
     estimate.value = await store.getEstimateById(route.params.id)
+    logs.value = await axios.get(`http://localhost:8000/api/estimates/${route.params.id}/logs`).then(res => res.data)
 })
 
 function confirmDelete() {
     showConfirm.value = true
+}
+
+async function copyEstimate() {
+    const original = await store.getEstimateById(estimate.value.id)
+    store.setCopiedEstimate(original)
+    router.push('/estimates/create')
 }
 
 async function deleteEstimate() {
