@@ -42,6 +42,11 @@ export const useEstimatesStore = defineStore('estimates', {
 
     clearCopiedEstimate() {
       this.copiedEstimate = null
+    },
+
+    getEstimateLogs: async function (id) {
+      const res = await axios.get(`http://localhost:8000/api/estimates/${id}/logs`)
+      return res.data
     }
     
   }

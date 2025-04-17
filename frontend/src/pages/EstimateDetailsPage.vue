@@ -1,4 +1,7 @@
 <template>
+    <div v-if="error" class="text-center text-red-500 text-lg font-medium mt-10">
+        {{ error }}
+    </div>
     <div v-if="estimate" class="space-y-6">
         <div class="flex justify-between items-center">
             <h1 class="text-2xl font-bold">{{ editing ? 'Редактирование сметы' : estimate.name }}</h1>
@@ -55,10 +58,6 @@
                             <div><strong>{{ item.name }}</strong> — {{ item.description }}</div>
                             <div>Кол-во: {{ item.quantity }} {{ item.unit }}</div>
                             <div>Цена за единицу: {{ formatCurrency(item.unit_price) }}</div>
-                            <div>Скидка:
-                                <span v-if="item.discount_type === 'percent'">{{ item.discount }}%</span>
-                                <span v-else>{{ formatCurrency(item.discount) }}</span>
-                            </div>
                             <div class="font-semibold text-right">
                                 Итог: {{ formatCurrency(getItemTotal(item)) }}
                             </div>
@@ -84,7 +83,7 @@
         </p>
     </div>
 
-    <div class="mt-8 border-t pt-4 text-sm">
+    <div v-if="logs.length" class="mt-8 border-t pt-4 text-sm">
         <h3 class="font-semibold text-gray-700 mb-2">История изменений</h3>
         <ul class="space-y-2">
             <li v-for="log in logs" :key="log.id" class="text-gray-600">
@@ -106,27 +105,43 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import EstimateForm from '@/components/EstimateForm.vue'
 import { useToast } from 'vue-toastification'
-import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 const store = useEstimatesStore()
 const toast = useToast()
 
-const estimate = ref(null)
 const showConfirm = ref(false)
 const editing = ref(false)
+
+const estimate = ref(null)
 const logs = ref([])
+const error = ref(null)
 
 onMounted(async () => {
-    estimate.value = await store.getEstimateById(route.params.id)
-    logs.value = await axios.get(`http://localhost:8000/api/estimates/${route.params.id}/logs`).then(res => res.data)
+    try {
+        estimate.value = await store.getEstimateById(route.params.id)
+        logs.value = await store.getEstimateLogs(route.params.id)
+    } catch (e) {
+        if (e.response?.status === 403) {
+            error.value = '🚫 У вас нет доступа к этой смете.'
+        } else if (e.response?.status === 404) {
+            error.value = '❌ Смета не найдена.'
+        } else {
+            error.value = '⚠️ Ошибка при загрузке сметы.'
+        }
+    }
 })
+
+onUnmounted(() => {
+    store.currentEstimate = null
+})
+
 
 function confirmDelete() {
     showConfirm.value = true
@@ -166,11 +181,7 @@ function getGroupTotal(items) {
 
 const getItemTotal = (item) => {
     const raw = item.quantity * item.unit_price
-    if (item.discount_type === 'percent') {
-        return raw * (1 - item.discount / 100)
-    } else {
-        return Math.max(0, raw - item.discount)
-    }
+    return raw
 }
 
 const total = computed(() => {

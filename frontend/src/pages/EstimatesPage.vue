@@ -2,10 +2,8 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Сметы</h1>
-      <router-link
-        to="/estimates/create"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
+      <router-link to="/estimates/create"
+        class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium">
         + Создать смету
       </router-link>
     </div>
@@ -16,10 +14,7 @@
       <div class="text-sm">Ответственный: {{ e.responsible || '—' }}</div>
       <div class="text-xs text-gray-500">Создана: {{ new Date(e.date).toLocaleString() }}</div>
 
-      <router-link
-        :to="`/estimates/${e.id}`"
-        class="text-blue-600 text-sm hover:underline mt-2 inline-block"
-      >
+      <router-link :to="`/estimates/${e.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">
         Подробнее →
       </router-link>
     </div>

@@ -1,12 +1,15 @@
 <template>
+    <div v-if="error" class="text-red-500 text-center text-lg font-medium mt-10">
+        {{ error }}
+    </div>
     <div v-if="estimate">
-        <h1 class="text-2xl font-bold mb-4">Редактирование сметы {{ estimate?.name }}</h1>
+        <h1 class="text-2xl font-bold mb-4 text-center">Редактирование сметы {{ estimate?.name }}</h1>
         <EstimateForm :initial="estimate" mode="edit" @updated="onUpdated" />
     </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import EstimateForm from '@/components/EstimateForm.vue'
@@ -18,9 +21,24 @@ const store = useEstimatesStore()
 const toast = useToast()
 
 const estimate = ref(null)
+const error = ref(null)
 
 onMounted(async () => {
-    estimate.value = await store.getEstimateById(route.params.id)
+    try {
+        estimate.value = await store.getEstimateById(route.params.id)
+    } catch (e) {
+        if (e.response?.status === 403) {
+            error.value = '🚫 У вас нет доступа к этой смете.'
+        } else if (e.response?.status === 404) {
+            error.value = '❌ Смета не найдена.'
+        } else {
+            error.value = '⚠️ Ошибка при загрузке сметы.'
+        }
+    }
+})
+
+onUnmounted(() => {
+    store.currentEstimate = null
 })
 
 function onUpdated() {

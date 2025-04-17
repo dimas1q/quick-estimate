@@ -8,9 +8,17 @@ import router from './router'
 import Toast, { POSITION } from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
+import { useAuthStore } from '@/store/auth'
+
 const app = createApp(App)
 
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
+
+const auth = useAuthStore()
+
+await auth.restoreSession()  // ⬅️ восстанавливаем сессию до mount()
+
 app.use(router)
 
 app.use(Toast, {

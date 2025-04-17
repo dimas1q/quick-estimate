@@ -4,6 +4,7 @@ import EstimateForm from '@/components/EstimateForm.vue'
 
 const store = useEstimatesStore()
 const copiedEstimate = store.copiedEstimate
+store.clearCopiedEstimate()
 </script>
 
 <template>

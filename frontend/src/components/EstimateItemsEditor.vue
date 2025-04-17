@@ -1,14 +1,13 @@
 <template>
   <div class="space-y-4">
-    <h2 class="text-lg font-semibold">Услуги</h2>
+    <h2 class="text-lg font-semibold text-center">Услуги</h2>
 
-    <div class="grid grid-cols-9 gap-2 font-semibold text-sm text-gray-600">
+    <div class="grid grid-cols-8 gap-2 font-semibold text-sm text-gray-600">
       <div class="flex items-center justify-center">Название</div>
       <div class="flex items-center justify-center">Описание</div>
       <div class="flex items-center justify-center">Кол-во</div>
       <div class="flex items-center justify-center">Ед. изм.</div>
       <div class="flex items-center justify-center">Цена</div>
-      <div class="flex items-center justify-center">Скидка</div>
       <div class="flex items-center justify-center">Категория</div>
       <div class="flex items-center justify-center">Итог</div>
       <div class="flex items-center justify-center">Действие</div>
@@ -17,10 +16,11 @@
     <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-3 mb-6">
       <h3 class="text-md font-semibold text-gray-700">{{ category }}</h3>
 
-      <div v-for="(item, index) in groupItems" :key="index" class="grid grid-cols-9 gap-2 items-center">
+      <div v-for="(item, index) in groupItems" :key="index" class="grid grid-cols-8 gap-2 items-center">
         <input v-model="item.name" class="input" placeholder="Название" />
         <input v-model="item.description" class="input" placeholder="Описание" />
-        <input v-model.number="item.quantity" type="number" min="0" class="input" placeholder="Кол-во" />
+        <input type="text" v-model="item.quantity" @blur="normalizeNumber(item, 'quantity')" class="input" min="1"
+          placeholder="Кол-во" />
 
 
         <select v-model="item.unit" class="input">
@@ -31,9 +31,8 @@
           <option value="м">м</option>
         </select>
 
-        <input v-model.number="item.unit_price" type="number" min="0" class="input" />
-
-        <input v-model="item.discount_raw" @input="parseDiscount(item)" class="input" placeholder="Сумма или %" />
+        <input type="text" v-model="item.unit_price" @blur="normalizeNumber(item, 'unit_price')" class="input"
+          placeholder="Цена за единицу" />
 
         <input v-model="item.category_input" @blur="applyCategory(item)" class="input" placeholder="Категория" />
 
@@ -55,7 +54,8 @@
       </div>
     </div>
 
-    <button type="button" @click="addItem" class="bg-gray-200 px-3 py-1 rounded">
+    <button type="button" @click="addItem"
+      class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-gray-200 text-black hover:bg-gray-300 transition-all text-sm font-medium">
       + Добавить услугу
     </button>
 
@@ -93,12 +93,9 @@ function addItem() {
   items.push({
     name: '',
     description: '',
-    quantity: 1,
+    quantity: '',
     unit: 'шт',
-    unit_price: 0,
-    discount: 0,
-    discount_type: 'fixed',
-    discount_raw: '',
+    unit_price: '',
     category_input: '',
     category: ''
   })
@@ -109,35 +106,9 @@ function removeItem(itemToRemove) {
   if (index !== -1) items.splice(index, 1)
 }
 
-function parseDiscount(item) {
-  const val = (item.discount_raw || '').toString().trim()
-
-  if (val.endsWith('%')) {
-    const num = parseFloat(val)
-    if (!isNaN(num) && num >= 0 && num <= 100) {
-      item.discount = num
-      item.discount_type = 'percent'
-      return
-    }
-  }
-
-  const num = parseFloat(val)
-  if (!isNaN(num) && num >= 0) {
-    item.discount = num
-    item.discount_type = 'fixed'
-  } else {
-    item.discount = 0
-    item.discount_type = 'fixed'
-  }
-}
-
 function getItemTotal(item) {
   const raw = item.quantity * item.unit_price
-  if (item.discount_type === 'percent') {
-    return raw * (1 - item.discount / 100)
-  } else {
-    return Math.max(0, raw - item.discount)
-  }
+  return raw
 }
 
 function getGroupTotal(group) {
@@ -158,7 +129,6 @@ function applyCategory(item) {
   item.category = item.category_input.trim()
 }
 
-
 const total = computed(() => {
   return items.reduce((sum, item) => sum + getItemTotal(item), 0)
 })
@@ -168,6 +138,18 @@ const totalWithVat = computed(() => total.value + vat.value)
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₽`
+}
+
+function normalizeNumber(item, field) {
+  let value = item[field]
+  if (value === '') {
+    return
+  }
+  if (typeof value === 'string') {
+    value = value.replace(',', '.')
+  }
+  const parsed = parseFloat(value)
+  item[field] = isNaN(parsed) ? 0 : parsed
 }
 </script>
 

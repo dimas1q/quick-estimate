@@ -1,21 +1,20 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+
 
 class EstimateItemBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    quantity: float
+    name: str = Field(..., min_length=1)
+    description: str = ""
+    quantity: float = Field(..., gt=0)
     unit: str
-    unit_price: float
-    discount: float
-    discount_type: str  # "percent" or "fixed"
-    category: Optional[str] = None
+    unit_price: float = Field(..., gt=0)
+    category: str = ""
+
 
 class EstimateItemCreate(EstimateItemBase):
     pass
 
+
 class EstimateItemOut(EstimateItemBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}

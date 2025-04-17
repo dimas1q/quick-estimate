@@ -9,5 +9,4 @@ class ChangeLogOut(BaseModel):
     description: str
     timestamp: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}

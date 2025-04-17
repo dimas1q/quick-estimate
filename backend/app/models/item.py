@@ -12,8 +12,6 @@ class EstimateItem(Base):
     quantity = Column(Float, default=1)
     unit = Column(String, default="шт")
     unit_price = Column(Float, default=0)
-    discount = Column(Float, default=0)
-    discount_type = Column(String, default="percent")  # percent | fixed
     category = Column(String)
 
     estimate = relationship("Estimate", back_populates="items")
