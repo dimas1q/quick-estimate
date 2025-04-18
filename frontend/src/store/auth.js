@@ -9,19 +9,24 @@ export const useAuthStore = defineStore('auth', {
     }),
 
     actions: {
-        async login(email, password) {
-            const res = await axios.post('http://localhost:8000/api/auth/login', new URLSearchParams({
-                username: email,
-                password
-            }))
+        async login(identifier, password) {
+            const res = await axios.post('http://localhost:8000/api/auth/login',
+                new URLSearchParams({ username: identifier, password })
+            )
+
             this.token = res.data.access_token
             localStorage.setItem('token', this.token)
             axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+
             await this.fetchUser()
         },
 
-        async register(email, password) {
-            await axios.post('http://localhost:8000/api/auth/register', { email, password })
+        async register({ login, email, password }) {
+            await axios.post('http://localhost:8000/api/auth/register', {
+                login,
+                email,
+                password
+            })
         },
 
         async fetchUser() {
@@ -31,9 +36,9 @@ export const useAuthStore = defineStore('auth', {
                 }
             })
             this.user = res.data
-            if (this.token) {
-                axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
-            }
+
+            // Восстановим дефолтный токен, если вдруг axios сбросился
+            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
         },
 
         logout() {
@@ -41,8 +46,10 @@ export const useAuthStore = defineStore('auth', {
             this.user = null
             localStorage.removeItem('token')
 
+            delete axios.defaults.headers.common['Authorization']
+
             const estimateStore = useEstimatesStore()
-            estimateStore.estimates = []  
+            estimateStore.estimates = []
         },
 
         async restoreSession() {

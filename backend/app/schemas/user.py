@@ -1,14 +1,34 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
-class UserCreate(BaseModel):
+class UserBase(BaseModel):
+    email: EmailStr
+    login: str = Field(..., min_length=3)
+    name: str | None = None
+    company: str | None = None
+
+
+class UserCreate(UserBase):
+    login: str = Field(..., min_length=3)
     email: EmailStr
     password: str
 
 
-class UserOut(BaseModel):
+class UserOut(UserBase):
     id: int
-    email: EmailStr
     is_admin: bool
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+    email: EmailStr
+    login: str
+    name: str | None = None
+    company: str | None = None
+
+
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str

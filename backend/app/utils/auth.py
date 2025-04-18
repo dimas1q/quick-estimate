@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.utils.secret_key import load_or_create_secret_key
 from sqlalchemy.future import select
+from sqlalchemy import or_
 from app.core.database import get_db
 from app.models.user import User
 import bcrypt
@@ -27,6 +28,20 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
+
+
+# 🔑 Проверка пользователя по email или логину
+async def authenticate_user(
+    db: AsyncSession, identifier: str, password: str
+) -> Optional[User]:
+    stmt = select(User).where(or_(User.email == identifier, User.login == identifier))
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user or not verify_password(password, user.hashed_password):
+        return None
+
+    return user
 
 
 # 🔐 Токен
