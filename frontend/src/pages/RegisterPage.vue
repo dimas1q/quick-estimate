@@ -22,7 +22,7 @@ async function handleRegister() {
 </script>
 
 <template>
-    <div class="min-h-screen flex items-center justify-center bg-gray-50">
+    <div class="flex items-center justify-center bg-gray-50 py-60">
         <div class="bg-white shadow-md rounded px-8 py-6 w-full max-w-sm">
             <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Регистрация</h2>
 
@@ -33,7 +33,7 @@ async function handleRegister() {
                 class="w-full mb-4 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
 
             <button @click="handleRegister"
-                class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded">
+                class="w-full bg-blue-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded">
                 Зарегистрироваться
             </button>
 

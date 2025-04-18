@@ -20,9 +20,9 @@ async function handleLogin() {
 </script>
 
 <template>
-    <div class="min-h-screen flex items-center justify-center bg-gray-50">
+    <div class="flex items-center justify-center bg-gray-50 py-60">
         <div class="bg-white shadow-md rounded px-8 py-6 w-full max-w-sm">
-            <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Вход в QuickEstimate</h2>
+            <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Вход</h2>
 
             <input v-model="email" type="email" placeholder="Email"
                 class="w-full mb-4 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
@@ -44,3 +44,9 @@ async function handleLogin() {
         </div>
     </div>
 </template>
+
+<style scoped>
+.input {
+    @apply border rounded w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400;
+}
+</style>
