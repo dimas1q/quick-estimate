@@ -50,7 +50,7 @@
 
       <!-- промежуточный итог -->
       <div class="text-right font-semibold text-sm text-gray-600 border-t pt-2">
-        Итог по "{{ category }}": {{ formatCurrency(getGroupTotal(groupItems)) }}
+        Итог по категории {{ category }}: {{ formatCurrency(getGroupTotal(groupItems)) }}
       </div>
     </div>
 

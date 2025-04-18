@@ -31,13 +31,7 @@
             <p><strong>Контакты:</strong> {{ estimate.client_contact }}</p>
             <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
             <p><strong>Заметки:</strong> {{ estimate.notes }}</p>
-
-            <p class="text-sm text-gray-600">
-                НДС:
-                <span class="font-semibold">
-                    {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}
-                </span>
-            </p>
+            <p><strong>НДС:</strong> {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}</p>
 
             <p class="text-sm text-gray-600">
                 Дата создания: {{ new Date(estimate.date).toLocaleString() }}
@@ -65,7 +59,7 @@
                     </ul>
 
                     <div class="text-right font-semibold text-sm text-gray-600 pt-2">
-                        Итог по категории "{{ category }}": {{ formatCurrency(getGroupTotal(groupItems)) }}
+                        Итог по категории {{ category }}: {{ formatCurrency(getGroupTotal(groupItems)) }}
                     </div>
                 </div>
 

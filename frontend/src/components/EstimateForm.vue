@@ -123,8 +123,9 @@ function validateEstimate() {
 
     <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
 
+    
     <div class="flex gap-2 pt-4">
-      <button type="submit" 
+      <button type="submit"
         class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium">Сохранить</button>
       <button type="button" @click="cancel"
         class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium">Отмена</button>

@@ -34,8 +34,7 @@ onBeforeUnmount(() => {
   <div class="flex flex-col h-screen bg-gray-50 text-gray-900">
     <!-- HEADER -->
     <header class="bg-white border-b shadow-sm px-6 py-3 flex justify-between items-center">
-      <RouterLink to="/" class="text-xl font-bold text-blue-600">QuickEstimate
-      </RouterLink>
+      <RouterLink to="/" class="text-xl font-bold text-blue-600">Quick Estimate</RouterLink>
       <div class="flex items-center gap-4">
         <RouterLink v-if="!auth.user" to="/login" class="text-sm text-blue-600 hover:underline">Войти</RouterLink>
         <div v-else class="relative" id="user-menu">
