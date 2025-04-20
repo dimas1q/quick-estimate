@@ -50,8 +50,3 @@ async def login(
 
     token = create_access_token(data={"sub": db_user.email})
     return {"access_token": token, "token_type": "bearer"}
-
-
-@router.get("/me", response_model=UserOut)
-async def get_me(user: User = Depends(get_current_user)):
-    return user

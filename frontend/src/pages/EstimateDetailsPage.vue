@@ -1,8 +1,10 @@
 <template>
+    <div  class="px-16 py-8 max-w-7xl mx-auto">
+
     <div v-if="error" class="text-center text-red-500 text-lg font-medium mt-10">
         {{ error }}
     </div>
-    <div v-if="estimate" class="space-y-6">
+    <div v-if="estimate" class="space-y-6 ">
         <div class="flex justify-between items-center">
             <h1 class="text-2xl font-bold">{{ editing ? 'Редактирование сметы' : estimate.name }}</h1>
 
@@ -28,9 +30,9 @@
 
         <div v-else class="grid gap-3 text-sm text-gray-800">
             <p><strong>Клиент:</strong> {{ estimate.client_name }} ({{ estimate.client_company }})</p>
-            <p><strong>Контакты:</strong> {{ estimate.client_contact }}</p>
-            <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
-            <p><strong>Заметки:</strong> {{ estimate.notes }}</p>
+            <p><strong>Контакты:</strong> {{ estimate.client_contact || '—' }} </p>
+            <p><strong>Ответственный:</strong> {{ estimate.responsible || '—'}}</p>
+            <p><strong>Заметки:</strong> {{ estimate.notes || '—' }}</p>
             <p><strong>НДС:</strong> {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}</p>
 
             <p class="text-sm text-gray-600">
@@ -96,6 +98,8 @@
             </div>
         </div>
     </div>
+            
+</div>
 </template>
 
 <script setup>
@@ -196,4 +200,6 @@ function formatCurrency(val) {
 .input {
     @apply border p-2 w-full rounded mb-2;
 }
+
+
 </style>

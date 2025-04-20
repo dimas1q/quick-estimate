@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from '@/store/auth'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Sidebar from '@/components/Sidebar.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const showMenu = ref(false)
 
@@ -15,7 +16,13 @@ function logout() {
   router.push('/login')
 }
 
+watch(() => route.path, () => {
+  showMenu.value = false
+})
+
 function handleClickOutside(event) {
+  if (!showMenu.value) return
+
   const menu = document.getElementById('user-menu')
   if (menu && !menu.contains(event.target)) {
     showMenu.value = false
@@ -81,7 +88,7 @@ onBeforeUnmount(() => {
       <Sidebar v-if="auth.user" />
 
       <!-- MAIN -->
-      <main class="flex-1 overflow-y-auto px-14 py-6 mx-auto">
+      <main class="flex-1 overflow-y-auto">
         <router-view />
       </main>
     </div>

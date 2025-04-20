@@ -44,6 +44,15 @@ const routes = [
         component: {
           template: '<div>Страница входа 🔐</div>'
         }
+      },
+      {
+        path: '/profile',
+        component: () => import('@/pages/ProfilePage.vue'),
+        children: [
+          { path: '', redirect: '/profile/account' },
+          { path: 'account', component: () => import('@/pages/profile/AccountTab.vue') },
+          { path: 'password', component: () => import('@/pages/profile/PasswordTab.vue') }
+        ]
       }
     ]
   }

@@ -20,7 +20,7 @@ async function handleLogin() {
 </script>
 
 <template>
-    <div class="flex items-center justify-center bg-gray-50 py-60">
+    <div class="flex items-center justify-center min-h-screen bg-gray-50">
         <div class="bg-white shadow-md rounded px-8 py-6 w-full max-w-sm">
             <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Вход</h2>
 

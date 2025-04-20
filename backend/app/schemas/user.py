@@ -22,8 +22,8 @@ class UserOut(UserBase):
 
 
 class UserUpdate(BaseModel):
+    login: str = Field(..., min_length=3)
     email: EmailStr
-    login: str
     name: str | None = None
     company: str | None = None
 

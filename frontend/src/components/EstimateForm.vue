@@ -109,30 +109,48 @@ function validateEstimate() {
 </script>
 
 <template>
-  <form @submit.prevent="submit" class="space-y-4">
-    <div v-for="(label, key) in fieldLabels" :key="key">
-      <label class="block font-semibold mb-1">{{ label }} </label>
-      <input v-if="key !== 'notes'" v-model="estimate[key]" class="input" />
-      <textarea v-else v-model="estimate.notes" class="input" />
+  <form @submit.prevent="submit" class="space-y-6 max-w-8xl mx-auto bg-white rounded-lg p-6 shadow-sm">
+    <div v-for="(label, key) in fieldLabels" :key="key" class="space-y-1">
+      <label class="block text-sm font-medium text-gray-700">{{ label }}</label>
+      <input
+        v-if="key !== 'notes'"
+        v-model="estimate[key]"
+        type="text"
+        class="input-field"
+      />
+      <textarea
+        v-else
+        v-model="estimate.notes"
+        rows="3"
+        class="input-field resize-none"
+      />
     </div>
 
     <div class="flex items-center gap-2">
-      <input type="checkbox" v-model="estimate.vat_enabled" id="vat" />
-      <label for="vat" class="text-sm font-semibold">Включить НДС</label>
+      <input type="checkbox" v-model="estimate.vat_enabled" id="vat" class="form-checkbox h-4 w-4 text-blue-600" />
+      <label for="vat" class="text-sm font-medium text-gray-700">Включить НДС</label>
     </div>
 
     <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
 
-    
-    <div class="flex gap-2 pt-4">
-      <button type="submit"
-        class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium">Сохранить</button>
-      <button type="button" @click="cancel"
-        class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium">Отмена</button>
+    <div class="flex gap-2 pt-4 justify-end">
+      <button
+        type="submit"
+        class="btn-primary"
+      >
+        Сохранить
+      </button>
+      <button
+        type="button"
+        @click="cancel"
+        class="btn-danger"
+      >
+        Отмена
+      </button>
     </div>
-
   </form>
-</template> 
+</template>
+
 
 <script>
 export default {
@@ -154,5 +172,17 @@ export default {
 <style scoped>
 .input {
   @apply border p-2 w-full rounded mb-2;
+}
+
+.input-field {
+  @apply w-full border border-gray-300 rounded-md px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition;
+}
+
+.btn-primary {
+  @apply inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition text-sm font-medium;
+}
+
+.btn-danger {
+  @apply inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition text-sm font-medium;
 }
 </style>

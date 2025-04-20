@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useEstimatesStore } from '@/store/estimates'
 import axios from 'axios'
+axios.defaults.baseURL = 'http://localhost:8000/api'
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
@@ -10,7 +11,7 @@ export const useAuthStore = defineStore('auth', {
 
     actions: {
         async login(identifier, password) {
-            const res = await axios.post('http://localhost:8000/api/auth/login',
+            const res = await axios.post('/auth/login',
                 new URLSearchParams({ username: identifier, password })
             )
 
@@ -22,7 +23,7 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async register({ login, email, password }) {
-            await axios.post('http://localhost:8000/api/auth/register', {
+            await axios.post('/auth/register', {
                 login,
                 email,
                 password
@@ -30,7 +31,7 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async fetchUser() {
-            const res = await axios.get('http://localhost:8000/api/auth/me', {
+            const res = await axios.get('/users/me', {
                 headers: {
                     Authorization: `Bearer ${this.token}`
                 }
@@ -40,6 +41,29 @@ export const useAuthStore = defineStore('auth', {
             // Восстановим дефолтный токен, если вдруг axios сбросился
             axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
         },
+
+        async updateProfile({ login, email, name, company }) {
+            try {
+              await axios.put('/users/me', { login, email, name, company })
+              await this.fetchUser()
+            } catch (error) {
+              throw error.response?.data?.detail || 'Ошибка при обновлении профиля'
+            }
+          },
+          
+          async changePassword({ current_password, new_password, confirm_password }) {
+            try {
+              await axios.put('/users/me/password', {
+                current_password,
+                new_password,
+                confirm_password
+              })
+            } catch (error) {
+                console.error('[changePassword]', error)
+                throw error  // ❗
+            }
+          },
+          
 
         logout() {
             this.token = null

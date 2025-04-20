@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.api import estimates
 from app.api import auth
+from app.api import user
 from app.core.database import create_tables
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -21,3 +22,4 @@ async def startup():
 
 app.include_router(estimates.router, prefix="/api/estimates")
 app.include_router(auth.router, prefix="/api/auth")
+app.include_router(user.router, prefix="/api/users")

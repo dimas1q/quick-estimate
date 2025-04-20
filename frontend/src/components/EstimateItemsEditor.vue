@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <h2 class="text-lg font-semibold text-center">Услуги</h2>
 
-    <div class="grid grid-cols-8 gap-2 font-semibold text-sm text-gray-600">
+    <div class="grid grid-cols-8 gap-3 font-semibold text-sm text-gray-600  px-2 py-2">
       <div class="flex items-center justify-center">Название</div>
       <div class="flex items-center justify-center">Описание</div>
       <div class="flex items-center justify-center">Кол-во</div>
@@ -13,17 +13,17 @@
       <div class="flex items-center justify-center">Действие</div>
     </div>
 
-    <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-3 mb-6">
-      <h3 class="text-md font-semibold text-gray-700">{{ category }}</h3>
+    <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-4 mb-6">
+      <h3 class="text-md font-semibold text-gray-700 text-center">{{ category }}</h3>
 
       <div v-for="(item, index) in groupItems" :key="index" class="grid grid-cols-8 gap-2 items-center">
-        <input v-model="item.name" class="input" placeholder="Название" />
-        <input v-model="item.description" class="input" placeholder="Описание" />
-        <input type="text" v-model="item.quantity" @blur="normalizeNumber(item, 'quantity')" class="input" min="1"
+        <input v-model="item.name" class="input-field" placeholder="Название" />
+        <input v-model="item.description" class="input-field" placeholder="Описание" />
+        <input type="text" v-model="item.quantity" @blur="normalizeNumber(item, 'quantity')" class="input-field" min="1"
           placeholder="Кол-во" />
 
 
-        <select v-model="item.unit" class="input">
+        <select v-model="item.unit" class="input-field">
           <option value="шт">шт</option>
           <option value="час">час</option>
           <option value="день">день</option>
@@ -31,10 +31,10 @@
           <option value="м">м</option>
         </select>
 
-        <input type="text" v-model="item.unit_price" @blur="normalizeNumber(item, 'unit_price')" class="input"
+        <input type="text" v-model="item.unit_price" @blur="normalizeNumber(item, 'unit_price')" class="input-field"
           placeholder="Цена за единицу" />
 
-        <input v-model="item.category_input" @blur="applyCategory(item)" class="input" placeholder="Категория" />
+        <input v-model="item.category_input" @blur="applyCategory(item)" class="input-field" placeholder="Категория" />
 
         <div class="text-sm font-semibold flex items-center justify-center h-full">
           {{ formatCurrency(getItemTotal(item)) }}
@@ -156,5 +156,17 @@ function normalizeNumber(item, field) {
 <style scoped>
 .input {
   @apply border p-2 rounded text-sm w-full;
+}
+
+.input-field {
+  @apply w-full border border-gray-300 rounded-md px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition;
+}
+
+.btn-primary {
+  @apply inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition text-sm font-medium;
+}
+
+.btn-danger {
+  @apply inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition text-sm font-medium;
 }
 </style>

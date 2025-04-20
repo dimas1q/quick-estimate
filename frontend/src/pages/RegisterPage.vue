@@ -44,14 +44,14 @@ async function handleRegister() {
 
 
 <template>
-    <div class="flex items-center justify-center bg-gray-50 py-20 min-h-screen">
+    <div class="flex items-center justify-center min-h-screen bg-gray-50">
         <div class="bg-white shadow-md rounded px-8 py-6 w-full max-w-sm">
             <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Регистрация</h2>
 
-            <input v-model="login" type="text" placeholder="Логин" class="input" />
-            <input v-model="email" type="email" placeholder="Email" class="input" />
-            <input v-model="password" type="password" placeholder="Пароль" class="input" />
-            <input v-model="confirmPassword" type="password" placeholder="Повторите пароль" class="input" />
+            <input v-model="login" type="text" placeholder="Логин" class="w-full mb-4 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            <input v-model="email" type="email" placeholder="Email" class="w-full mb-4 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            <input v-model="password" type="password" placeholder="Пароль" class="w-full mb-4 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            <input v-model="confirmPassword" type="password" placeholder="Повторите пароль" class="w-full mb-4 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"/>
 
             <button @click="handleRegister"
                 class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded mt-4">
@@ -68,10 +68,4 @@ async function handleRegister() {
         </div>
     </div>
 </template>
-
-<style scoped>
-.input {
-    @apply w-full mb-4 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400;
-}
-</style>
 
