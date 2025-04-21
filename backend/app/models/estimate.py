@@ -14,7 +14,11 @@ class Estimate(Base):
     client_contact = Column(String)
     responsible = Column(String)
     notes = Column(Text, nullable=True)
+    
     items = relationship("EstimateItem", back_populates="estimate", cascade="all, delete-orphan")
+    
     vat_enabled = Column(Boolean, default=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("User", backref="estimates")
+
+    user = relationship("User", back_populates="estimates")
+

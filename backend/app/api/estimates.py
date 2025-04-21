@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -180,4 +180,4 @@ async def delete_estimate(
 
     await db.delete(estimate)
     await db.commit()
-    return JSONResponse(status_code=204, content=None)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
