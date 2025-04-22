@@ -1,8 +1,8 @@
+# frontend/src/components/EstimateForm.vue
 <script setup>
 import { reactive, watch, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
-import { useTemplatesStore } from '@/store/templates'
 import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
 
@@ -18,13 +18,6 @@ const emit = defineEmits(['updated'])
 const store = useEstimatesStore()
 const toast = useToast()
 const router = useRouter()
-
-const templatesStore = useTemplatesStore()
-onMounted(() => templatesStore.fetchTemplates())
-
-
-const requiredFields = ['name', 'client_name', 'client_company']
-
 
 const estimate = reactive({
   name: '',
@@ -109,21 +102,6 @@ function validateEstimate() {
   return true
 }
 
-const selectedTemplateId = ref(null)
-
-function applyTemplate() {
-  const template = templatesStore.templates.find(t => t.id === selectedTemplateId.value)
-  if (template) {
-    estimate.items.push(
-      ...template.items.map(item => ({
-        ...item,
-        category_input: item.category || ''
-      }))
-    )
-    toast.success(`Добавлены услуги из шаблона "${template.name}"`)
-  }
-}
-
 </script>
 
 <template>
@@ -137,21 +115,6 @@ function applyTemplate() {
     <div class="flex items-center gap-2">
       <input type="checkbox" v-model="estimate.vat_enabled" id="vat" class="form-checkbox h-4 w-4 text-blue-600" />
       <label for="vat" class="text-sm font-medium text-gray-700">Включить НДС</label>
-    </div>
-
-    <div class="space-y-4">
-      <label class="text-sm font-medium text-gray-700">Добавить услуги из шаблона</label>
-      <div class="flex items-center gap-3">
-        <select v-model="selectedTemplateId" class="input-field w-64">
-          <option :value="null" disabled selected>Выберите шаблон</option>
-          <option v-for="template in templatesStore.templates" :key="template.id" :value="template.id">
-            {{ template.name }}
-          </option>
-        </select>
-        <button type="button" @click="applyTemplate" class="btn-primary">
-          Добавить
-        </button>
-      </div>
     </div>
 
     <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />

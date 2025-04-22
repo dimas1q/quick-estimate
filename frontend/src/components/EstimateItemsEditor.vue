@@ -1,5 +1,7 @@
+# frontend/src/components/EstimateItemsEditor.vue
 <template>
-  <div class="space-y-2">
+  <div class="space-y-4">
+
     <h2 class="text-lg font-semibold text-center">Услуги</h2>
 
     <div class="grid grid-cols-8 gap-6 font-semibold text-sm text-gray-600 px-2 py-2">
@@ -54,16 +56,26 @@
       </div>
     </div>
 
-    <button type="button" @click="addItem"
-      class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-gray-200 text-black hover:bg-gray-300 transition-all text-sm font-medium">
-      + Добавить услугу
-    </button>
+    <div class="flex flex-wrap items-center gap-4">
+      <select v-model="selectedTemplateId" class="input-field">
+        <option :value="null" disabled>Выберите шаблон</option>
+        <option v-for="template in templatesStore.templates" :key="template.id" :value="template.id">
+          {{ template.name }}
+        </option>
+      </select>
+      <button type="button" @click="applyTemplate" class="btn-secondary">
+        ➕ Из шаблона
+      </button>
+      <button type="button" @click="addItem" class="btn-secondary">
+        ➕ Услуга
+      </button>
+    </div>
 
     <div class="pt-6 border-t">
       <p class="text-right font-semibold text-lg">
         Общая сумма: {{ formatCurrency(total) }}
       </p>
-      <p class="text-right text-gray-700"  v-if="props.showVatSummary">
+      <p class="text-right text-gray-700" v-if="props.showVatSummary">
         НДС (20%): {{ formatCurrency(vat) }} <br />
         Итого с НДС: {{ formatCurrency(totalWithVat) }}
       </p>
@@ -72,7 +84,17 @@
 </template>
 
 <script setup>
-import { reactive, watch, computed } from 'vue'
+import { onMounted, ref, reactive, watch, computed } from 'vue'
+import { useTemplatesStore } from '@/store/templates'
+import { useToast } from 'vue-toastification'
+
+const templatesStore = useTemplatesStore()
+const toast = useToast()
+const selectedTemplateId = ref(null)
+
+onMounted(() => {
+  templatesStore.fetchTemplates()
+})
 
 const props = defineProps({
   modelValue: Array,
@@ -154,6 +176,20 @@ function normalizeNumber(item, field) {
   }
   const parsed = parseFloat(value)
   item[field] = isNaN(parsed) ? 0 : parsed
+}
+
+function applyTemplate() {
+  const template = templatesStore.templates.find(t => t.id === selectedTemplateId.value)
+  if (template) {
+    items.push(
+      ...template.items.map(item => ({
+        ...item,
+        category_input: item.category || ''
+      }))
+    )
+    toast.success(`Добавлены услуги из шаблона "${template.name}"`)
+    selectedTemplateId.value = null
+  }
 }
 </script>
 
