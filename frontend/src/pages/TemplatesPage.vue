@@ -56,17 +56,56 @@ async function handleFile(event) {
     const text = await file.text()
     const json = JSON.parse(text)
 
-    // Примитивная валидация
-    if (!json.name || !Array.isArray(json.items)) {
-      toast.error('Некорректный шаблон')
+    if ('id' in json) delete json.id
+    json.items?.forEach(item => delete item.id)
+
+    if (!isValidTemplate(json)) {
       return
     }
 
-    store.importedTemplate = json // ✅ сохранили во временное хранилище
-    router.push('/templates/create')
+    store.importedTemplate = json
+    router.push({ path: '/templates/create', state: { importedData: json } })
 
   } catch (e) {
-    toast.error('Ошибка при импорте шаблона')
+    console.error(e)
+    toast.error('Ошибка при чтении или разборе файла')
   }
 }
+
+function isValidTemplate(template) {
+  if (typeof template !== 'object' || template === null) return false
+  if (typeof template.name !== 'string' || !template.name.trim()) return false
+  if (!Array.isArray(template.items)) return false
+
+  for (const [i, item] of template.items.entries()) {
+    if (!item || typeof item !== 'object') return false
+
+    const { name, quantity, unit, unit_price } = item
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      toast.error(`Ошибка в услуге №${i + 1}: отсутствует название`)
+      return false
+    }
+
+    if (!['шт', 'час', 'день', 'м²', 'м'].includes(unit)) {
+      toast.error(`Ошибка в услуге №${i + 1}: недопустимая единица измерения`)
+      return false
+    }
+
+    if (typeof quantity !== 'number' || quantity <= 0) {
+      toast.error(`Ошибка в услуге №${i + 1}: количество должно быть > 0`)
+      return false
+    }
+
+    if (typeof unit_price !== 'number' || unit_price <= 0) {
+      toast.error(`Ошибка в услуге №${i + 1}: цена должна быть > 0`)
+      return false
+    }
+
+
+  }
+
+  return true
+}
+
 </script>

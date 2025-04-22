@@ -40,7 +40,7 @@ async def create_estimate(
         EstimateChangeLog(
             estimate_id=new_estimate.id,
             action="Создание",
-            description=f"Создана смета: {new_estimate.name}",
+            description=f"Смета создана",
         )
     )
 
@@ -148,7 +148,7 @@ async def update_estimate(
         EstimateChangeLog(
             estimate_id=estimate_id,
             action="Обновление",
-            description="Смета была обновлена",
+            description="Смета обновлена",
         )
     )
 

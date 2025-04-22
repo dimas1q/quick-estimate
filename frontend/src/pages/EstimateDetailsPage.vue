@@ -80,7 +80,7 @@
             <h3 class="font-semibold text-gray-700 mb-2">История изменений</h3>
             <ul class="space-y-2">
                 <li v-for="log in logs" :key="log.id" class="text-gray-600">
-                    🕓 {{ new Date(log.timestamp).toLocaleString() }} — {{ log.action }}: {{ log.description }}
+                    🕓 {{ new Date(log.timestamp).toLocaleString() }} — {{ log.description }}
                 </li>
             </ul>
         </div>
