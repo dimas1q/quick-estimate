@@ -10,15 +10,19 @@
 
         <div class="space-x-2">
 
-        <router-link :to="`/templates/${template.id}/edit`"
-          class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium">
-          ✏️ Редактировать
-        </router-link>
-        <button @click="confirmDelete"
-          class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium">
-          🗑️ Удалить
-        </button>
-      </div>
+          <router-link :to="`/templates/${template.id}/edit`"
+            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium">
+            ✏️ Редактировать
+          </router-link>
+          <button @click="downloadJson"
+            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 transition-all text-sm font-medium">
+            📥 Экспортировать
+          </button>
+          <button @click="confirmDelete"
+            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium">
+            🗑️ Удалить
+          </button>
+        </div>
       </div>
 
       <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -52,7 +56,7 @@
             </ul>
 
             <div class="text-right font-semibold text-sm text-gray-600 pt-2">
-              Итог: {{ formatCurrency(getGroupTotal(groupItems)) }}
+              Итог по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
             </div>
           </div>
 
@@ -132,5 +136,9 @@ async function deleteTemplate() {
   await store.deleteTemplate(template.value.id)
   toast.success('Шаблон удалён')
   router.push('/templates')
+}
+
+async function downloadJson() {
+  await store.exportTemplate(template.value.id)
 }
 </script>

@@ -5,6 +5,7 @@ import axios from 'axios'
 export const useTemplatesStore = defineStore('templates', {
   state: () => ({
     templates: [],
+    importedTemplate: null
   }),
 
   actions: {
@@ -34,5 +35,19 @@ export const useTemplatesStore = defineStore('templates', {
       await this.fetchTemplates()
       return res.data
     },
+    
+    async exportTemplate(id) {
+      const res = await axios.get(`http://localhost:8000/api/templates/${id}`)
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${res.data.name || 'template'}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    }
   }
 })

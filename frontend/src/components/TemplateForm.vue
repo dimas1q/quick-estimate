@@ -1,6 +1,7 @@
+# frontend/src/components/TemplateForm.vue
 <script setup>
-import { reactive, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useTemplatesStore } from '@/store/templates'
 import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
@@ -21,8 +22,24 @@ const router = useRouter()
 const template = reactive({
   name: '',
   description: '',
-  vat_enabled: true,
   items: []
+})
+
+onMounted(() => {
+  if (store.importedTemplate) {
+    template.name = store.importedTemplate.name || ''
+    template.description = store.importedTemplate.description || ''
+
+    template.items.splice(0) // очищаем
+    for (const item of store.importedTemplate.items || []) {
+      template.items.push({
+        ...item,
+        category_input: item.category || ''
+      })
+    }
+
+    store.importedTemplate = null
+  }
 })
 
 watch(() => props.initial, (value) => {

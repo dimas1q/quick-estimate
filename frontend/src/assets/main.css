@@ -17,3 +17,22 @@
 .btn-secondary {
   @apply inline-flex justify-center items-center px-3 py-2 rounded-md bg-gray-200 text-sm font-medium text-gray-800 hover:bg-gray-300 transition;
 }
+
+/* Кастомизация toast-уведомлений в стиле Apple */
+.Vue-Toastification__toast {
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(10px);
+  color: #1a1a1a !important; /* Более тёмный текст */
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.Vue-Toastification__icon {
+  color: #007aff !important;
+}
+
+.Vue-Toastification__close-button {
+  color: #1a1a1a !important;
+  opacity: 0.6;
+}

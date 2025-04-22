@@ -64,10 +64,10 @@
         </option>
       </select>
       <button type="button" @click="applyTemplate" class="btn-secondary">
-        ➕ Из шаблона
+        Добавить услуги из шаблона
       </button>
       <button type="button" @click="addItem" class="btn-secondary">
-        ➕ Услуга
+        Добавить услугу
       </button>
     </div>
 
