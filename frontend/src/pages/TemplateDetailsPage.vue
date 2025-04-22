@@ -15,25 +15,16 @@
             ✏️ Редактировать
           </router-link>
           <button @click="downloadJson"
-            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 transition-all text-sm font-medium">
+            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-all text-sm font-medium">
             📥 Экспортировать
           </button>
           <button @click="confirmDelete"
-            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium">
+            class="btn-danger">
             🗑️ Удалить
           </button>
         </div>
       </div>
 
-      <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded shadow max-w-sm w-full text-center">
-          <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данный шаблон?</p>
-          <div class="flex justify-center gap-4">
-            <button @click="deleteTemplate" class="bg-red-500 text-white px-4 py-2 rounded">Да, удалить</button>
-            <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded">Отмена</button>
-          </div>
-        </div>
-      </div>
 
       <div class="grid gap-3 text-sm text-gray-800">
         <p><strong>Описание:</strong> {{ template.description || '—' }}</p>
@@ -66,6 +57,15 @@
           <p class="text-right font-semibold text-lg">
             Общая сумма: {{ formatCurrency(total) }}
           </p>
+        </div>
+      </div>
+    </div>
+    <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded shadow max-w-sm w-full text-center">
+        <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данный шаблон?</p>
+        <div class="flex justify-center gap-4">
+          <button @click="deleteTemplate" class="bg-red-500 text-white px-4 py-2 rounded-md">Да, удалить</button>
+          <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-md">Отмена</button>
         </div>
       </div>
     </div>

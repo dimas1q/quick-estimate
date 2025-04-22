@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 
+import NotFoundPage from '@/pages/errors/NotFoundPage.vue'
+
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import EstimatesPage from '@/pages/EstimatesPage.vue'
 import EstimatesCreatePage from '@/pages/EstimatesCreatePage.vue'
@@ -68,6 +70,11 @@ const routes = [
           { path: 'account', component: () => import('@/pages/profile/AccountTab.vue') },
           { path: 'password', component: () => import('@/pages/profile/PasswordTab.vue') }
         ]
+      },
+      {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: NotFoundPage
       }
     ]
   }

@@ -4,18 +4,18 @@
 
     <h2 class="text-lg font-semibold text-center">Услуги</h2>
 
-    <div class="grid grid-cols-8 gap-6 font-semibold text-sm text-gray-600 px-2 py-2">
-      <div class="flex items-center justify-center">Название</div>
-      <div class="flex items-center justify-center">Описание</div>
-      <div class="flex items-center justify-center">Кол-во</div>
-      <div class="flex items-center justify-center">Ед. изм.</div>
-      <div class="flex items-center justify-center">Цена</div>
-      <div class="flex items-center justify-center">Категория</div>
-      <div class="flex items-center justify-center">Итог</div>
-      <div class="flex items-center justify-center">Действие</div>
+    <div class="grid grid-cols-8 gap-4 font-semibold text-sm text-gray-600 py-2">
+      <div class="w-full px-4 text-center">Название</div>
+      <div class="w-full px-4 text-center">Описание</div>
+      <div class="w-full px-4 text-center">Кол-во</div>
+      <div class="w-full px-4 text-center">Ед. изм.</div>
+      <div class="w-full px-4 text-center">Цена</div>
+      <div class="w-full px-4 text-center">Категория</div>
+      <div class="w-full px-4 text-center">Итог</div>
+      <div class="w-full px-4 text-center">Действие</div>
     </div>
 
-    <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-4 py-2 ">
+    <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-4">
       <h3 class="text-md font-semibold text-gray-700 text-center">{{ category }}</h3>
 
       <div v-for="(item, index) in groupItems" :key="index" class="grid grid-cols-8 gap-2 items-center">

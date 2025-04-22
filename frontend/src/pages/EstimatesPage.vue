@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Сметы</h1>
       <router-link to="/estimates/create"
-        class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium">
+        class="btn-primary">
         Создать смету
       </router-link>
     </div>
@@ -17,6 +17,10 @@
       <router-link :to="`/estimates/${e.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">
         Подробнее →
       </router-link>
+    </div>
+    <div v-if="store.estimates.length === 0" class="text-center text-gray-500 border p-4 rounded py-8">
+      <p>Сметы отсутствуют.</p>
+      <p>Создайте новую смету.</p>
     </div>
   </div>
 </template>

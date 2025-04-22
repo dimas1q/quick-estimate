@@ -13,12 +13,10 @@
                         class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium">
                         ✏️ Редактировать
                     </RouterLink>
-                    <button @click="copyEstimate"
-                        class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium">
+                    <button @click="copyEstimate" class="btn-primary">
                         📄 Копировать
                     </button>
-                    <button @click="confirmDelete"
-                        class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium">
+                    <button @click="confirmDelete" class="btn-danger">
                         🗑️ Удалить
                     </button>
                 </div>
@@ -90,8 +88,9 @@
             <div class="bg-white p-6 rounded shadow max-w-sm w-full text-center">
                 <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данную смету?</p>
                 <div class="flex justify-center gap-4">
-                    <button @click="deleteEstimate" class="bg-red-500 text-white px-4 py-2 rounded">Да, удалить</button>
-                    <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded">Отмена</button>
+                    <button @click="deleteEstimate" class="bg-red-500 text-white px-4 py-2 rounded-md">Да,
+                        удалить</button>
+                    <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-md">Отмена</button>
                 </div>
             </div>
         </div>
@@ -150,12 +149,6 @@ async function deleteEstimate() {
     await store.deleteEstimate(route.params.id)
     toast.success('Смета удалена')
     router.push('/estimates')
-}
-
-function handleUpdate(updated) {
-    editing.value = false
-    estimate.value = updated
-    toast.success('Смета обновлена')
 }
 
 const groupedItems = computed(() => {

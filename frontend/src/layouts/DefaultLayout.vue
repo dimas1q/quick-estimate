@@ -88,7 +88,7 @@ onBeforeUnmount(() => {
       <Sidebar v-if="auth.user" />
 
       <!-- MAIN -->
-      <main class="flex-1 overflow-y-auto">
+      <main class="flex-1 overflow-y-auto max-h-screen">
         <router-view />
       </main>
     </div>

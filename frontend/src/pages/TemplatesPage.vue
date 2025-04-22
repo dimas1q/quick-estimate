@@ -2,28 +2,30 @@
   <div class="space-y-6 px-16 py-8 max-w-7xl mx-auto">
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Шаблоны смет</h1>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-2 ">
         <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
-        <button type="button"
-          class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium"
-          @click="triggerFileInput">
-          Импортировать шаблон
+        <button type="button" class="btn-primary" @click="triggerFileInput">
+          Импорт шаблона
         </button>
 
-        <router-link to="/templates/create"
-          class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium">
+        <router-link to="/templates/create" class="btn-primary">
           Создать шаблон
         </router-link>
       </div>
     </div>
 
-    <div v-for="template in store.templates" :key="template.id" class="border p-4 rounded shadow-sm space-y-1">
-      <div class="font-semibold text-lg">{{ template.name }}</div>
-      <div class="text-sm text-gray-600">Описание: {{ template.description || '—' }}</div>
+    <div v-for="template in store.templates" :key="template.id" class="border p-4 rounded shadow-sm space-y-1 py-4">
+      <div class="font-semibold text-lg ">{{ template.name }}</div>
+      <div class="text-sm text-gray-600 ">Описание: {{ template.description || '—' }}</div>
 
       <router-link :to="`/templates/${template.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">
         Подробнее →
       </router-link>
+    </div>
+
+    <div v-if="store.templates.length === 0" class="text-center text-gray-500 border p-4 rounded py-8">
+      <p>Шаблоны смет отсутствуют.</p>
+      <p>Создайте новый шаблон или импортируйте существующий.</p>
     </div>
   </div>
 </template>
