@@ -1,7 +1,8 @@
 <script setup>
-import { reactive, watch } from 'vue'
+import { reactive, watch, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
+import { useTemplatesStore } from '@/store/templates'
 import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
 
@@ -17,6 +18,10 @@ const emit = defineEmits(['updated'])
 const store = useEstimatesStore()
 const toast = useToast()
 const router = useRouter()
+
+const templatesStore = useTemplatesStore()
+onMounted(() => templatesStore.fetchTemplates())
+
 
 const requiredFields = ['name', 'client_name', 'client_company']
 
@@ -104,26 +109,29 @@ function validateEstimate() {
   return true
 }
 
+const selectedTemplateId = ref(null)
 
+function applyTemplate() {
+  const template = templatesStore.templates.find(t => t.id === selectedTemplateId.value)
+  if (template) {
+    estimate.items.push(
+      ...template.items.map(item => ({
+        ...item,
+        category_input: item.category || ''
+      }))
+    )
+    toast.success(`Добавлены услуги из шаблона "${template.name}"`)
+  }
+}
 
 </script>
 
 <template>
   <form @submit.prevent="submit" class="space-y-6 max-w-8xl mx-auto bg-white rounded-lg p-6 shadow-sm">
-    <div v-for="(label, key) in fieldLabels" :key="key" class="space-y-1">
+    <div v-for="(label, key) in fieldLabels" :key="key" class="space-y-2">
       <label class="block text-sm font-medium text-gray-700">{{ label }}</label>
-      <input
-        v-if="key !== 'notes'"
-        v-model="estimate[key]"
-        type="text"
-        class="input-field"
-      />
-      <textarea
-        v-else
-        v-model="estimate.notes"
-        rows="3"
-        class="input-field resize-none"
-      />
+      <input v-if="key !== 'notes'" v-model="estimate[key]" type="text" class="input-field" />
+      <textarea v-else v-model="estimate.notes" rows="3" class="input-field resize-none" />
     </div>
 
     <div class="flex items-center gap-2">
@@ -131,20 +139,28 @@ function validateEstimate() {
       <label for="vat" class="text-sm font-medium text-gray-700">Включить НДС</label>
     </div>
 
+    <div class="space-y-4">
+      <label class="text-sm font-medium text-gray-700">Добавить услуги из шаблона</label>
+      <div class="flex items-center gap-3">
+        <select v-model="selectedTemplateId" class="input-field w-64">
+          <option :value="null" disabled selected>Выберите шаблон</option>
+          <option v-for="template in templatesStore.templates" :key="template.id" :value="template.id">
+            {{ template.name }}
+          </option>
+        </select>
+        <button type="button" @click="applyTemplate" class="btn-primary">
+          Добавить
+        </button>
+      </div>
+    </div>
+
     <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
 
     <div class="flex gap-2 pt-4 justify-end">
-      <button
-        type="submit"
-        class="btn-primary"
-      >
+      <button type="submit" class="btn-primary">
         Сохранить
       </button>
-      <button
-        type="button"
-        @click="cancel"
-        class="btn-danger"
-      >
+      <button type="button" @click="cancel" class="btn-danger">
         Отмена
       </button>
     </div>
@@ -168,21 +184,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.input {
-  @apply border p-2 w-full rounded mb-2;
-}
-
-.input-field {
-  @apply w-full border border-gray-300 rounded-md px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition;
-}
-
-.btn-primary {
-  @apply inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition text-sm font-medium;
-}
-
-.btn-danger {
-  @apply inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition text-sm font-medium;
-}
-</style>

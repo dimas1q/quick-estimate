@@ -9,7 +9,6 @@ class EstimateTemplate(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    vat_enabled = Column(Boolean, default=True)
     
     items = relationship("EstimateItem", back_populates="template", cascade="all, delete-orphan")
 

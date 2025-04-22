@@ -28,7 +28,6 @@ async def create_template(
     new_template = EstimateTemplate(
         name=template.name,
         description=template.description,
-        vat_enabled=template.vat_enabled,
         user_id=user.id
     )
     db.add(new_template)
@@ -100,7 +99,6 @@ async def update_template(
     # Обновление основных полей
     template.name = updated_data.name
     template.description = updated_data.description
-    template.vat_enabled = updated_data.vat_enabled
 
     # Удаление старых услуг
     await db.execute(

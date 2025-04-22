@@ -46,9 +46,3 @@ function onUpdated() {
     router.push(`/estimates/${route.params.id}`)
 }
 </script>
-
-<style scoped>
-.input {
-    @apply border p-2 w-full rounded mb-2;
-}
-</style>

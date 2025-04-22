@@ -21,8 +21,8 @@ app.add_middleware(
 async def startup():
     await create_tables()
 
-app.include_router(estimates.router, prefix="/api/estimates")
 app.include_router(auth.router, prefix="/api/auth")
 app.include_router(user.router, prefix="/api/users")
+app.include_router(estimates.router, prefix="/api/estimates")
 app.include_router(templates.router, prefix="/api/templates")
 

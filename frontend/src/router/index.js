@@ -8,6 +8,10 @@ import EstimateDetailsPage from '@/pages/EstimateDetailsPage.vue'
 import EstimateEditPage from '@/pages/EstimateEditPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
+import TemplatesPage from '@/pages/TemplatesPage.vue'
+import TemplateCreatePage from '@/pages/TemplateCreatePage.vue'
+import TemplateEditPage from '@/pages/TemplateEditPage.vue'
+import TemplateDetailsPage from '@/pages/TemplateDetailsPage.vue'
 
 const routes = [
   {
@@ -34,10 +38,21 @@ const routes = [
       { path: 'estimates/:id', component: EstimateDetailsPage },
       { path: '/estimates/:id/edit', component: EstimateEditPage },
       {
-        path: 'templates',
-        component: {
-          template: '<div>Тут скоро будут шаблоны 🧱</div>'
-        }
+        path: '/templates',
+        name: 'TemplatesPage',
+        component: TemplatesPage
+      },
+      {
+        path: '/templates/create',
+        component: TemplateCreatePage
+      },
+      {
+        path: '/templates/:id/edit',
+        component: TemplateEditPage
+      },
+      {
+        path: '/templates/:id',
+        component: TemplateDetailsPage
       },
       {
         path: 'login',

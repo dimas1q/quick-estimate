@@ -4,9 +4,9 @@
     <div v-if="error" class="text-center text-red-500 text-lg font-medium mt-10">
         {{ error }}
     </div>
-    <div v-if="estimate" class="space-y-6 ">
+    <div v-if="estimate" class="space-y-6">
         <div class="flex justify-between items-center">
-            <h1 class="text-2xl font-bold">{{ editing ? 'Редактирование сметы' : estimate.name }}</h1>
+            <h1 class="text-2xl font-bold">{{ estimate.name }}</h1>
 
             <div class="space-x-2">
                 <RouterLink :to="`/estimates/${estimate.id}/edit`"
@@ -24,11 +24,8 @@
             </div>
         </div>
 
-        <div v-if="editing">
-            <EstimateForm :initial="estimate" @updated="handleUpdate" />
-        </div>
 
-        <div v-else class="grid gap-3 text-sm text-gray-800">
+        <div class="grid gap-3 text-sm text-gray-800">
             <p><strong>Клиент:</strong> {{ estimate.client_name }} ({{ estimate.client_company }})</p>
             <p><strong>Контакты:</strong> {{ estimate.client_contact || '—' }} </p>
             <p><strong>Ответственный:</strong> {{ estimate.responsible || '—'}}</p>
@@ -61,7 +58,7 @@
                     </ul>
 
                     <div class="text-right font-semibold text-sm text-gray-600 pt-2">
-                        Итог по категории {{ category }}: {{ formatCurrency(getGroupTotal(groupItems)) }}
+                        Итог: {{ formatCurrency(getGroupTotal(groupItems)) }}
                     </div>
                 </div>
 
@@ -115,7 +112,6 @@ const store = useEstimatesStore()
 const toast = useToast()
 
 const showConfirm = ref(false)
-const editing = ref(false)
 
 const estimate = ref(null)
 const logs = ref([])
@@ -195,11 +191,3 @@ function formatCurrency(val) {
     return `${val.toFixed(2)} ₽`
 }
 </script>
-
-<style scoped>
-.input {
-    @apply border p-2 w-full rounded mb-2;
-}
-
-
-</style>

@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-2">
     <h2 class="text-lg font-semibold text-center">Услуги</h2>
 
-    <div class="grid grid-cols-8 gap-3 font-semibold text-sm text-gray-600  px-2 py-2">
+    <div class="grid grid-cols-8 gap-6 font-semibold text-sm text-gray-600 px-2 py-2">
       <div class="flex items-center justify-center">Название</div>
       <div class="flex items-center justify-center">Описание</div>
       <div class="flex items-center justify-center">Кол-во</div>
@@ -13,7 +13,7 @@
       <div class="flex items-center justify-center">Действие</div>
     </div>
 
-    <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-4 mb-6">
+    <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-4 py-2 ">
       <h3 class="text-md font-semibold text-gray-700 text-center">{{ category }}</h3>
 
       <div v-for="(item, index) in groupItems" :key="index" class="grid grid-cols-8 gap-2 items-center">
@@ -50,7 +50,7 @@
 
       <!-- промежуточный итог -->
       <div class="text-right font-semibold text-sm text-gray-600 border-t pt-2">
-        Итог по категории {{ category }}: {{ formatCurrency(getGroupTotal(groupItems)) }}
+        Итог: {{ formatCurrency(getGroupTotal(groupItems)) }}
       </div>
     </div>
 
@@ -63,7 +63,7 @@
       <p class="text-right font-semibold text-lg">
         Общая сумма: {{ formatCurrency(total) }}
       </p>
-      <p class="text-right text-gray-700">
+      <p class="text-right text-gray-700"  v-if="props.showVatSummary">
         НДС (20%): {{ formatCurrency(vat) }} <br />
         Итого с НДС: {{ formatCurrency(totalWithVat) }}
       </p>
@@ -77,6 +77,10 @@ import { reactive, watch, computed } from 'vue'
 const props = defineProps({
   modelValue: Array,
   vatEnabled: {
+    type: Boolean,
+    default: true
+  },
+  showVatSummary: {
     type: Boolean,
     default: true
   }
@@ -153,20 +157,3 @@ function normalizeNumber(item, field) {
 }
 </script>
 
-<style scoped>
-.input {
-  @apply border p-2 rounded text-sm w-full;
-}
-
-.input-field {
-  @apply w-full border border-gray-300 rounded-md px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition;
-}
-
-.btn-primary {
-  @apply inline-flex justify-center items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition text-sm font-medium;
-}
-
-.btn-danger {
-  @apply inline-flex justify-center items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition text-sm font-medium;
-}
-</style>

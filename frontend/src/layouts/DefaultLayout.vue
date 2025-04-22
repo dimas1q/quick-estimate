@@ -51,7 +51,7 @@ onBeforeUnmount(() => {
               fill="currentColor">
               <path d="M10 2a5 5 0 100 10 5 5 0 000-10zM2 18a8 8 0 0116 0H2z" />
             </svg>
-            <span class="text-gray-700">{{ auth.user.email }}</span>
+            <span class="text-gray-700">{{ auth.user.login }}</span>
             <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>

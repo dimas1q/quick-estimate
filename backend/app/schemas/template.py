@@ -24,7 +24,6 @@ class TemplateItemOut(TemplateItemBase):
 class EstimateTemplateBase(BaseModel):
     name: str
     description: Optional[str] = None
-    vat_enabled: Optional[bool] = True
 
 
 class EstimateTemplateCreate(EstimateTemplateBase):
