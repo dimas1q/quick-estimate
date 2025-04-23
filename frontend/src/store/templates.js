@@ -9,8 +9,9 @@ export const useTemplatesStore = defineStore('templates', {
   }),
 
   actions: {
-    async fetchTemplates() {
-      const res = await axios.get('http://localhost:8000/api/templates/')
+    async fetchTemplates(filters = {}) {
+      const params = new URLSearchParams(filters).toString()
+      const res = await axios.get('http://localhost:8000/api/templates/?${params}')
       this.templates = res.data
     },
 

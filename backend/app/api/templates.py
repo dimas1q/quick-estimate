@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+# backend/app/api/templates.py
+# Implementation of the templates API endpoints
+
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -49,15 +52,19 @@ async def create_template(
 
 @router.get("/", response_model=List[EstimateTemplateOut])
 async def list_templates(
+    name: str = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    result = await db.execute(
-        select(EstimateTemplate)
-        .options(selectinload(EstimateTemplate.items))
-        .where(EstimateTemplate.user_id == user.id)
-        .order_by(EstimateTemplate.id.desc())
+    query = select(EstimateTemplate).options(selectinload(EstimateTemplate.items)).where(
+        EstimateTemplate.user_id == user.id
     )
+
+    if name:
+        query = query.where(EstimateTemplate.name.ilike(f"%{name}%"))
+
+    query = query.order_by(EstimateTemplate.id.desc())
+    result = await db.execute(query)
     return result.scalars().all()
 
 

@@ -9,8 +9,8 @@ export const useEstimatesStore = defineStore('estimates', {
 
   actions: {
     
-    async fetchEstimates() {
-      const res = await axios.get('http://localhost:8000/api/estimates/')
+    async fetchEstimates(params = {}) {
+      const res = await axios.get('http://localhost:8000/api/estimates/', { params })
       this.estimates = res.data
     },
 

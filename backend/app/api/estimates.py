@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+# backend/app/api/estimates.py
+# Implementation of the estimates API endpoints
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import delete
+from sqlalchemy import delete, or_, func
+
 
 from app.models.estimate import Estimate
 from app.models.item import EstimateItem
@@ -14,7 +17,7 @@ from app.models.changelog import EstimateChangeLog
 from app.utils.auth import get_current_user, get_current_admin
 from app.models.user import User
 
-
+from typing import Optional
 from typing import List
 
 router = APIRouter(
@@ -58,16 +61,40 @@ async def create_estimate(
 
 @router.get("/", response_model=List[EstimateOut])
 async def list_estimates(
-    db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)
+    name: str = Query(None),
+    client: str = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
 ):
-    result = await db.execute(
-        select(Estimate)
-        .options(selectinload(Estimate.items))
-        .where(Estimate.user_id == user.id)
-        .order_by(Estimate.id.desc())
-    )
-    return result.scalars().all()
+    from datetime import datetime, timedelta
+    query = select(Estimate).options(selectinload(Estimate.items)).where(Estimate.user_id == user.id)
 
+    if name:
+        query = query.where(Estimate.name.ilike(f"%{name}%"))
+    if client:
+        query = query.where(
+            or_(
+                Estimate.client_name.ilike(f"%{client}%"),
+                Estimate.client_company.ilike(f"%{client}%")
+            )
+        )
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, "%Y-%m-%d") - timedelta(days=1)
+            query = query.where(Estimate.date >= dt_from)
+        except ValueError:
+            pass 
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, "%Y-%m-%d")
+            query = query.where(Estimate.date <= dt_to)
+        except ValueError:
+            pass
+
+    result = await db.execute(query.order_by(Estimate.id.desc()))
+    return result.scalars().all()
 
 @router.get("/{estimate_id}", response_model=EstimateOut)
 async def get_estimate(
