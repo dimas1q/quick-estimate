@@ -1,33 +1,56 @@
+# frontend/src/pages/TemplatesPage.vue
+# Component for displaying and managing templates.
 <template>
   <div class="space-y-6 px-16 py-8 max-w-7xl mx-auto">
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Шаблоны смет</h1>
       <div class="flex items-center space-x-2 ">
         <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
-        <button type="button" class="btn-primary" @click="triggerFileInput">
-          Импорт шаблона
-        </button>
 
-        <router-link to="/templates/create" class="btn-primary">
-          Создать шаблон
-        </router-link>
       </div>
     </div>
 
-    <div v-for="template in store.templates" :key="template.id" class="border p-4 rounded shadow-sm space-y-1 py-4">
-      <div class="font-semibold text-lg ">{{ template.name }}</div>
-      <div class="text-sm text-gray-600 ">Описание: {{ template.description || '—' }}</div>
+    <div class="flex gap-6 items-start">
+      <!-- Левая колонка — список шаблонов -->
+      <div class="flex-1 space-y-4">
 
-      <router-link :to="`/templates/${template.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">
-        Подробнее →
-      </router-link>
-    </div>
+        <div v-for="template in store.templates" :key="template.id" class="border p-4 rounded shadow-sm space-y-1 py-4">
+          <div class="font-semibold text-lg ">{{ template.name }}</div>
+          <div class="text-sm text-gray-600 ">Описание: {{ template.description || '—' }}</div>
 
-    <div v-if="store.templates.length === 0" class="text-center text-gray-500 border p-4 rounded py-8">
-      <p>Шаблоны смет отсутствуют.</p>
-      <p>Создайте новый шаблон или импортируйте существующий.</p>
+          <router-link :to="`/templates/${template.id}`"
+            class="text-blue-600 text-sm hover:underline mt-2 inline-block">
+            Подробнее →
+          </router-link>
+        </div>
+
+        <div v-if="store.templates.length === 0" class="text-center text-gray-500 border p-4 rounded py-8">
+          <p>Шаблоны смет отсутствуют.</p>
+        </div>
+      </div>
+
+      <div class="w-64 space-y-4">
+        <router-link to="/templates/create" class="btn-primary block w-full text-center">
+          Создать шаблон
+        </router-link>
+        <button type="button" class="btn-primary block w-full text-center" @click="triggerFileInput">
+          Импорт шаблона
+        </button>
+        <div class="border rounded p-4 shadow-sm space-y-4 text-center">
+          <h2 class="font-semibold text-lg">Фильтр</h2>
+          <div>
+            <label class="text-sm text-gray-600">Название</label>
+            <input v-model="filters.name" class="input-field mt-1" type="text" />
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button @click="applyFilters" class="btn-secondary w-full">Применить</button>
+            <button @click="resetFilters" class="btn-secondary w-full">Сбросить</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+
 </template>
 
 <script setup>
@@ -41,6 +64,22 @@ const router = useRouter()
 const toast = useToast()
 
 const store = useTemplatesStore()
+
+const filters = ref({
+  name: ''
+})
+
+function applyFilters() {
+  const query = {
+    name: filters.value.name
+  }
+  store.fetchTemplates(query)
+}
+
+function resetFilters() {
+  filters.value.name = ''
+  store.fetchTemplates()
+}
 
 onMounted(() => {
   store.fetchTemplates()
@@ -103,10 +142,7 @@ function isValidTemplate(template) {
       toast.error(`Ошибка в услуге №${i + 1}: цена должна быть > 0`)
       return false
     }
-
-
   }
-
   return true
 }
 

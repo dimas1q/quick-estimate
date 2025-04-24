@@ -29,6 +29,7 @@
         <router-link to="/estimates/create" class="btn-primary block w-full text-center">
           Создать смету
         </router-link>
+        
         <!-- Блок фильтров -->
         <div class="border rounded p-4 shadow-sm space-y-4 text-center">
 
