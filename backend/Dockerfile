@@ -1,5 +1,13 @@
 FROM python:3.11-slim
 
+# Установим системные зависимости для wkhtmltopdf
+RUN apt-get update && apt-get install -y \
+    wkhtmltopdf \
+    libxrender1 \
+    libxext6 \
+    libfontconfig1 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY ./app /app/app

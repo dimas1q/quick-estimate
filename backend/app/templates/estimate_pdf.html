@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ estimate.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .details {
+            margin-bottom: 20px;
+        }
+        .details p {
+            font-size: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f7f7f7;
+            font-weight: bold;
+        }
+        tfoot td {
+            font-weight: bold;
+        }
+        .summary {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .summary p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ estimate.name }}</h1>
+
+    <div class="details">
+        <p><strong>Клиент:</strong> {{ estimate.client_name }} ({{ estimate.client_company }})</p>
+        <p><strong>Компания клиента:</strong> {{ estimate.client_company }}</p>
+        <p><strong>Контакт:</strong> {{ estimate.client_contact }}</p>
+        <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
+        <p><strong>Заметки:</strong> {{ estimate.notes }}</p>
+        <p><strong>НДС:</strong> {% if estimate.vat_enabled %}Включён (20%){% else %}Не включён{% endif %}</p>
+        <p><strong>Дата:</strong> {{ estimate.date.strftime('%d.%m.%Y %H:%M') }}</p>
+    </div>
+
+    <h1>Услуги</h1>
+
+    {% set grouped = {} %}
+    {% for item in estimate.items %}
+      {% set _ = grouped.setdefault(item.category or 'Без категории', []).append(item) %}
+    {% endfor %}
+    
+    {% for category, items in grouped.items() %}
+      <h2 style="margin-top: 30px; font-size: 16px; color: #444;">{{ category }}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Услуга</th>
+            <th>Описание</th>
+            <th>Кол-во</th>
+            <th>Ед.</th>
+            <th>Цена</th>
+            <th>Итог</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.description or '' }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unit }}</td>
+            <td>{{ "%.2f"|format(item.unit_price) }}</td>
+            <td>{{ "%.2f"|format(item.quantity * item.unit_price) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" style="text-align: right;">Итог по категории:</td>
+            <td>
+              {{
+                "%.2f"|format(
+                  items|map(attribute="unit_price")|sum * items|map(attribute="quantity")|sum
+                )
+              }} ₽
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    {% endfor %}
+
+    <div class="details" style="margin-top: 30px; text-align: right">
+        <p><strong>Общая сумма:</strong> {{ "%.2f" | format(total) }} ₽</p>
+        {% if estimate.vat_enabled %}
+          <p><strong>НДС (20%):</strong> {{ "%.2f" | format(total * 0.2) }} ₽</p>
+          <p><strong>Итого с НДС:</strong> {{ "%.2f" | format(total * 1.2) }} ₽</p>
+        {% endif %}
+    </div>
+    
+</body>
+</html>

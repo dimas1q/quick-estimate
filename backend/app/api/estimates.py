@@ -1,12 +1,11 @@
 # backend/app/api/estimates.py
 # Implementation of the estimates API endpoints
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import delete, or_, func
-
 
 from app.models.estimate import Estimate
 from app.models.item import EstimateItem
@@ -14,7 +13,8 @@ from app.schemas.estimate import EstimateCreate, EstimateOut
 from app.schemas.changelog import ChangeLogOut
 from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
-from app.utils.auth import get_current_user, get_current_admin
+from app.utils.auth import get_current_user
+from app.utils.pdf import render_pdf
 from app.models.user import User
 
 from typing import Optional
@@ -144,6 +144,28 @@ async def get_logs(
     )
 
     return result.scalars().all()
+
+@router.get("/{estimate_id}/export/pdf")
+async def export_estimate_pdf(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Estimate).options(selectinload(Estimate.items)).where(Estimate.id == estimate_id)
+    )
+    estimate = result.scalar_one_or_none()
+    if not estimate or estimate.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
+
+    total = sum(item.unit_price * item.quantity for item in estimate.items)
+
+    pdf_bytes = render_pdf("estimate_pdf.html", {"estimate": estimate, "total": total})
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"}
+    )
 
 
 @router.put("/{estimate_id}", response_model=EstimateOut)

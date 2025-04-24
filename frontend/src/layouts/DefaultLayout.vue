@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from '@/store/auth'
+import { onClickOutside } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import Sidebar from '@/components/Sidebar.vue'
 
@@ -9,6 +10,8 @@ const router = useRouter()
 const route = useRoute()
 
 const showMenu = ref(false)
+const menuRef = ref(null)
+
 
 function logout() {
   showMenu.value = false
@@ -20,21 +23,10 @@ watch(() => route.path, () => {
   showMenu.value = false
 })
 
-function handleClickOutside(event) {
-  if (!showMenu.value) return
-
-  const menu = document.getElementById('user-menu')
-  if (menu && !menu.contains(event.target)) {
-    showMenu.value = false
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
+onClickOutside(menuRef, () => {
+  showMenu.value = false
 })
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+
 </script>
 
 <template>
@@ -44,7 +36,7 @@ onBeforeUnmount(() => {
       <RouterLink to="/" class="text-xl font-bold text-blue-600">Quick Estimate</RouterLink>
       <div class="flex items-center gap-4">
         <RouterLink v-if="!auth.user" to="/login" class="text-sm text-blue-600 hover:underline">Войти</RouterLink>
-        <div v-else class="relative" id="user-menu">
+        <div v-else class="relative" id="user-menu" ref="menuRef">
           <button @click="showMenu = !showMenu"
             class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-blue-100 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-700" viewBox="0 0 20 20"
@@ -58,7 +50,7 @@ onBeforeUnmount(() => {
           </button>
 
           <div v-show="showMenu"
-            class="absolute right-0 mt-2 w-42 bg-white rounded-lg shadow-lg border z-50 text-sm overflow-hidden transition-all">
+            class="absolute right-0 mt-2 w-42 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border z-50 text-sm overflow-hidden animate-fade-in transition-all">
             <RouterLink to="/profile"
               class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24"

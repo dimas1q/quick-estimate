@@ -5,28 +5,58 @@
             {{ error }}
         </div>
         <div v-if="estimate" class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold">{{ estimate.name }}</h1>
+            <div class="flex justify-between items-center border-b pb-4 mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">{{ estimate.name }}</h1>
 
-                <div class="space-x-2">
+                <div class="flex space-x-3 items-center relative">
+                    <!-- Выпадающее меню -->
+                    <div class="relative" ref="menuRef">
+                        <button @click="showExport = !showExport"
+                            class="inline-flex items-center px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-all text-sm font-medium shadow">
+                            🖨️ Экспорт
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <div v-if="showExport"
+                            class="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
+                            <button @click="downloadExcel(estimate.id)"
+                                class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-b-xl">
+                                📊 Скачать в Excel
+                            </button>
+                            <button @click="downloadPdf(estimate.id)"
+                                class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-t-xl">
+                                📄 Скачать в PDF
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Остальные кнопки -->
                     <RouterLink :to="`/estimates/${estimate.id}/edit`"
-                        class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium">
+                        class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">
                         ✏️ Редактировать
                     </RouterLink>
-                    <button @click="copyEstimate" class="btn-primary">
-                        📄 Копировать
+                    <button @click="copyEstimate"
+                        class="inline-flex items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium shadow">
+                        📋 Копировать
                     </button>
-                    <button @click="confirmDelete" class="btn-danger">
+                    <button @click="confirmDelete"
+                        class="inline-flex items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium shadow">
                         🗑️ Удалить
                     </button>
                 </div>
+
             </div>
 
 
             <div class="grid gap-3 text-sm text-gray-800">
-                <p><strong>Клиент:</strong> {{ estimate.client_name }} ({{ estimate.client_company }})</p>
-                <p><strong>Контакты:</strong> {{ estimate.client_contact || '—' }} </p>
-                <p><strong>Ответственный:</strong> {{ estimate.responsible || '—'}}</p>
+                <p><strong>Клиент:</strong> {{ estimate.client_name }}</p>
+                <p><strong>Компания клиента:</strong> {{ estimate.client_company }}</p>
+                <p><strong>Контакт:</strong> {{ estimate.client_contact || '—' }} </p>
+                <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
                 <p><strong>Заметки:</strong> {{ estimate.notes || '—' }}</p>
                 <p><strong>НДС:</strong> {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}</p>
 
@@ -39,7 +69,7 @@
                 </p>
 
                 <h2 class="font-semibold text-lg mt-6">Услуги</h2>
-                <ul class="space-y-2">
+                <ul class="space-y-2 ">
                     <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-6 space-y-3">
                         <h3 class="text-md font-semibold text-gray-700">{{ category }}</h3>
 
@@ -102,13 +132,18 @@
 import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
+import { onClickOutside } from '@vueuse/core'
 import { useToast } from 'vue-toastification'
+import axios from 'axios'
+import fileDownload from 'js-file-download'
 
 const route = useRoute()
 const router = useRouter()
 const store = useEstimatesStore()
 const toast = useToast()
 
+const showExport = ref(false)
+const menuRef = ref(null)
 const showConfirm = ref(false)
 
 const estimate = ref(null)
@@ -134,6 +169,9 @@ onUnmounted(() => {
     store.currentEstimate = null
 })
 
+onClickOutside(menuRef, () => {
+    showExport.value = false
+})
 
 function confirmDelete() {
     showConfirm.value = true
@@ -181,5 +219,18 @@ const totalWithVat = computed(() => total.value + vat.value)
 
 function formatCurrency(val) {
     return `${val.toFixed(2)} ₽`
+}
+
+async function downloadPdf(id) {
+    try {
+        const res = await axios.get(`http://localhost:8000/api/estimates/${id}/export/pdf`, {
+            responseType: 'blob'
+        })
+        fileDownload(res.data, `smeta_${id}.pdf`)
+        toast.success('PDF успешно загружен')
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при загрузке PDF')
+    }
 }
 </script>
