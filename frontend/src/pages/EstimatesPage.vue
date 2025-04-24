@@ -55,7 +55,7 @@
           </div>
 
           <div class="flex gap-2 pt-2">
-            <button @click="store.fetchEstimates(filters)" class="btn-secondary w-full">Применить</button>
+            <button @click="applyFilters" class="btn-secondary w-full">Применить</button>
             <button @click="resetFilters" class="btn-secondary w-full">Сбросить</button>
           </div>
         </div>
@@ -81,6 +81,16 @@ const filters = ref({
 const store = useEstimatesStore()
 onMounted(() => store.fetchEstimates())
 
+function applyFilters() {
+  const query = {
+    name: filters.value.name,
+    client: filters.value.client,
+    date_from: toUTCStart(filters.value.date_from),
+    date_to: toUTCEnd(filters.value.date_to)
+  }
+  store.fetchEstimates(query)
+}
+
 function resetFilters() {
   filters.value = {
     name: '',
@@ -90,4 +100,18 @@ function resetFilters() {
   }
   store.fetchEstimates()
 }
+
+function toUTCStart(dateStr) {
+  if (!dateStr) return ''
+  const local = new Date(dateStr + 'T00:00:00')
+  return local.toISOString()
+}
+
+function toUTCEnd(dateStr) {
+  if (!dateStr) return ''
+  const local = new Date(dateStr + 'T00:00:00')
+  const endOfDay = new Date(local.getTime() + 24 * 60 * 60 * 1000)
+  return endOfDay.toISOString()
+}
+
 </script>

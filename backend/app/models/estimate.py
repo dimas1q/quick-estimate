@@ -1,3 +1,5 @@
+# backend/app/models/estimate.py
+
 from sqlalchemy import Column, Integer, String, DateTime, Text, func, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -21,4 +23,3 @@ class Estimate(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="estimates")
-

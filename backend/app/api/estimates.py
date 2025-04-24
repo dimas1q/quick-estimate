@@ -82,16 +82,18 @@ async def list_estimates(
         )
     if date_from:
         try:
-            dt_from = datetime.strptime(date_from, "%Y-%m-%d") - timedelta(days=1)
+            dt_from = datetime.fromisoformat(date_from)
             query = query.where(Estimate.date >= dt_from)
         except ValueError:
-            pass 
+            pass
+
     if date_to:
         try:
-            dt_to = datetime.strptime(date_to, "%Y-%m-%d")
-            query = query.where(Estimate.date <= dt_to)
+            dt_to = datetime.fromisoformat(date_to)
+            query = query.where(Estimate.date < dt_to)
         except ValueError:
             pass
+
 
     result = await db.execute(query.order_by(Estimate.id.desc()))
     return result.scalars().all()
