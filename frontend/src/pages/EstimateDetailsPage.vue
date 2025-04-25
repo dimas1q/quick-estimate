@@ -1,5 +1,5 @@
 <template>
-    <div class="px-16 py-8 max-w-7xl mx-auto">
+    <div class="px-16 py-8 max-w-6xl mx-auto">
 
         <div v-if="error" class="text-center text-red-500 text-lg font-medium mt-10">
             {{ error }}
@@ -21,14 +21,14 @@
                         </button>
 
                         <div v-if="showExport"
-                            class="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
+                            class="absolute right-0 mt-2 w-36 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
                             <button @click="downloadExcel(estimate.id)"
                                 class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-b-xl">
-                                📊 Скачать в Excel
+                                Скачать в Excel
                             </button>
                             <button @click="downloadPdf(estimate.id)"
                                 class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-t-xl">
-                                📄 Скачать в PDF
+                                Скачать в PDF
                             </button>
                         </div>
 

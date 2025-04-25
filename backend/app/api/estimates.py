@@ -15,10 +15,13 @@ from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
 from app.utils.auth import get_current_user
 from app.utils.pdf import render_pdf
+from app.utils.excel import generate_excel
 from app.models.user import User
 
 from typing import Optional
 from typing import List
+from urllib.parse import quote
+import re
 
 router = APIRouter(
     tags=["estimates"], dependencies=[Depends(get_current_user)]
@@ -165,6 +168,36 @@ async def export_estimate_pdf(
         iter([pdf_bytes]),
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"}
+    )
+
+
+@router.get("/{estimate_id}/export/excel")
+async def export_estimate_excel(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Estimate)
+        .options(selectinload(Estimate.items))
+        .where(Estimate.id == estimate_id)
+    )
+    estimate = result.scalar_one_or_none()
+
+    if not estimate or estimate.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
+
+    filename = f"{estimate.name}.xlsx"
+    ascii_filename = re.sub(r'[^\x00-\x7F]+', '_', filename)
+    utf8_filename = quote(filename)
+
+    excel_file = generate_excel(estimate)
+    return StreamingResponse(
+        excel_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename={ascii_filename}; filename*=UTF-8''{utf8_filename}"
+        }
     )
 
 
