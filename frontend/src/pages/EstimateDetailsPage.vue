@@ -22,11 +22,11 @@
 
                         <div v-if="showExport"
                             class="absolute right-0 mt-2 w-36 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
-                            <button @click="downloadExcel(estimate.id)"
+                            <button @click="downloadExcel(estimate)"
                                 class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-b-xl">
                                 Скачать в Excel
                             </button>
-                            <button @click="downloadPdf(estimate.id)"
+                            <button @click="downloadPdf(estimate)"
                                 class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-t-xl">
                                 Скачать в PDF
                             </button>
@@ -221,12 +221,25 @@ function formatCurrency(val) {
     return `${val.toFixed(2)} ₽`
 }
 
-async function downloadPdf(id) {
+async function downloadExcel(estimate) {
     try {
-        const res = await axios.get(`http://localhost:8000/api/estimates/${id}/export/pdf`, {
+        const res = await axios.get(`http://localhost:8000/api/estimates/${estimate.id}/export/excel`, {
             responseType: 'blob'
         })
-        fileDownload(res.data, `smeta_${id}.pdf`)
+        fileDownload(res.data, `${estimate.name}.xlsx`)
+        toast.success('Excel успешно загружен')
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при загрузке Excel')
+    }
+}
+
+async function downloadPdf(estimate) {
+    try {
+        const res = await axios.get(`http://localhost:8000/api/estimates/${estimate.id}/export/pdf`, {
+            responseType: 'blob'
+        })
+        fileDownload(res.data, `${estimate.name}.pdf`)
         toast.success('PDF успешно загружен')
     } catch (e) {
         console.error(e)

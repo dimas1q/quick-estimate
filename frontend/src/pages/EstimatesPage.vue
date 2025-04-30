@@ -2,7 +2,7 @@
 # Component for displaying a list of estimates with filtering options.
 
 <template>
-  <div class="space-y-6 px-16 py-8 max-w-6xl mx-auto">
+  <div class="space-y-6 px-24 py-8 max-w-6xl mx-auto">
 
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Сметы</h1>

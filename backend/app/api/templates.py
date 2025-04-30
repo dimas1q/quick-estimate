@@ -144,34 +144,3 @@ async def delete_template(
     await db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-@router.get("/{template_id}/export", response_class=JSONResponse)
-async def export_template(
-    template_id: int,
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
-):
-    result = await db.execute(
-        select(EstimateTemplate)
-        .options(selectinload(EstimateTemplate.items))
-        .where(EstimateTemplate.id == template_id)
-    )
-    template = result.scalar_one_or_none()
-    if not template or template.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Шаблон не найден или нет доступа")
-
-    return {
-        "name": template.name,
-        "description": template.description,
-        "items": [
-            {
-                "name": item.name,
-                "description": item.description,
-                "quantity": item.quantity,
-                "unit": item.unit,
-                "unit_price": item.unit_price,
-                "category": item.category
-            }
-            for item in template.items
-        ]
-    }

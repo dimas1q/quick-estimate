@@ -1,7 +1,7 @@
 # frontend/src/pages/TemplatesPage.vue
 # Component for displaying and managing templates.
 <template>
-  <div class="space-y-6 px-16 py-8 max-w-6xl mx-auto">
+  <div class="space-y-6 px-24 py-8 max-w-6xl mx-auto">
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Шаблоны смет</h1>
       <div class="flex items-center space-x-2 ">
