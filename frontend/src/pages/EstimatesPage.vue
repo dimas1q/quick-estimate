@@ -8,6 +8,8 @@
       <h1 class="text-2xl font-bold">Сметы</h1>
     </div>
 
+    <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
+
     <div class="flex gap-6 items-start">
 
       <div class="flex-1 space-y-4">
@@ -29,7 +31,9 @@
         <router-link to="/estimates/create" class="btn-primary block w-full text-center">
           Создать смету
         </router-link>
-        
+
+        <button @click="triggerFileInput" class="btn-primary block w-full text-center">Импорт сметы</button>
+
         <!-- Блок фильтров -->
         <div class="border rounded p-4 shadow-sm space-y-4 text-center">
 
@@ -70,7 +74,12 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { useEstimatesStore } from '@/store/estimates'
+
+const router = useRouter()
+const toast = useToast()
 
 const filters = ref({
   name: '',
@@ -78,6 +87,8 @@ const filters = ref({
   date_from: '',
   date_to: ''
 })
+
+const fileInput = ref(null)
 
 const store = useEstimatesStore()
 onMounted(() => store.fetchEstimates())
@@ -113,6 +124,69 @@ function toUTCEnd(dateStr) {
   const local = new Date(dateStr + 'T00:00:00')
   const endOfDay = new Date(local.getTime() + 24 * 60 * 60 * 1000)
   return endOfDay.toISOString()
+}
+
+function triggerFileInput() {
+  fileInput.value.click()
+}
+
+async function handleFile(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  try {
+    const text = await file.text()
+    const json = JSON.parse(text)
+
+    // удалим id, если есть
+    if ('id' in json) delete json.id
+    json.items?.forEach(item => delete item.id)
+
+    if (!isValidEstimate(json)) {
+      return
+    }
+
+    store.setImportedEstimate(json)
+    router.push({ path: '/estimates/create', state: { importedData: json } })
+
+  } catch (e) {
+    console.error(e)
+    toast.error('Ошибка при чтении или разборе файла')
+  }
+}
+
+function isValidEstimate(estimate) {
+  if (typeof estimate !== 'object' || estimate === null) return false
+  if (typeof estimate.name !== 'string' || !estimate.name.trim()) return false
+  if (!Array.isArray(estimate.items)) return false
+
+  for (const [i, item] of estimate.items.entries()) {
+    if (!item || typeof item !== 'object') return false
+
+    const { name, quantity, unit, unit_price } = item
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      toast.error(`Ошибка в услуге №${i + 1}: отсутствует название`)
+      return false
+    }
+
+    if (!['шт', 'час', 'день', 'м²', 'м'].includes(unit)) {
+      toast.error(`Ошибка в услуге №${i + 1}: недопустимая единица измерения`)
+      return false
+    }
+
+    if (typeof quantity !== 'number' || quantity <= 0) {
+      toast.error(`Ошибка в услуге №${i + 1}: количество должно быть > 0`)
+      return false
+    }
+
+    if (typeof unit_price !== 'number' || unit_price <= 0) {
+      toast.error(`Ошибка в услуге №${i + 1}: цена должна быть > 0`)
+      return false
+    }
+  }
+
+  return true
 }
 
 </script>

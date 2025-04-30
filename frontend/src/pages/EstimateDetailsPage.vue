@@ -21,14 +21,18 @@
                         </button>
 
                         <div v-if="showExport"
-                            class="absolute right-0 mt-2 w-36 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
+                            class="absolute right-0 mt-2 w-34 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
+                            <button @click="downloadJson(estimate.id)"
+                                class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700">
+                                Скачать JSON
+                            </button>
                             <button @click="downloadExcel(estimate)"
                                 class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-b-xl">
-                                Скачать в Excel
+                                Скачать Excel
                             </button>
                             <button @click="downloadPdf(estimate)"
                                 class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-t-xl">
-                                Скачать в PDF
+                                Скачать PDF
                             </button>
                         </div>
 
@@ -232,6 +236,10 @@ async function downloadExcel(estimate) {
         console.error(e)
         toast.error('Ошибка при загрузке Excel')
     }
+}
+
+async function downloadJson(id) {
+    await store.exportEstimate(id)
 }
 
 async function downloadPdf(estimate) {

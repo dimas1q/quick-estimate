@@ -4,7 +4,8 @@ import axios from 'axios'
 export const useEstimatesStore = defineStore('estimates', {
   state: () => ({
     estimates: [],
-    copiedEstimate: null
+    copiedEstimate: null,
+    importedEstimate: null
   }),
 
   actions: {
@@ -36,8 +37,26 @@ export const useEstimatesStore = defineStore('estimates', {
       return res.data
     },
 
+    async exportEstimate(id) {
+      const res = await axios.get(`http://localhost:8000/api/estimates/${id}`)
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${res.data.name || 'estimate'}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    },
+
     setCopiedEstimate(estimate) {
       this.copiedEstimate = estimate
+    },
+
+    setImportedEstimate(data) {
+      this.importedEstimate = data
     },
 
     clearCopiedEstimate() {

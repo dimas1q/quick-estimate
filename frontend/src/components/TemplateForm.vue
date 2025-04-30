@@ -1,7 +1,7 @@
 # frontend/src/components/TemplateForm.vue
 <script setup>
 import { reactive, watch, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useTemplatesStore } from '@/store/templates'
 import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
@@ -30,7 +30,7 @@ onMounted(() => {
     template.name = store.importedTemplate.name || ''
     template.description = store.importedTemplate.description || ''
 
-    template.items.splice(0) // очищаем
+    template.items.splice(0)
     for (const item of store.importedTemplate.items || []) {
       template.items.push({
         ...item,

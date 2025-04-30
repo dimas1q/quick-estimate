@@ -1,6 +1,6 @@
 # frontend/src/components/EstimateForm.vue
 <script setup>
-import { reactive, watch, onMounted, ref } from 'vue'
+import { reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
@@ -29,7 +29,29 @@ const estimate = reactive({
   items: []
 })
 
-// если передали initial — заполним
+onMounted(() => {
+  if (store.importedEstimate) {
+    estimate.name = store.importedEstimate.name || ''
+    estimate.client_name = store.importedEstimate.client_name || ''
+    estimate.client_company = store.importedEstimate.client_company || ''
+    estimate.client_contact = store.importedEstimate.client_contact || ''
+    estimate.responsible = store.importedEstimate.responsible || ''
+    estimate.notes = store.importedEstimate.notes || ''
+    estimate.vat_enabled = store.importedEstimate.vat_enabled ?? true
+
+    estimate.items.splice(0)
+    for (const item of store.importedEstimate.items || []) {
+      estimate.items.push({
+        ...item,
+        category_input: item.category || ''
+      })
+    }
+
+    store.importedEstimate = null
+  }
+})
+
+
 watch(() => props.initial, (value) => {
   if (value) {
     Object.assign(estimate, {
