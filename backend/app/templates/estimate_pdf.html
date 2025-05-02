@@ -57,9 +57,9 @@
     <h1>{{ estimate.name }}</h1>
 
     <div class="details">
-        <p><strong>Клиент:</strong> {{ estimate.client_name }} ({{ estimate.client_company }})</p>
-        <p><strong>Компания клиента:</strong> {{ estimate.client_company }}</p>
-        <p><strong>Контакт:</strong> {{ estimate.client_contact }}</p>
+        <p><strong>Клиент:</strong> {{ estimate.client.name }}</p>
+        <p><strong>Компания клиента:</strong> {{ estimate.client.company }}</p>
+        <p><strong>Контакт:</strong> {{ estimate.client.email }}</p>
         <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
         <p><strong>Заметки:</strong> {{ estimate.notes }}</p>
         <p><strong>НДС:</strong> {% if estimate.vat_enabled %}Включён (20%){% else %}Не включён{% endif %}</p>

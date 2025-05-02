@@ -17,6 +17,7 @@ from app.utils.auth import get_current_user
 from app.utils.pdf import render_pdf
 from app.utils.excel import generate_excel
 from app.models.user import User
+from app.models.client import Client
 
 from typing import Optional
 from typing import List
@@ -37,7 +38,7 @@ async def create_estimate(
     items_data = estimate.items or []
     new_estimate = Estimate(**estimate.dict(exclude={"items"}), user_id=user.id)
     db.add(new_estimate)
-    await db.flush()  # получаем ID
+    await db.flush() 
 
     for item in items_data:
         db.add(EstimateItem(**item.dict(), estimate_id=new_estimate.id))
@@ -52,10 +53,10 @@ async def create_estimate(
 
     await db.commit()
 
-    # загружаем estimate с items без ошибок greenlet
+    # greenlet
     result = await db.execute(
         select(Estimate)
-        .options(selectinload(Estimate.items))
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
         .where(Estimate.id == new_estimate.id)
     )
     new_estimate = result.scalar_one()
@@ -65,24 +66,23 @@ async def create_estimate(
 @router.get("/", response_model=List[EstimateOut])
 async def list_estimates(
     name: str = Query(None),
-    client: str = Query(None),
+    client: Optional[int] = Query(None),  # Change type to Optional[int]
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    from datetime import datetime, timedelta
-    query = select(Estimate).options(selectinload(Estimate.items)).where(Estimate.user_id == user.id)
+    from datetime import datetime
+    query = (
+        select(Estimate)
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .where(Estimate.user_id == user.id)
+    )
 
     if name:
         query = query.where(Estimate.name.ilike(f"%{name}%"))
     if client:
-        query = query.where(
-            or_(
-                Estimate.client_name.ilike(f"%{client}%"),
-                Estimate.client_company.ilike(f"%{client}%")
-            )
-        )
+        query = query.where(Estimate.client_id == client)  # Adjust to filter by client ID
     if date_from:
         try:
             dt_from = datetime.fromisoformat(date_from)
@@ -97,7 +97,6 @@ async def list_estimates(
         except ValueError:
             pass
 
-
     result = await db.execute(query.order_by(Estimate.id.desc()))
     return result.scalars().all()
 
@@ -109,7 +108,7 @@ async def get_estimate(
 ):
     result = await db.execute(
         select(Estimate)
-        .options(selectinload(Estimate.items))
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
         .where(Estimate.id == estimate_id)
     )
     estimate = result.scalar_one_or_none()
@@ -118,7 +117,7 @@ async def get_estimate(
 
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
-    
+
     return estimate
 
 
@@ -155,7 +154,9 @@ async def export_estimate_pdf(
     user: User = Depends(get_current_user)
 ):
     result = await db.execute(
-        select(Estimate).options(selectinload(Estimate.items)).where(Estimate.id == estimate_id)
+        select(Estimate)
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .where(Estimate.id == estimate_id)
     )
     estimate = result.scalar_one_or_none()
     if not estimate or estimate.user_id != user.id:
@@ -179,7 +180,7 @@ async def export_estimate_excel(
 ):
     result = await db.execute(
         select(Estimate)
-        .options(selectinload(Estimate.items))
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
         .where(Estimate.id == estimate_id)
     )
     estimate = result.scalar_one_or_none()
@@ -241,7 +242,7 @@ async def update_estimate(
     # вернём обновлённую
     result = await db.execute(
         select(Estimate)
-        .options(selectinload(Estimate.items))
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
         .where(Estimate.id == estimate_id)
     )
     return result.scalar_one()

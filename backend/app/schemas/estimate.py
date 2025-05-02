@@ -2,12 +2,11 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from app.schemas.item import EstimateItemOut, EstimateItemCreate
+from app.schemas.client import ClientOut
 
 class EstimateBase(BaseModel):
     name: str = Field(..., min_length=1)
-    client_name: str = Field(..., min_length=1)
-    client_company: str = Field(..., min_length=1)
-    client_contact: Optional[str]
+    client_id: Optional[int]
     responsible: Optional[str]
     notes: Optional[str]
 
@@ -30,4 +29,5 @@ class EstimateOut(EstimateBase):
     items: List[EstimateItemOut] = Field(..., min_items=1)
     vat_enabled: bool = True
     user_id: int
+    client: Optional[ClientOut]
     model_config = {"from_attributes": True}

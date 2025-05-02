@@ -15,7 +15,10 @@
       <div class="flex-1 space-y-4">
         <div v-for="e in store.estimates" :key="e.id" class="border p-4 rounded shadow-sm space-y-1">
           <div class="font-semibold text-lg">{{ e.name }}</div>
-          <div class="text-sm">Клиент: {{ e.client_name || '—' }} ({{ e.client_company || '—' }})</div>
+            <div class="text-sm">
+            Клиент: {{ e.client?.name || '—' }} 
+            <span v-if="e.client?.company">({{ e.client.company }})</span>
+            </div>
           <div class="text-sm">Ответственный: {{ e.responsible || '—' }}</div>
           <div class="text-xs text-gray-500">Создана: {{ new Date(e.date).toLocaleString() }}</div>
           <router-link :to="`/estimates/${e.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">

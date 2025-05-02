@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.template import EstimateTemplate
 from app.models.estimate import Estimate
-
+from app.models.client import Client
 
 
 class User(Base):
@@ -16,6 +16,9 @@ class User(Base):
     company = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     is_admin = Column(Boolean, default=False)
-    
+
     estimates = relationship(Estimate, back_populates="user", cascade="all, delete-orphan")
     templates = relationship(EstimateTemplate, back_populates="user", cascade="all, delete-orphan")
+    clients = relationship(
+        Client, back_populates="user", cascade="all, delete-orphan"
+    )

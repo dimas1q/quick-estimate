@@ -11,14 +11,21 @@ class Estimate(Base):
     name = Column(String, nullable=False)
     date = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
-    client_name = Column(String)
-    client_company = Column(String)
-    client_contact = Column(String)
+    client_id = Column(
+        Integer,
+        ForeignKey("clients.id", ondelete="SET NULL"),
+        nullable=True, 
+    )
+    client = relationship(
+        "Client",
+        back_populates="estimates",
+        passive_deletes=True, 
+    )
     responsible = Column(String)
     notes = Column(Text, nullable=True)
-    
+
     items = relationship("EstimateItem", back_populates="estimate", cascade="all, delete-orphan")
-    
+
     vat_enabled = Column(Boolean, default=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 

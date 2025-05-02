@@ -1,3 +1,4 @@
+## frontend/src/pages/EstimateDetailsPage.vue
 <template>
     <div class="px-16 py-8 max-w-6xl mx-auto">
 
@@ -57,9 +58,9 @@
 
 
             <div class="grid gap-3 text-sm text-gray-800">
-                <p><strong>Клиент:</strong> {{ estimate.client_name }}</p>
-                <p><strong>Компания клиента:</strong> {{ estimate.client_company }}</p>
-                <p><strong>Контакт:</strong> {{ estimate.client_contact || '—' }} </p>
+                <p><strong>Клиент:</strong> {{ estimate.client?.name || '—' }}</p>
+                <p><strong>Компания клиента:</strong> {{ estimate.client?.company || '—' }}</p>
+                <p><strong>Контакт:</strong> {{ estimate.client?.email || '—' }} </p>
                 <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
                 <p><strong>Заметки:</strong> {{ estimate.notes || '—' }}</p>
                 <p><strong>НДС:</strong> {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}</p>
