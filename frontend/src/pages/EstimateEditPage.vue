@@ -1,3 +1,4 @@
+## frontend/src/pages/EstimateEditPage.vue
 <template>
     <div v-if="error" class="text-red-500 text-center text-lg font-medium mt-10">
         {{ error }}

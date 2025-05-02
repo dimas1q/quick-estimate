@@ -14,6 +14,10 @@ import TemplatesPage from '@/pages/TemplatesPage.vue'
 import TemplateCreatePage from '@/pages/TemplateCreatePage.vue'
 import TemplateEditPage from '@/pages/TemplateEditPage.vue'
 import TemplateDetailsPage from '@/pages/TemplateDetailsPage.vue'
+import ClientsPage from '@/pages/ClientsPage.vue'
+import ClientCreatePage from '@/pages/ClientCreatePage.vue'
+import ClientDetailsPage from '@/pages/ClientDetailsPage.vue'
+import ClientEditPage from '@/pages/ClientEditPage.vue'
 
 const routes = [
   {
@@ -56,6 +60,10 @@ const routes = [
         path: '/templates/:id',
         component: TemplateDetailsPage
       },
+      { path: '/clients', component: ClientsPage },
+      { path: '/clients/create', component: ClientCreatePage },
+      { path: '/clients/:id', component: ClientDetailsPage },
+      { path: '/clients/:id/edit', component: ClientEditPage },
       {
         path: 'login',
         component: {

@@ -31,9 +31,9 @@ def generate_excel(estimate: Estimate) -> BytesIO:
 
     # Основные поля
     fields = [
-        ("Клиент", estimate.client_name),
-        ("Компания клиента", estimate.client_company),
-        ("Контакт", estimate.client_contact),
+        ("Клиент", estimate.client.name),
+        ("Компания клиента", estimate.client.company),
+        ("Контакт", estimate.client.email),
         ("Ответственный", estimate.responsible),
         ("Заметки", estimate.notes),
         ("Дата создания", estimate.date.strftime("%d.%m.%Y %H:%M:%S")),

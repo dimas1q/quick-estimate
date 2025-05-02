@@ -29,6 +29,10 @@ function isActive(path) {
                 :class="{ 'bg-blue-100 font-semibold text-blue-700': isActive('/templates') }">
                 📁 <span v-if="!collapsed">Шаблоны</span>
             </RouterLink>
+            <RouterLink to="/clients" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-50 transition"
+                :class="{ 'bg-blue-100 font-semibold text-blue-700': isActive('/clients') }">
+                👥 <span v-if="!collapsed">Клиенты</span>
+            </RouterLink>
         </nav>
 
         <button @click="toggleSidebar"
