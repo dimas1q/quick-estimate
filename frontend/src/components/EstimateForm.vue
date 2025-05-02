@@ -1,36 +1,57 @@
 # frontend/src/components/EstimateForm.vue
 <template>
-  <form @submit.prevent="submit" class="space-y-6 max-w-8xl mx-auto bg-white rounded-lg p-6 shadow-sm">
-    <div v-for="(label, key) in fieldLabels" :key="key" class="space-y-2">
-      <label class="block text-sm font-medium text-gray-700">{{ label }}</label>
-      <input v-if="key !== 'notes'" v-model="estimate[key]" type="text" class="input-field" />
-      <textarea v-else v-model="estimate.notes" rows="3" class="input-field resize-none" />
+  <form @submit.prevent="submit" class="space-y-8">
+    <!-- 1. Основные поля в две колонки -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Название -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Название сметы</label>
+        <input v-model="estimate.name" type="text" placeholder="Введите название"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+      </div>
+      <!-- Клиент -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Клиент</label>
+        <select v-model="estimate.client_id"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300">
+          <option :value="null">— выберите клиента —</option>
+          <option v-for="c in clients" :key="c.id" :value="c.id">
+            {{ c.name }} <span v-if="c.company">({{ c.company }})</span>
+          </option>
+        </select>
+      </div>
+      <!-- Ответственный (на всю ширину) -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Ответственный</label>
+        <input v-model="estimate.responsible" type="text" placeholder="Кто отвечает за выполнение"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+      </div>
+      <!-- Заметки -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Заметки</label>
+        <textarea v-model="estimate.notes" rows="1" placeholder="Дополнительная информация"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
+      </div>
+      <!-- НДС -->
+      <div class="flex items-center space-x-2">
+        <input type="checkbox" v-model="estimate.vat_enabled" id="vat" class="h-5 w-5 text-blue-600" />
+        <label for="vat" class="text-sm font-medium text-gray-700">Включить НДС</label>
+      </div>
     </div>
 
-    <div class="space-y-2">
-      <label class="block text-sm font-medium text-gray-700">Клиент</label>
-      <select v-model="estimate.client_id" class="input-field">
-        <option :value="null">— Выберите клиента —</option>
-        <option v-for="c in clients" :key="c.id" :value="c.id">
-          {{ c.name }} {{ c.company ? `(${c.company})` : '' }}
-        </option>
-      </select>
+    <!-- 2. Редактор услуг — растягивается на всю ширину -->
+    <div>
+      <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
     </div>
 
-
-    <div class="flex items-center gap-2">
-      <input type="checkbox" v-model="estimate.vat_enabled" id="vat" class="form-checkbox h-4 w-4 text-blue-600" />
-      <label for="vat" class="text-sm font-medium text-gray-700">Включить НДС</label>
-    </div>
-
-    <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
-
-    <div class="flex gap-2 pt-4 justify-end">
-      <button type="submit" class="btn-primary">
-        Сохранить
-      </button>
-      <button type="button" @click="cancel" class="btn-danger">
+    <!-- 3. Кнопки -->
+    <div class="flex justify-end space-x-4">
+      <button type="button" @click="cancel"
+        class="px-6 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
         Отмена
+      </button>
+      <button type="submit" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+        Сохранить
       </button>
     </div>
   </form>

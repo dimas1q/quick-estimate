@@ -5,8 +5,8 @@
     </div>
 
     <div v-if="template" class="space-y-6">
-      <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold">{{ template.name }}</h1>
+      <div class="flex justify-between border-b pb-4 items-center">
+        <h1 class="text-3xl font-bold">{{ template.name }}</h1>
 
         <div class="space-x-2">
 
@@ -18,8 +18,7 @@
             class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-all text-sm font-medium">
             📥 Экспортировать
           </button>
-          <button @click="confirmDelete"
-            class="btn-danger">
+          <button @click="confirmDelete" class="btn-danger">
             🗑️ Удалить
           </button>
         </div>
@@ -38,7 +37,7 @@
             <h3 class="text-md font-semibold text-gray-700">{{ category }}</h3>
 
             <ul class="space-y-2">
-              <li v-for="item in groupItems" :key="item.id" class="border rounded p-3 text-sm flex flex-col gap-1">
+              <li v-for="item in groupItems" :key="item.id" class="border rounded-lg p-3 text-sm flex flex-col gap-1">
                 <div><strong>{{ item.name }}</strong> — {{ item.description }}</div>
                 <div>Кол-во: {{ item.quantity }} {{ item.unit }}</div>
                 <div>Цена за единицу: {{ formatCurrency(item.unit_price) }}</div>

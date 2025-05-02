@@ -1,6 +1,5 @@
 # frontend/src/pages/EstimatesPage.vue
 # Component for displaying a list of estimates with filtering options.
-
 <template>
   <div class="space-y-6 px-24 py-8 max-w-6xl mx-auto">
 
@@ -13,7 +12,7 @@
     <div class="flex gap-6 items-start">
 
       <div class="flex-1 space-y-4">
-        <div v-for="e in store.estimates" :key="e.id" class="border p-4 rounded shadow-sm space-y-1">
+        <div v-for="e in store.estimates" :key="e.id" class="border p-4 rounded-lg shadow-sm space-y-1">
           <div class="font-semibold text-lg">{{ e.name }}</div>
             <div class="text-sm">
             Клиент: {{ e.client?.name || '—' }} 

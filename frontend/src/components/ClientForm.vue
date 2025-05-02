@@ -1,33 +1,55 @@
+## frontend/src/components/ClientForm.vue
 <template>
-    <form @submit.prevent="submit" class="space-y-6 max-w-2xl mx-auto bg-white rounded-lg p-6 shadow-sm">
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Имя клиента</label>
-            <input v-model="client.name" type="text" class="input-field" />
+    <form @submit.prevent="submit" class="space-y-8">
+        <!-- 1. Двухколоночные поля -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Имя клиента -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Имя клиента</label>
+                <input v-model="client.name" type="text" placeholder="ФИО или имя"
+                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <!-- Компания -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Компания</label>
+                <input v-model="client.company" type="text" placeholder="Название компании"
+                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <!-- Email -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                <input v-model="client.email" type="email" placeholder="email@example.com"
+                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <!-- Телефон -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Телефон</label>
+                <input v-model="client.phone" type="tel" placeholder="+7 (999) 123-45-67"
+                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <!-- Адрес (на всю ширину) -->
+            <div class="md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Адрес</label>
+                <input v-model="client.address" type="text" placeholder="Город, улица, дом"
+                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <!-- Примечания -->
+            <div class="md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Примечания</label>
+                <textarea v-model="client.notes" rows="4" placeholder="Любые дополнительные данные"
+                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
+            </div>
         </div>
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Компания</label>
-            <input v-model="client.company" type="text" class="input-field" />
-        </div>
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Email</label>
-            <input v-model="client.email" type="email" class="input-field" />
-        </div>
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Телефон</label>
-            <input v-model="client.phone" type="text" class="input-field" />
-        </div>
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Адрес</label>
-            <input v-model="client.address" type="text" class="input-field" />
-        </div>
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Примечания</label>
-            <textarea v-model="client.notes" class="input-field" rows="4"></textarea> 
-        </div>
-        <!-- здесь можно добавить ещё поля: адрес, примечания и т.п.-->
-        <div class="flex gap-2 pt-4 justify-end">
-            <button type="submit" class="btn-primary">Сохранить</button>
-            <button type="button" @click="cancel" class="btn-danger">Отмена</button>
+
+        <!-- 2. Кнопки -->
+        <div class="flex justify-end space-x-4">
+            <button type="button" @click="cancel"
+                class="px-6 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
+                Отмена
+            </button>
+            <button type="submit" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+                Сохранить
+            </button>
         </div>
     </form>
 </template>

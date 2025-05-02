@@ -1,7 +1,7 @@
 ## frontend/src/pages/EstimateEditPage.vue
 <template>
   <div class="space-y-6 max-w-6xl mx-auto px-16 py-8">
-    <h1 class="text-2xl font-bold text-center py-2">Создание сметы</h1>
+    <h1 class="text-2xl font-bold mb-10 text-center py-2">Создание сметы</h1>
     <EstimateForm :initial="copiedEstimate" mode="copy" />
   </div>
 </template>

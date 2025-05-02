@@ -24,7 +24,7 @@
             <div class="mt-8">
                 <h2 class="text-xl font-semibold mb-4">Сметы клиента</h2>
                 <ul class="space-y-2">
-                    <li v-for="e in estimates" :key="e.id" class="border p-4 rounded shadow-sm">
+                    <li v-for="e in estimates" :key="e.id" class="border p-4 rounded-lg shadow-sm">
                         <RouterLink :to="`/estimates/${e.id}`" class="font-medium">{{ e.name }}</RouterLink>
                         <span class="text-gray-500 text-sm ml-2">{{ new Date(e.date).toLocaleDateString() }}</span>
                     </li>

@@ -1,4 +1,40 @@
 # frontend/src/components/TemplateForm.vue
+<template>
+  <form @submit.prevent="submit" class="space-y-8">
+    <!-- 1. Основные поля: название и описание -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Название шаблона -->
+      <div >
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Название шаблона</label>
+        <input v-model="template.name" type="text" placeholder="Введите название"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+      </div>
+      <!-- Описание шаблона (занимает обе колонки) -->
+      <div >
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Описание</label>
+        <textarea v-model="template.description" rows="1" placeholder="Краткое описание шаблона"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
+      </div>
+    </div>
+
+    <!-- 2. Редактор услуг -->
+    <div>
+      <EstimateItemsEditor v-model="template.items" :vat-enabled="false" :show-vat-summary="false" />
+    </div>
+
+    <!-- 3. Кнопки -->
+    <div class="flex justify-end space-x-4">
+      <button type="button" @click="cancel"
+        class="px-6 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
+        Отмена
+      </button>
+      <button type="submit" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+        Сохранить
+      </button>
+    </div>
+  </form>
+</template>
+
 <script setup>
 import { reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -103,24 +139,5 @@ function validateTemplate() {
 }
 </script>
 
-<template>
-  <form @submit.prevent="submit" class="space-y-6 max-w-8xl mx-auto bg-white rounded-lg p-6 shadow-sm">
-    <div class="space-y-2">
-      <label class="block text-sm font-medium text-gray-700">Название шаблона</label>
-      <input v-model="template.name" type="text" class="input-field" />
-    </div>
 
-    <div class="space-y-2">
-      <label class="block text-sm font-medium text-gray-700">Описание</label>
-      <textarea v-model="template.description" rows="3" class="input-field resize-none" />
-    </div>
-
-    <EstimateItemsEditor v-model="template.items" :vat-enabled="false" :show-vat-summary="false"/>
-
-    <div class="flex gap-2 pt-4 justify-end">
-      <button type="submit" class="btn-primary">Сохранить</button>
-      <button type="button" @click="cancel" class="btn-danger">Отмена</button>
-    </div>
-  </form>
-</template>
 

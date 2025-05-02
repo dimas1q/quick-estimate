@@ -80,7 +80,7 @@
 
                         <ul class="space-y-2">
                             <li v-for="item in groupItems" :key="item.id"
-                                class="border rounded p-3 text-sm flex flex-col gap-1">
+                                class="border rounded-lg p-3 text-sm flex flex-col gap-1">
                                 <div><strong>{{ item.name }}</strong> — {{ item.description }}</div>
                                 <div>Кол-во: {{ item.quantity }} {{ item.unit }}</div>
                                 <div>Цена за единицу: {{ formatCurrency(item.unit_price) }}</div>

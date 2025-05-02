@@ -8,7 +8,7 @@
         <div class="flex gap-6 items-start">
             <!-- Левый столбец: список клиентов -->
             <div class="flex-1 space-y-4">
-                <div v-for="c in store.clients" :key="c.id" class="border p-4 rounded shadow-sm space-y-1 py-4">
+                <div v-for="c in store.clients" :key="c.id" class="border p-4 rounded-lg shadow-sm space-y-1 py-4">
                     <div class="font-semibold text-lg">{{ c.name }}</div>
                     <div class="text-sm text-gray-600">Компания: {{ c.company || '—' }}</div>
                     <div class="text-sm text-gray-600">Контакт: {{ c.email || c.phone || '—' }}</div>

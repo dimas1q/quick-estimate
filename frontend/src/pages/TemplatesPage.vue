@@ -15,7 +15,7 @@
       <!-- Левая колонка — список шаблонов -->
       <div class="flex-1 space-y-4">
 
-        <div v-for="template in store.templates" :key="template.id" class="border p-4 rounded shadow-sm space-y-1 py-4">
+        <div v-for="template in store.templates" :key="template.id" class="border p-4 rounded-lg shadow-sm space-y-1 py-4">
           <div class="font-semibold text-lg ">{{ template.name }}</div>
           <div class="text-sm text-gray-600 ">Описание: {{ template.description || '—' }}</div>
 
