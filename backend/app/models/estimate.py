@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, func, Boolean, F
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
+
 class Estimate(Base):
     __tablename__ = "estimates"
 
@@ -25,6 +26,15 @@ class Estimate(Base):
     notes = Column(Text, nullable=True)
 
     items = relationship("EstimateItem", back_populates="estimate", cascade="all, delete-orphan")
+
+    from app.models.version import EstimateVersion
+
+    versions = relationship(
+        "EstimateVersion",
+        back_populates="estimate",
+        cascade="all, delete-orphan",
+        order_by="EstimateVersion.version.desc()"
+    )
 
     vat_enabled = Column(Boolean, default=True)
     user_id = Column(Integer, ForeignKey("users.id"))

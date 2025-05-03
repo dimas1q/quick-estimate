@@ -5,7 +5,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import delete, or_, func
+from sqlalchemy import delete, func
+from fastapi.encoders import jsonable_encoder
 
 from app.models.estimate import Estimate
 from app.models.item import EstimateItem
@@ -13,6 +14,7 @@ from app.schemas.estimate import EstimateCreate, EstimateOut
 from app.schemas.changelog import ChangeLogOut
 from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
+from app.models.version import EstimateVersion
 from app.utils.auth import get_current_user
 from app.utils.pdf import render_pdf
 from app.utils.excel import generate_excel
@@ -43,6 +45,8 @@ async def create_estimate(
     for item in items_data:
         db.add(EstimateItem(**item.dict(), estimate_id=new_estimate.id))
 
+    await db.commit()
+
     db.add(
         EstimateChangeLog(
             estimate_id=new_estimate.id,
@@ -51,15 +55,24 @@ async def create_estimate(
         )
     )
 
-    await db.commit()
-
-    # greenlet
     result = await db.execute(
         select(Estimate)
         .options(selectinload(Estimate.items), selectinload(Estimate.client))
         .where(Estimate.id == new_estimate.id)
     )
     new_estimate = result.scalar_one()
+
+    first_out = EstimateOut.from_orm(new_estimate)
+    payload = jsonable_encoder(first_out)
+
+    db.add(
+        EstimateVersion(
+            estimate_id=new_estimate.id, version=1, user_id=user.id, payload=payload,
+        )
+    )
+
+    await db.commit()
+
     return new_estimate
 
 
@@ -212,11 +225,41 @@ async def update_estimate(
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
 
+    result = await db.execute(
+         select(Estimate)
+         .options(selectinload(Estimate.items), selectinload(Estimate.client))
+         .where(Estimate.id == estimate_id)
+     )
+
+    old_estimate = result.scalar_one_or_none()
+
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
-    
+
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
+
+    old_out = EstimateOut.from_orm(old_estimate)
+    old_payload = jsonable_encoder(old_out)
+
+    max_ver = (
+        await db.scalar(
+            select(func.max(EstimateVersion.version)).where(
+                EstimateVersion.estimate_id == estimate_id
+            )
+        )
+        or 0
+    )
+    next_ver = max_ver + 1
+
+    db.add(
+        EstimateVersion(
+            estimate_id=estimate_id,
+            version=next_ver,
+            user_id=user.id,
+            payload=old_payload,
+        )
+    )
 
     # обновим основные поля
     for field, value in updated_data.dict(exclude={"items"}).items():
