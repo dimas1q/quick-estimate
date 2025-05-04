@@ -1,5 +1,5 @@
 # backend/app/api/versions.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, delete
@@ -94,7 +94,6 @@ async def restore_version(
     if not est or est.user_id != user.id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
 
-    
     data = ver.payload
     # обновляем поля
     for f, v in data.items():
@@ -123,3 +122,35 @@ async def restore_version(
     # 6) вернуть обновлённую смету
     await db.refresh(est)
     return est
+
+
+@router.delete("/{version}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_version(
+    estimate_id: int,
+    version: int,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    # 1) проверка прав
+    est = await db.get(Estimate, estimate_id)
+    if not est or est.user_id != user.id:
+        raise HTTPException(404, "Смета не найдена или нет доступа")
+    # 2) найти сам снимок
+    q = await db.execute(
+        select(EstimateVersion).where(
+            EstimateVersion.estimate_id == estimate_id,
+            EstimateVersion.version == version,
+        )
+    )
+    ver = q.scalar_one_or_none()
+    if not ver:
+        raise HTTPException(404, "Версия не найдена")
+    # 3) удалить
+    await db.execute(
+        delete(EstimateVersion).where(
+            EstimateVersion.estimate_id == estimate_id,
+            EstimateVersion.version == version,
+        )
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

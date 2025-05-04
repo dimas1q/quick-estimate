@@ -45,8 +45,6 @@ async def create_estimate(
     for item in items_data:
         db.add(EstimateItem(**item.dict(), estimate_id=new_estimate.id))
 
-    await db.commit()
-
     db.add(
         EstimateChangeLog(
             estimate_id=new_estimate.id,
@@ -55,25 +53,15 @@ async def create_estimate(
         )
     )
 
+    await db.commit()
+
     result = await db.execute(
         select(Estimate)
         .options(selectinload(Estimate.items), selectinload(Estimate.client))
         .where(Estimate.id == new_estimate.id)
     )
-    new_estimate = result.scalar_one()
 
-    first_out = EstimateOut.from_orm(new_estimate)
-    payload = jsonable_encoder(first_out)
-
-    db.add(
-        EstimateVersion(
-            estimate_id=new_estimate.id, version=1, user_id=user.id, payload=payload,
-        )
-    )
-
-    await db.commit()
-
-    return new_estimate
+    return result.scalar_one()
 
 
 @router.get("/", response_model=List[EstimateOut])

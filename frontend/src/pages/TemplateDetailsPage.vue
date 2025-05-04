@@ -33,22 +33,22 @@
         <ul class="space-y-2">
           <h2 class="font-semibold text-lg mt-6">Услуги</h2>
 
-          <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-6 space-y-3">
-            <h3 class="text-md font-semibold text-gray-700">{{ category }}</h3>
+            <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-6">
+            <h3 class="text-md font-semibold text-gray-700 mb-3">{{ category }}</h3>
 
-            <ul class="space-y-2">
-              <li v-for="item in groupItems" :key="item.id" class="border rounded-lg p-3 text-sm flex flex-col gap-1">
-                <div><strong>{{ item.name }}</strong> — {{ item.description }}</div>
-                <div>Кол-во: {{ item.quantity }} {{ item.unit }}</div>
-                <div>Цена за единицу: {{ formatCurrency(item.unit_price) }}</div>
-                <div class="font-semibold text-right">Итог: {{ formatCurrency(getItemTotal(item)) }}</div>
-              </li>
-            </ul>
+            <div class="grid grid-cols-2 gap-4">
+              <div v-for="item in groupItems" :key="item.id" class="border rounded-lg p-3 text-sm flex flex-col gap-1">
+              <div><strong>{{ item.name }}</strong> — {{ item.description }}</div>
+              <div>Кол-во: {{ item.quantity }} {{ item.unit }}</div>
+              <div>Цена за единицу: {{ formatCurrency(item.unit_price) }}</div>
+              <div class="font-semibold text-right">Итог: {{ formatCurrency(getItemTotal(item)) }}</div>
+              </div>
+            </div>
 
             <div class="text-right font-semibold text-sm text-gray-600 pt-2">
               Итог по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
             </div>
-          </div>
+            </div>
 
         </ul>
 
