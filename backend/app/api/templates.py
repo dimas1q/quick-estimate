@@ -31,7 +31,8 @@ async def create_template(
     new_template = EstimateTemplate(
         name=template.name,
         description=template.description,
-        user_id=user.id
+        user_id=user.id,
+        notes=template.notes
     )
     db.add(new_template)
     await db.flush()
@@ -106,6 +107,7 @@ async def update_template(
     # Обновление основных полей
     template.name = updated_data.name
     template.description = updated_data.description
+    template.notes = updated_data.notes
 
     # Удаление старых услуг
     await db.execute(

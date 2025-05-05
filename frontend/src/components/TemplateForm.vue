@@ -3,16 +3,19 @@
   <form @submit.prevent="submit" class="space-y-8">
     <!-- 1. Основные поля: название и описание -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Название шаблона -->
-      <div >
+      <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1">Название шаблона</label>
         <input v-model="template.name" type="text" placeholder="Введите название"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
       </div>
-      <!-- Описание шаблона (занимает обе колонки) -->
-      <div >
+      <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1">Описание</label>
         <textarea v-model="template.description" rows="1" placeholder="Краткое описание шаблона"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Примечания</label>
+        <textarea v-model="template.notes" rows="4" placeholder="Примечания к шаблону"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
       </div>
     </div>
@@ -58,6 +61,7 @@ const router = useRouter()
 const template = reactive({
   name: '',
   description: '',
+  notes: '',
   items: []
 })
 
@@ -65,6 +69,7 @@ onMounted(() => {
   if (store.importedTemplate) {
     template.name = store.importedTemplate.name || ''
     template.description = store.importedTemplate.description || ''
+    template.notes = store.importedTemplate.notes || ''
 
     template.items.splice(0)
     for (const item of store.importedTemplate.items || []) {
@@ -83,7 +88,7 @@ watch(() => props.initial, (value) => {
     Object.assign(template, {
       name: value.name || '',
       description: value.description || '',
-      vat_enabled: value.vat_enabled ?? true,
+      notes: value.notes || '',
       items: (value.items || []).map(item => ({
         ...item,
         category_input: item.category || ''

@@ -6,7 +6,7 @@
             {{ error }}
         </div>
         <div v-if="estimate" class="space-y-6">
-            <div class="flex justify-between items-center pb-4 mb-6">
+            <div class="flex justify-between items-center pb-2 mb-6">
                 <h1 class="text-3xl font-bold text-gray-800">{{ estimate.name }}</h1>
 
                 <div class="flex space-x-3 items-center relative">
@@ -94,28 +94,31 @@
 
             <div v-if="activeTab === 'details'">
                 <div class="grid gap-3 text-sm text-gray-800">
-                    <p><strong>Клиент:</strong> {{ estimate.client?.name || '—' }}</p>
-                    <p><strong>Компания клиента:</strong> {{ estimate.client?.company || '—' }}</p>
-                    <p><strong>Контакт:</strong> {{ estimate.client?.email || '—' }} </p>
-                    <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
-                    <p><strong>Заметки:</strong> {{ estimate.notes || '—' }}</p>
-                    <p><strong>НДС:</strong> {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <p><strong>Клиент:</strong> {{ estimate.client?.name || '—' }}</p>
+                        <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
 
-                    <p class="text-sm text-gray-600">
-                        Дата создания: {{ new Date(estimate.date).toLocaleString() }}
-                    </p>
+                        <p><strong>Контакт:</strong> {{ estimate.client?.email || '—' }}</p>
+                        <p><strong>НДС:</strong> {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}</p>
 
-                    <p class="text-sm text-gray-600">
-                        Последнее обновление: {{ new Date(estimate.updated_at).toLocaleString() }}
-                    </p>
+                        <p><strong>Компания клиента:</strong> {{ estimate.client?.company || '—' }}</p>
+                        <p class="text-sm text-gray-600">
+                            Дата создания: {{ new Date(estimate.date).toLocaleString() }}
+                        </p>
+                        <p><strong>Заметки:</strong> {{ estimate.notes || '—' }}</p>
 
-                    <h2 class="font-semibold text-lg mt-6 border-t pt-6">Услуги</h2>
-                    <ul class="space-y-2">
+                        <p class="text-sm text-gray-600">
+                            Последнее обновление: {{ new Date(estimate.updated_at).toLocaleString() }}
+                        </p>
+                    </div>
+
+                    <h2 class="font-semibold text-lg mt-6 text-center">Список услуг</h2>
+                    <ul class="space-y-2 ">
                         <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-6 space-y-3">
                             <h3 class="text-md font-semibold text-gray-700">{{ category }}</h3>
 
-                            <div class="grid grid-cols-2 gap-4">
-                                <div v-for="item in groupItems" :key="item.id"
+                            <ul class="space-y-2">
+                                <li v-for="item in groupItems" :key="item.id"
                                     class="border rounded-lg p-3 text-sm flex flex-col gap-1">
                                     <div><strong>{{ item.name }}</strong> — {{ item.description }}</div>
                                     <div>Кол-во: {{ item.quantity }} {{ item.unit }}</div>
@@ -123,19 +126,20 @@
                                     <div class="font-semibold text-right">
                                         Итог: {{ formatCurrency(getItemTotal(item)) }}
                                     </div>
-                                </div>
-                            </div>
+                                </li>
+                            </ul>
 
                             <div class="text-right font-semibold text-sm text-gray-600 pt-2">
                                 Итог по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
                             </div>
                         </div>
+
                     </ul>
                 </div>
 
 
-                <div v-if="estimate?.items?.length" class="pt-6 border-t">
-                    <p class="text-right font-semibold text-lg">
+                <div v-if="estimate?.items?.length" class="pt-6">
+                    <p class="text-right font-semibold text-lg pt-4 border-t">
                         Общая сумма: {{ formatCurrency(total) }}
                     </p>
                     <p class="text-right text-gray-700">
@@ -159,9 +163,9 @@
                 <!-- 5. Версии -->
                 <div v-if="versions.length" class="mt-8 border-t pt-6 text-sm">
                     <h3 class="font-semibold text-gray-700 mb-4">История версий</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-100">
+                    <div class="overflow-x-auto rounded-lg shadow-sm">
+                        <table class="w-full text-left ">
+                            <thead class="bg-gray-100 ">
                                 <tr>
                                     <th class="px-4 py-2 font-medium text-gray-600">Версия</th>
                                     <th class="px-4 py-2 font-medium text-gray-600">Дата создания</th>

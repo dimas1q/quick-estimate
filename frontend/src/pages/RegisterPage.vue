@@ -45,7 +45,7 @@ async function handleRegister() {
 
 <template>
     <div class="flex items-center justify-center h-full bg-gray-50">
-        <div class="bg-white shadow-md rounded px-8 py-6 w-full max-w-sm">
+        <div class="bg-white shadow-lg rounded-lg px-8 py-6 w-full max-w-sm">
             <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Регистрация</h2>
 
             <input v-model="login" type="text" placeholder="Логин"

@@ -24,6 +24,7 @@ class TemplateItemOut(TemplateItemBase):
 class EstimateTemplateBase(BaseModel):
     name: str
     description: Optional[str] = None
+    notes: Optional[str]
 
 
 class EstimateTemplateCreate(EstimateTemplateBase):
