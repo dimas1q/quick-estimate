@@ -1,6 +1,6 @@
 # frontend/src/components/EstimateForm.vue
 <template>
-  <form @submit.prevent="submit" class="space-y-8">
+  <form @submit.prevent="submit" class="space-y-8 border bg-gray rounded-2xl shadow-md p-6">
     <!-- 1. Основные поля в две колонки -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Название -->
@@ -40,7 +40,7 @@
     </div>
 
     <!-- 2. Редактор услуг — растягивается на всю ширину -->
-    <div>
+    <div >
       <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
     </div>
 

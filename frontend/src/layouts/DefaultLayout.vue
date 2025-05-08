@@ -81,8 +81,28 @@ onClickOutside(menuRef, () => {
 
       <!-- MAIN -->
       <main class="flex-1 overflow-y-auto max-h-screen">
-        <router-view />
+        <RouterView v-slot="{ Component }">
+          <Transition mode="out-in" enter-active-class="transition-opacity duration-100 ease-in-out"
+            enter-from-class="opacity-0" enter-to-class="opacity-100"
+            leave-active-class="transition-opacity duration-100 ease-in-out" leave-from-class="opacity-100"
+            leave-to-class="opacity-0">
+            <component :is="Component" />
+          </Transition>
+        </RouterView>
       </main>
+
+
     </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

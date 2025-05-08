@@ -112,59 +112,91 @@
                         </p>
                     </div>
 
-                    <h2 class="font-semibold text-lg mt-6 text-center">Список услуг</h2>
-                    <ul class="space-y-2 ">
-                        <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-6 space-y-3">
-                            <h3 class="text-md font-semibold text-gray-700">{{ category }}</h3>
+                    <div class="border bg-gray-50 rounded-2xl shadow-md p-6 mt-8">
+                        <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-10">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center pb-1">{{ category }}</h3>
 
-                            <ul class="space-y-2">
-                                <li v-for="item in groupItems" :key="item.id"
-                                    class="border rounded-lg p-3 text-sm flex flex-col gap-1">
-                                    <div><strong>{{ item.name }}</strong> — {{ item.description }}</div>
-                                    <div>Кол-во: {{ item.quantity }} {{ item.unit }}</div>
-                                    <div>Цена за единицу: {{ formatCurrency(item.unit_price) }}</div>
-                                    <div class="font-semibold text-right">
-                                        Итог: {{ formatCurrency(getItemTotal(item)) }}
+                            <div class="space-y-4">
+                                <div v-for="(row, rowIndex) in chunkArray(groupItems, 3)" :key="rowIndex"
+                                    class="flex gap-4">
+                                    <div v-for="item in row" :key="item.id"
+                                        :class="`flex-1 ${row.length === 1 ? 'max-w-full' : row.length === 2 ? 'max-w-1/2' : 'max-w-1/3'}`"
+                                        class="bg-gray border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <p class="text-base font-semibold text-gray-900">{{ item.name }}</p>
+                                                <p class="text-sm text-gray-600">{{ item.description }}</p>
+                                            </div>
+                                            <div class="text-sm text-gray-500 text-right whitespace-nowrap">
+                                                {{ item.quantity }} {{ item.unit }}
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-between text-sm text-gray-700 pt-2">
+                                            <span>Цена за единицу:</span>
+                                            <span>{{ formatCurrency(item.unit_price) }}</span>
+                                        </div>
+                                        <div class="flex justify-between font-semibold text-sm text-gray-900">
+                                            <span>Итог:</span>
+                                            <span>{{ formatCurrency(getItemTotal(item)) }}</span>
+                                        </div>
                                     </div>
-                                </li>
-                            </ul>
+                                </div>
+                            </div>
 
-                            <div class="text-right font-semibold text-sm text-gray-600 pt-2">
-                                Итог по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
+                            <div class="text-right font-semibold text-base text-gray-700 mt-4">
+                                Сумма по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
                             </div>
                         </div>
 
-                    </ul>
-                </div>
+
+                        <div v-if="estimate?.items?.length" class="pt-6">
+                            <p class="text-right font-semibold text-lg pt-4 border-t">
+                                Общая сумма: {{ formatCurrency(total) }}
+                            </p>
+                            <p class="text-right text-gray-700">
+                                НДС (20%): {{ formatCurrency(vat) }} <br />
+                                Итого с НДС: {{ formatCurrency(totalWithVat) }}
+                            </p>
+                        </div>
+
+                    </div>
 
 
-                <div v-if="estimate?.items?.length" class="pt-6">
-                    <p class="text-right font-semibold text-lg pt-4 border-t">
-                        Общая сумма: {{ formatCurrency(total) }}
-                    </p>
-                    <p class="text-right text-gray-700">
-                        НДС (20%): {{ formatCurrency(vat) }} <br />
-                        Итого с НДС: {{ formatCurrency(totalWithVat) }}
-                    </p>
                 </div>
             </div>
 
             <div v-else>
 
-                <div v-if="logs.length" class="text-sm">
-                    <h3 class="font-semibold text-gray-700 mb-2">История изменений</h3>
-                    <ul class="space-y-2">
-                        <li v-for="log in logs" :key="log.id" class="text-gray-600">
-                            🕓 {{ new Date(log.timestamp).toLocaleString() }} — {{ log.description }}
-                        </li>
-                    </ul>
+                <div v-if="logs.length" class="text-sm w-full mt-6">
+                    <h3 class="font-semibold text-gray-800 text-sm mb-4 flex items-center gap-2">
+                        История изменений
+                    </h3>
+
+                    <div class="overflow-x-auto rounded-lg shadow-sm ">
+                        <table class="w-full text-sm text-gray-700">
+                            <thead class="bg-gray-100 border-b text-left">
+                                <tr>
+                                    <th class="px-4 py-2 font-medium text-gray-600 whitespace-nowrap">Дата и время</th>
+                                    <th class="px-4 py-2 font-medium text-gray-600 whitespace-nowrap">Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="log in logs" :key="log.id" class="hover:bg-gray-50 border-b">
+                                    <td class="px-4 py-2 text-gray-600 whitespace-nowrap">{{ new
+                                        Date(log.timestamp).toLocaleString() }}</td>
+                                    <td class="px-4 py-2 text-gray-600">{{ log.description }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+
 
                 <!-- 5. Версии -->
                 <div v-if="versions.length" class="mt-8 border-t pt-6 text-sm">
                     <h3 class="font-semibold text-gray-700 mb-4">История версий</h3>
-                    <div class="overflow-x-auto rounded-lg shadow-sm">
-                        <table class="w-full text-left ">
+                    <div class="overflow-x-auto rounded-lg shadow-sm ">
+                        <table class="w-full text-left text-gray-700">
                             <thead class="bg-gray-100 ">
                                 <tr>
                                     <th class="px-4 py-2 font-medium text-gray-600">Версия</th>
@@ -174,15 +206,16 @@
                             </thead>
                             <tbody>
                                 <tr v-for="v in versions" :key="v.version" class="border-b hover:bg-gray-50">
-                                    <td class="px-4 py-2">№{{ v.version }}</td>
-                                    <td class="px-4 py-2"> {{ new Date(v.created_at).toLocaleString() }}</td>
+                                    <td class="px-4 py-2 text-gray-600">№{{ v.version }}</td>
+                                    <td class="px-4 py-2 text-gray-600"> {{ new Date(v.created_at).toLocaleString() }}
+                                    </td>
                                     <td class="px-4 py-2 text-right space-x-2">
                                         <button @click="viewVersion(v.version)"
-                                            class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+                                            class="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
                                             Просмотр
                                         </button>
                                         <button @click="deleteVersion(v.version)"
-                                            class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition">
+                                            class="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition">
                                             Удалить
                                         </button>
                                     </td>
@@ -301,6 +334,25 @@ async function deleteEstimate() {
     router.push('/estimates')
 }
 
+function chunkArray(array) {
+    const len = array.length
+    let chunkSize = 3
+
+    if (len === 1) {
+        chunkSize = 1
+    } else if (len % 2 === 0) {
+        chunkSize = 2
+    }
+
+    const chunks = []
+    for (let i = 0; i < len; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize))
+    }
+    return chunks
+}
+
+
+
 const groupedItems = computed(() => {
     const groups = {}
     for (const item of estimate.value?.items || []) {
@@ -369,6 +421,25 @@ async function viewVersion(ver) {
     await router.push({ path: `/estimates/${id}`, query: { version: ver } })
     // 4. Перезагрузить данные (чтобы loadAll учёл новый query.version)
     await loadAll()
+}
+
+async function restoreVersion(version) {
+    const id = route.params.id
+    try {
+        await axios.post(
+            `http://localhost:8000/api/versions/${version}/restore`,
+            null,
+            { params: { estimate_id: estimate.value.id } }
+        )
+
+        toast.success(`Версия №${version} восстановлена`)
+        // Сбросить query и вернуть на основную версию сметы
+        await router.push({ path: `/estimates/${id}` })
+        await loadAll()
+    } catch (err) {
+        console.error(err)
+        toast.error('Не удалось восстановить версию')
+    }
 }
 
 async function copyVersion(version) {

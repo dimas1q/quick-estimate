@@ -35,7 +35,7 @@ async def list_versions(
     q = await db.execute(
         select(EstimateVersion)
         .where(EstimateVersion.estimate_id == estimate_id)
-        .order_by(EstimateVersion.version.desc())
+        .order_by(EstimateVersion.version.asc())
     )
     return q.scalars().all()
 

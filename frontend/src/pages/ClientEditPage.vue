@@ -1,4 +1,5 @@
 <template>
+<div>
     <div v-if="error" class="text-red-500 text-center text-lg font-medium mt-10">
         {{ error }}
     </div>
@@ -6,7 +7,7 @@
         <h1 class="text-2xl font-bold mb-14 text-center py-2">Редактирование клиента {{ client?.name }}</h1>
         <ClientForm :mode="'edit'" :initial="client" @updated="onUpdated" />
     </div>
-    
+</div>
 </template>
 <script setup>
 import { ref, onMounted } from 'vue'
