@@ -25,54 +25,59 @@
       </div>
 
 
-      <div class="grid gap-3 text-sm text-gray-800 grid-cols-1 md:grid-cols-2">
-        <p><strong>Описание:</strong> {{ template.description || '—' }}</p>
-        <p><strong>Примечания:</strong> {{ template.notes || '—' }}</p>
-      </div>
+      <div class="grid gap-3 text-sm text-gray-800">
 
-      <div class="border bg-gray-50 rounded-2xl shadow-md p-6 mt-8">
-        <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-10">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center pb-1">{{ category }}</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <p><strong>Описание:</strong> {{ template.description || '—' }}</p>
+          <p><strong>Примечания:</strong> {{ template.notes || '—' }}</p>
+        </div>
 
-          <div class="space-y-4">
-            <div v-for="(row, rowIndex) in chunkArray(groupItems, 3)" :key="rowIndex" class="flex gap-4">
-              <div v-for="item in row" :key="item.id"
-                :class="`flex-1 ${row.length === 1 ? 'max-w-full' : row.length === 2 ? 'max-w-1/2' : 'max-w-1/3'}`"
-                class="bg-gray border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
-                <div class="flex justify-between items-start mb-2">
-                  <div>
-                    <p class="text-base font-semibold text-gray-900">{{ item.name }}</p>
-                    <p class="text-sm text-gray-600">{{ item.description }}</p>
+        <div class="border bg-gray-50 rounded-2xl shadow-md p-6 mt-6">
+          <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-10">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center pb-1">{{ category }}</h3>
+
+            <div class="space-y-4">
+              <div v-for="(row, rowIndex) in chunkArray(groupItems, 3)" :key="rowIndex" class="flex gap-4">
+                <div v-for="item in row" :key="item.id"
+                  :class="`flex-1 ${row.length === 1 ? 'max-w-full' : row.length === 2 ? 'max-w-1/2' : 'max-w-1/3'}`"
+                  class="bg-gray border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
+                  <div class="flex justify-between items-start mb-2">
+                    <div>
+                      <p class="text-base font-semibold text-gray-900">{{ item.name }}</p>
+                      <p class="text-sm text-gray-600">{{ item.description }}</p>
+                    </div>
+                    <div class="text-sm text-gray-500 text-right whitespace-nowrap">
+                      {{ item.quantity }} {{ item.unit }}
+                    </div>
                   </div>
-                  <div class="text-sm text-gray-500 text-right whitespace-nowrap">
-                    {{ item.quantity }} {{ item.unit }}
+                  <div class="flex justify-between text-sm text-gray-700 pt-2">
+                    <span>Цена за единицу:</span>
+                    <span>{{ formatCurrency(item.unit_price) }}</span>
                   </div>
-                </div>
-                <div class="flex justify-between text-sm text-gray-700 pt-2">
-                  <span>Цена за единицу:</span>
-                  <span>{{ formatCurrency(item.unit_price) }}</span>
-                </div>
-                <div class="flex justify-between font-semibold text-sm text-gray-900">
-                  <span>Итог:</span>
-                  <span>{{ formatCurrency(getItemTotal(item)) }}</span>
+                  <div class="flex justify-between font-semibold text-sm text-gray-900">
+                    <span>Итог:</span>
+                    <span>{{ formatCurrency(getItemTotal(item)) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <div class="text-right font-semibold text-base text-gray-700 mt-4">
+              Сумма по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
+            </div>
           </div>
 
-          <div class="text-right font-semibold text-base text-gray-700 mt-4">
-            Сумма по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
+
+          <div v-if="template?.items?.length" class="pt-6">
+            <p class="text-right font-semibold text-lg pt-4 border-t">
+              Общая сумма: {{ formatCurrency(total) }}
+            </p>
           </div>
+
         </div>
-
-
-        <div v-if="template?.items?.length" class="pt-6">
-          <p class="text-right font-semibold text-lg pt-4 border-t">
-            Общая сумма: {{ formatCurrency(total) }}
-          </p>
-        </div>
-
       </div>
+
+
 
     </div>
     <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

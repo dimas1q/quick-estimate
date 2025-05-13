@@ -112,7 +112,7 @@
                         </p>
                     </div>
 
-                    <div class="border bg-gray-50 rounded-2xl shadow-md p-6 mt-8">
+                    <div class="border bg-gray-50 rounded-2xl shadow-md p-6 mt-6">
                         <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-10">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center pb-1">{{ category }}</h3>
 
