@@ -7,7 +7,7 @@
         </div>
         <div v-if="estimate" class="space-y-6">
             <div class="flex justify-between items-center pb-2 mb-6">
-                <h1 class="text-3xl font-bold text-gray-800">{{ estimate.name }}</h1>
+                <h1 class="text-3xl font-bold text-gray-800">Смета: {{ estimate.name }}</h1>
 
                 <div class="flex space-x-3 items-center relative">
                     <!-- если мы в режиме версии, показываем другие кнопки -->
@@ -105,7 +105,7 @@
                         <p class="text-sm text-gray-600">
                             Дата создания: {{ new Date(estimate.date).toLocaleString() }}
                         </p>
-                        <p><strong>Заметки:</strong> {{ estimate.notes || '—' }}</p>
+                        <p><strong>Примечания:</strong> {{ estimate.notes || '—' }}</p>
 
                         <p class="text-sm text-gray-600">
                             Последнее обновление: {{ new Date(estimate.updated_at).toLocaleString() }}

@@ -3,7 +3,7 @@
         <div v-if="!client" class="text-center py-10">Загрузка…</div>
         <div v-else class="space-y-6">
             <div class="flex justify-between items-center border-b pb-4 mb-6">
-                <h1 class="text-3xl font-bold">{{ client.name }}</h1>
+                <h1 class="text-3xl font-bold">Клиент: {{ client.name }}</h1>
                 <div class="flex space-x-3 items-center relative">
                     <RouterLink :to="`/clients/${client.id}/edit`"
                         class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">

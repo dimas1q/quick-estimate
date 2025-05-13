@@ -4,20 +4,21 @@ import { useAuthStore } from '@/store/auth'
 import NotFoundPage from '@/pages/errors/NotFoundPage.vue'
 
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
-import EstimatesPage from '@/pages/EstimatesPage.vue'
-import EstimatesCreatePage from '@/pages/EstimatesCreatePage.vue'
-import EstimateDetailsPage from '@/pages/EstimateDetailsPage.vue'
-import EstimateEditPage from '@/pages/EstimateEditPage.vue'
-import LoginPage from '@/pages/LoginPage.vue'
-import RegisterPage from '@/pages/RegisterPage.vue'
-import TemplatesPage from '@/pages/TemplatesPage.vue'
-import TemplateCreatePage from '@/pages/TemplateCreatePage.vue'
-import TemplateEditPage from '@/pages/TemplateEditPage.vue'
-import TemplateDetailsPage from '@/pages/TemplateDetailsPage.vue'
-import ClientsPage from '@/pages/ClientsPage.vue'
-import ClientCreatePage from '@/pages/ClientCreatePage.vue'
-import ClientDetailsPage from '@/pages/ClientDetailsPage.vue'
-import ClientEditPage from '@/pages/ClientEditPage.vue'
+import LoginPage from '@/pages/auth/LoginPage.vue'
+import RegisterPage from '@/pages/auth/RegisterPage.vue'
+import ProfilePage from '@/pages/profile/ProfilePage.vue'
+import EstimatesPage from '@/pages/estimate/EstimatesPage.vue'
+import EstimateCreatePage from '@/pages/estimate/EstimateCreatePage.vue'
+import EstimateDetailsPage from '@/pages/estimate/EstimateDetailsPage.vue'
+import EstimateEditPage from '@/pages/estimate/EstimateEditPage.vue'
+import TemplatesPage from '@/pages/template/TemplatesPage.vue'
+import TemplateCreatePage from '@/pages/template/TemplateCreatePage.vue'
+import TemplateEditPage from '@/pages/template/TemplateEditPage.vue'
+import TemplateDetailsPage from '@/pages/template/TemplateDetailsPage.vue'
+import ClientsPage from '@/pages/client/ClientsPage.vue'
+import ClientCreatePage from '@/pages/client/ClientCreatePage.vue'
+import ClientDetailsPage from '@/pages/client/ClientDetailsPage.vue'
+import ClientEditPage from '@/pages/client/ClientEditPage.vue'
 
 const routes = [
   {
@@ -40,7 +41,7 @@ const routes = [
         path: 'estimates',
         component: EstimatesPage
       },
-      { path: 'estimates/create', component: EstimatesCreatePage },
+      { path: 'estimates/create', component: EstimateCreatePage },
       { path: 'estimates/:id', component: EstimateDetailsPage },
       { path: '/estimates/:id/edit', component: EstimateEditPage },
       {
@@ -72,7 +73,7 @@ const routes = [
       },
       {
         path: '/profile',
-        component: () => import('@/pages/ProfilePage.vue'),
+        component: ProfilePage,
         children: [
           { path: '', redirect: '/profile/account' },
           { path: 'account', component: () => import('@/pages/profile/AccountTab.vue') },

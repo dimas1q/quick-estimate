@@ -4,7 +4,7 @@
       {{ error }}
     </div>
     <div v-if="template" class="space-y-6 max-w-6xl mx-auto px-16 py-8">
-      <h1 class="text-2xl font-bold mb-14 text-center py-2">Редактирование шаблона {{ template?.name }}</h1>
+      <h1 class="text-2xl font-bold mb-10 text-center py-2">Редактирование шаблона {{ template?.name }}</h1>
       <TemplateForm v-if="template" :initial="template" mode="edit" @updated="goToDetails" />
     </div>
   </div>
