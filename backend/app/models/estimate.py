@@ -1,9 +1,27 @@
 # backend/app/models/estimate.py
 
-from sqlalchemy import Column, Integer, String, DateTime, Text, func, Boolean, ForeignKey
+import enum
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Text,
+    func,
+    Boolean,
+    ForeignKey,
+    Enum as SQLEnum,
+)
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
+# 1. Создаём перечисление статусов
+class EstimateStatus(str, enum.Enum):
+    DRAFT     = "draft"
+    SENT      = "sent"
+    APPROVED  = "approved"
+    PAID      = "paid"
+    CANCELLED = "cancelled"
 
 class Estimate(Base):
     __tablename__ = "estimates"
@@ -26,6 +44,13 @@ class Estimate(Base):
     notes = Column(Text, nullable=True)
 
     items = relationship("EstimateItem", back_populates="estimate", cascade="all, delete-orphan")
+
+     # 2. Здесь определяем новую колонку status
+    status = Column(
+        SQLEnum(EstimateStatus, name="estimate_status"),
+        nullable=False,
+        default=EstimateStatus.DRAFT
+    )
 
     from app.models.version import EstimateVersion
 
