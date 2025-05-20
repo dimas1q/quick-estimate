@@ -10,7 +10,7 @@ export const useAuthStore = defineStore('auth', {
 
     actions: {
         async login(identifier, password) {
-            const res = await axios.post('/auth/login/',
+            const res = await axios.post('/auth/login',
                 new URLSearchParams({ username: identifier, password })
             )
 
@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async register({ login, email, password }) {
-            await axios.post('/auth/register/', {
+            await axios.post('/auth/register', {
                 login,
                 email,
                 password
