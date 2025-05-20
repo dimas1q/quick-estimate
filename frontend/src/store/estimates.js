@@ -45,7 +45,7 @@ export const useEstimatesStore = defineStore('estimates', {
     },
 
     async getEstimateVersions(estimateId) {
-      const res = await axios.get('/versions', {
+      const res = await axios.get('/versions/', {
         params: { estimate_id: estimateId }
       })
       return res.data

@@ -31,12 +31,12 @@ export const useClientsStore = defineStore('clients', {
             return res.data
         },
         async updateClient(id, data) {
-            const res = await axios.put(`/clients/${id}/`, data)
+            const res = await axios.put(`/clients/${id}`, data)
             await this.fetchClients()
             return res.data
         },
         async deleteClient(id) {
-            await axios.delete(`/clients/${id}/`)
+            await axios.delete(`/clients/${id}`)
             await this.fetchClients()
         }
     }
