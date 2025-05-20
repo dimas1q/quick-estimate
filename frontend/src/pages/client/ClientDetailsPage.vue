@@ -51,7 +51,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useClientsStore } from '@/store/Clients'
+import { useClientsStore } from '@/store/clients'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
 
