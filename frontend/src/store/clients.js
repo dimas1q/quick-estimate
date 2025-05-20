@@ -18,7 +18,7 @@ export const useClientsStore = defineStore('clients', {
             const resClient = await axios.get(`/clients/${id}`)
             const client = resClient.data
 
-            const resEstimates = await axios.get('/estimates', {
+            const resEstimates = await axios.get('/estimates/', {
                 params: { client: client.id }
             })
             const estimates = resEstimates.data

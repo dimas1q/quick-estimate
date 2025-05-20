@@ -26,12 +26,12 @@ export const useTemplatesStore = defineStore('templates', {
     },
 
     async deleteTemplate(id) {
-      await axios.delete(`/templates/${id}/`)
+      await axios.delete(`/templates/${id}`)
       await this.fetchTemplates()
     },
 
     async updateTemplate(id, data) {
-      const res = await axios.put(`/templates/${id}/`, data)
+      const res = await axios.put(`/templates/${id}`, data)
       await this.fetchTemplates()
       return res.data
     },
