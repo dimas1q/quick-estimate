@@ -53,7 +53,6 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useClientsStore } from '@/store/clients'
 import { useToast } from 'vue-toastification'
-import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
@@ -64,13 +63,9 @@ const store = useClientsStore()
 const toast = useToast()
 
 onMounted(async () => {
-    const { data } = await axios.get(`http://localhost:8000/api/clients/${route.params.id}`)
-    client.value = data
-    // подгружаем сметы этого клиента
-    const res2 = await axios.get('http://localhost:8000/api/estimates', {
-        params: { client: data.id }
-    })
-    estimates.value = res2.data
+    const { client: c, estimates: e } = await store.getClientWithEstimates(route.params.id)
+    client.value = c
+    estimates.value = e
 })
 
 function confirmDelete() {

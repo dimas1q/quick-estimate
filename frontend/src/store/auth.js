@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { useEstimatesStore } from '@/store/estimates'
-import axios from 'axios'
-axios.defaults.baseURL = 'http://localhost:8000/api'
+import axios from '@/lib/axios'
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({

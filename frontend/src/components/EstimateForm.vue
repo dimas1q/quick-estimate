@@ -14,7 +14,7 @@
         <label class="block text-sm font-semibold text-gray-700 mb-1">Клиент</label>
         <select v-model="estimate.client_id"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300">
-          <option :value="null">— выберите клиента —</option>
+          <option  :value="null">Выберите клиента</option>
           <option v-for="c in clients" :key="c.id" :value="c.id">
             {{ c.name }} <span v-if="c.company">({{ c.company }})</span>
           </option>
@@ -40,7 +40,7 @@
     </div>
 
     <!-- 2. Редактор услуг — растягивается на всю ширину -->
-    <div >
+    <div>
       <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
     </div>
 

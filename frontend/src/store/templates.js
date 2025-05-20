@@ -1,6 +1,6 @@
 // src/store/templates.js
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import axios from '@/lib/axios'
 
 export const useTemplatesStore = defineStore('templates', {
   state: () => ({
@@ -10,34 +10,34 @@ export const useTemplatesStore = defineStore('templates', {
 
   actions: {
     async fetchTemplates(params = {}) {
-      const res = await axios.get('http://localhost:8000/api/templates/', { params })
+      const res = await axios.get('/templates/', { params })
       this.templates = res.data
     },
 
     async createTemplate(data) {
-      const res = await axios.post('http://localhost:8000/api/templates/', data)
+      const res = await axios.post('/templates/', data)
       await this.fetchTemplates()
       return res.data
     },
 
     async getTemplateById(id) {
-      const res = await axios.get(`http://localhost:8000/api/templates/${id}`)
+      const res = await axios.get(`/templates/${id}`)
       return res.data
     },
 
     async deleteTemplate(id) {
-      await axios.delete(`http://localhost:8000/api/templates/${id}`)
+      await axios.delete(`/templates/${id}`)
       await this.fetchTemplates()
     },
 
     async updateTemplate(id, data) {
-      const res = await axios.put(`http://localhost:8000/api/templates/${id}`, data)
+      const res = await axios.put(`/templates/${id}`, data)
       await this.fetchTemplates()
       return res.data
     },
     
     async exportTemplate(id) {
-      const res = await axios.get(`http://localhost:8000/api/templates/${id}`)
+      const res = await axios.get(`/templates/${id}`)
       const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
 

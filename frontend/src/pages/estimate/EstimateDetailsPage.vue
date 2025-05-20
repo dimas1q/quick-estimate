@@ -253,7 +253,6 @@ import { useEstimatesStore } from '@/store/estimates'
 import { onClickOutside } from '@vueuse/core'
 import { useToast } from 'vue-toastification'
 
-import axios from 'axios'
 import fileDownload from 'js-file-download'
 
 const route = useRoute()
@@ -280,22 +279,16 @@ async function loadAll() {
     const id = route.params.id
     try {
         if (versionParam.value) {
-            // загрузка конкретной версии
-            const { data: ver } = await axios.get(
-                `http://localhost:8000/api/versions/${versionParam.value}`,
-                { params: { estimate_id: id } }
-            )
+            const ver = await store.getEstimateVersion(versionParam.value, id)
             currentVersion.value = versionParam.value
             estimate.value = ver.payload
             activeTab.value = 'details'
         } else {
-            // обычная смета
             estimate.value = await store.getEstimateById(id)
         }
+
         logs.value = await store.getEstimateLogs(id)
-        versions.value = (await axios.get(`http://localhost:8000/api/versions`, {
-            params: { estimate_id: id }
-        })).data
+        versions.value = await store.getEstimateVersions(id)
         error.value = null
     } catch (e) {
         if (e.response?.status === 404) error.value = '❌ Смета не найдена.'
@@ -385,12 +378,14 @@ function formatCurrency(val) {
     return `${val.toFixed(2)} ₽`
 }
 
+async function downloadJson(id) {
+    await store.exportEstimate(id)
+}
+
 async function downloadExcel(estimate) {
     try {
-        const res = await axios.get(`http://localhost:8000/api/estimates/${estimate.id}/export/excel`, {
-            responseType: 'blob'
-        })
-        fileDownload(res.data, `${estimate.name}.xlsx`)
+        const blob = await store.downloadEstimateExcel(estimate.id)
+        fileDownload(blob, `${estimate.name}.xlsx`)
         toast.success('Excel успешно загружен')
     } catch (e) {
         console.error(e)
@@ -398,16 +393,11 @@ async function downloadExcel(estimate) {
     }
 }
 
-async function downloadJson(id) {
-    await store.exportEstimate(id)
-}
 
 async function downloadPdf(estimate) {
     try {
-        const res = await axios.get(`http://localhost:8000/api/estimates/${estimate.id}/export/pdf`, {
-            responseType: 'blob'
-        })
-        fileDownload(res.data, `${estimate.name}.pdf`)
+        const blob = await store.downloadEstimatePdf(estimate.id)
+        fileDownload(blob, `${estimate.name}.pdf`)
         toast.success('PDF успешно загружен')
     } catch (e) {
         console.error(e)
@@ -426,14 +416,8 @@ async function viewVersion(ver) {
 async function restoreVersion(version) {
     const id = route.params.id
     try {
-        await axios.post(
-            `http://localhost:8000/api/versions/${version}/restore`,
-            null,
-            { params: { estimate_id: estimate.value.id } }
-        )
-
+        await store.restoreVersion(version, estimate.value.id)
         toast.success(`Версия №${version} восстановлена`)
-        // Сбросить query и вернуть на основную версию сметы
         await router.push({ path: `/estimates/${id}` })
         await loadAll()
     } catch (err) {
@@ -452,14 +436,10 @@ async function deleteVersion(version) {
     if (!confirm(`Вы точно хотите удалить версию №${version}?`)) return
 
   try {
-    await axios.delete(
-      `http://localhost:8000/api/versions/${version}`, 
-      { params: { estimate_id: estimate.value.id } }
-    )
-    toast.success(`Версия №${version} удалена`)
-    // Сбросить query и вернуть на основную версию сметы
-    await router.push({ path: `/estimates/${estimate.value.id}` })
-    await loadAll()
+      await store.deleteVersion(version, estimate.value.id)
+      toast.success(`Версия №${version} удалена`)
+      await router.push({ path: `/estimates/${estimate.value.id}` })
+      await loadAll()
   } catch (err) {
     console.error(err)
     toast.error('Не удалось удалить версию')
