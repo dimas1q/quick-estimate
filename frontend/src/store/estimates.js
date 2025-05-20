@@ -27,12 +27,12 @@ export const useEstimatesStore = defineStore('estimates', {
     },
 
     async deleteEstimate(id) {
-      await axios.delete(`/estimates/${id}/`)
+      await axios.delete(`/estimates/${id}`)
       this.fetchEstimates()
     },
 
     async updateEstimate(id, data) {
-      const res = await axios.put(`/estimates/${id}/`, data)
+      const res = await axios.put(`/estimates/${id}`, data)
       await this.fetchEstimates()
       return res.data
     },
