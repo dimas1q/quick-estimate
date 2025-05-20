@@ -17,8 +17,8 @@ export const useEstimatesStore = defineStore('estimates', {
 
     async createEstimate(data) {
       const res = await axios.post('/estimates/', data)
-      this.fetchEstimates() // необязательно, но можно
-      return res.data // для получения id
+      this.fetchEstimates() 
+      return res.data 
     },
 
     async getEstimateById(id) {
@@ -27,12 +27,12 @@ export const useEstimatesStore = defineStore('estimates', {
     },
 
     async deleteEstimate(id) {
-      await axios.delete(`/estimates/${id}`)
+      await axios.delete(`/estimates/${id}/`)
       this.fetchEstimates()
     },
 
     async updateEstimate(id, data) {
-      const res = await axios.put(`/estimates/${id}`, data)
+      const res = await axios.put(`/estimates/${id}/`, data)
       await this.fetchEstimates()
       return res.data
     },
@@ -52,13 +52,13 @@ export const useEstimatesStore = defineStore('estimates', {
     },
 
     async restoreVersion(versionId, estimateId) {
-      await axios.post(`/versions/${versionId}/restore`, null, {
+      await axios.post(`/versions/${versionId}/restore/`, null, {
         params: { estimate_id: estimateId }
       })
     },
 
     async deleteVersion(versionId, estimateId) {
-      await axios.delete(`/versions/${versionId}`, {
+      await axios.delete(`/versions/${versionId}/`, {
         params: { estimate_id: estimateId }
       })
     },
