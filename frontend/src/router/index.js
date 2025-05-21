@@ -1,11 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 
-import NotFoundPage from '@/pages/errors/NotFoundPage.vue'
-
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import AuthLayout from '@/layouts/AuthLayout.vue'
+
+// auth
 import LoginPage from '@/pages/auth/LoginPage.vue'
 import RegisterPage from '@/pages/auth/RegisterPage.vue'
+
+// pages
 import ProfilePage from '@/pages/profile/ProfilePage.vue'
 import EstimatesPage from '@/pages/estimate/EstimatesPage.vue'
 import EstimateCreatePage from '@/pages/estimate/EstimateCreatePage.vue'
@@ -19,73 +22,57 @@ import ClientsPage from '@/pages/client/ClientsPage.vue'
 import ClientCreatePage from '@/pages/client/ClientCreatePage.vue'
 import ClientDetailsPage from '@/pages/client/ClientDetailsPage.vue'
 import ClientEditPage from '@/pages/client/ClientEditPage.vue'
+import NotFoundPage from '@/pages/errors/NotFoundPage.vue'
+
 
 const routes = [
+  // AUTH PAGES
   {
-    path: '/',
-    component: DefaultLayout,
+    path: '/login',
+    component: LoginPage,
+    meta: { layout: AuthLayout }
+  },
+  {
+    path: '/register',
+    component: RegisterPage,
+    meta: { layout: AuthLayout }
+  },
+
+  // APP PAGES — каждая страница указывает layout явно
+  { path: '/', redirect: '/estimates' },
+
+  { path: '/estimates', component: EstimatesPage, meta: { layout: DefaultLayout } },
+  { path: '/estimates/create', component: EstimateCreatePage, meta: { layout: DefaultLayout } },
+  { path: '/estimates/:id', component: EstimateDetailsPage, meta: { layout: DefaultLayout } },
+  { path: '/estimates/:id/edit', component: EstimateEditPage, meta: { layout: DefaultLayout } },
+
+  { path: '/templates', component: TemplatesPage, meta: { layout: DefaultLayout } },
+  { path: '/templates/create', component: TemplateCreatePage, meta: { layout: DefaultLayout } },
+  { path: '/templates/:id/edit', component: TemplateEditPage, meta: { layout: DefaultLayout } },
+  { path: '/templates/:id', component: TemplateDetailsPage, meta: { layout: DefaultLayout } },
+
+  { path: '/clients', component: ClientsPage, meta: { layout: DefaultLayout } },
+  { path: '/clients/create', component: ClientCreatePage, meta: { layout: DefaultLayout } },
+  { path: '/clients/:id', component: ClientDetailsPage, meta: { layout: DefaultLayout } },
+  { path: '/clients/:id/edit', component: ClientEditPage, meta: { layout: DefaultLayout } },
+
+  {
+    path: '/profile',
+    component: ProfilePage,
+    meta: { layout: DefaultLayout },
     children: [
-      {
-        path: '/login',
-        component: LoginPage
-      },
-      {
-        path: '/register',
-        component: RegisterPage
-      },
-      {
-        path: '',
-        redirect: '/estimates'
-      },
-      {
-        path: 'estimates',
-        component: EstimatesPage
-      },
-      { path: 'estimates/create', component: EstimateCreatePage },
-      { path: 'estimates/:id', component: EstimateDetailsPage },
-      { path: '/estimates/:id/edit', component: EstimateEditPage },
-      {
-        path: '/templates',
-        name: 'TemplatesPage',
-        component: TemplatesPage
-      },
-      {
-        path: '/templates/create',
-        component: TemplateCreatePage
-      },
-      {
-        path: '/templates/:id/edit',
-        component: TemplateEditPage
-      },
-      {
-        path: '/templates/:id',
-        component: TemplateDetailsPage
-      },
-      { path: '/clients', component: ClientsPage },
-      { path: '/clients/create', component: ClientCreatePage },
-      { path: '/clients/:id', component: ClientDetailsPage },
-      { path: '/clients/:id/edit', component: ClientEditPage },
-      {
-        path: 'login',
-        component: {
-          template: '<div>Страница входа 🔐</div>'
-        }
-      },
-      {
-        path: '/profile',
-        component: ProfilePage,
-        children: [
-          { path: '', redirect: '/profile/account' },
-          { path: 'account', component: () => import('@/pages/profile/AccountTab.vue') },
-          { path: 'password', component: () => import('@/pages/profile/PasswordTab.vue') }
-        ]
-      },
-      {
-        path: '/:pathMatch(.*)*',
-        name: 'NotFound',
-        component: NotFoundPage
-      }
+      { path: '', redirect: '/profile/account' },
+      { path: 'account', component: () => import('@/pages/profile/AccountTab.vue'), meta: { layout: DefaultLayout } },
+      { path: 'password', component: () => import('@/pages/profile/PasswordTab.vue'), meta: { layout: DefaultLayout } }
     ]
+  },
+
+  // 404
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: NotFoundPage,
+    meta: { layout: AuthLayout }
   }
 ]
 
@@ -94,6 +81,7 @@ const router = createRouter({
   routes
 })
 
+// защита маршрутов
 router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
   const publicPages = ['/login', '/register']

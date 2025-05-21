@@ -1,8 +1,10 @@
+<!-- frontend/src/layouts/DefaultLayout.vue -->
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/store/auth'
-import { onClickOutside } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
+import { onClickOutside } from '@vueuse/core'
+import { LogOut, User, Settings } from 'lucide-vue-next'
 import Sidebar from '@/components/Sidebar.vue'
 
 const auth = useAuthStore()
@@ -11,12 +13,25 @@ const route = useRoute()
 
 const showMenu = ref(false)
 const menuRef = ref(null)
+const showSidebar = ref(false)
 
+watch(
+  () => auth.user,
+  async (user) => {
+    if (user) {
+      await nextTick()
+      showSidebar.value = true
+    } else {
+      showSidebar.value = false
+    }
+  },
+  { immediate: true }
+)
 
 function logout() {
   showMenu.value = false
   auth.logout()
-  router.push('/login')
+  nextTick(() => router.push('/login'))
 }
 
 watch(() => route.path, () => {
@@ -26,7 +41,6 @@ watch(() => route.path, () => {
 onClickOutside(menuRef, () => {
   showMenu.value = false
 })
-
 </script>
 
 <template>
@@ -34,40 +48,29 @@ onClickOutside(menuRef, () => {
     <!-- HEADER -->
     <header class="bg-white border-b shadow-sm px-6 py-3 flex justify-between items-center">
       <RouterLink to="/" class="text-xl font-bold text-blue-600">Quick Estimate</RouterLink>
+
       <div class="flex items-center gap-4">
         <RouterLink v-if="!auth.user" to="/login" class="text-sm text-blue-600 hover:underline">Войти</RouterLink>
-        <div v-else class="relative" id="user-menu" ref="menuRef">
+
+        <div v-else class="relative" ref="menuRef">
           <button @click="showMenu = !showMenu"
             class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-blue-100 transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-700" viewBox="0 0 20 20"
-              fill="currentColor">
-              <path d="M10 2a5 5 0 100 10 5 5 0 000-10zM2 18a8 8 0 0116 0H2z" />
-            </svg>
+            <User class="w-4 h-4 text-gray-700" />
             <span class="text-gray-700">{{ auth.user.login }}</span>
-            <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown class="w-3 h-3" />
           </button>
 
           <div v-show="showMenu"
-            class="absolute right-0 mt-2 w-42 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border z-50 text-sm overflow-hidden animate-fade-in transition-all">
+            class="absolute right-0 mt-2 w-42 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 text-sm animate-fade-in">
             <RouterLink to="/profile"
               class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M5.121 17.804A4 4 0 019 16h6a4 4 0 013.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <Settings class="w-4 h-4 text-gray-600" />
               <span>Настройки</span>
             </RouterLink>
 
             <button @click="logout"
               class="flex items-center gap-2 w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10V5m0 0H5a2 2 0 00-2 2v10a2 2 0 002 2h6" />
-              </svg>
+              <LogOut class="w-4 h-4" />
               <span>Выйти</span>
             </button>
           </div>
@@ -76,33 +79,13 @@ onClickOutside(menuRef, () => {
     </header>
 
     <div class="flex flex-1 overflow-hidden">
-      <!-- SIDEBAR только для авторизованных -->
-      <Sidebar v-if="auth.user" />
+      <!-- SIDEBAR -->
+      <Sidebar v-if="auth.user && showSidebar" />
 
       <!-- MAIN -->
-      <main ref="scrollArea" class="flex-1 overflow-y-auto max-h-screen">
-        <RouterView v-slot="{ Component }">
-          <Transition mode="out-in" enter-active-class="transition-opacity duration-100 ease-in-out"
-            enter-from-class="opacity-0" enter-to-class="opacity-100"
-            leave-active-class="transition-opacity duration-100 ease-in-out" leave-from-class="opacity-100"
-            leave-to-class="opacity-0">
-            <component :is="Component" />
-          </Transition>
-        </RouterView>
+      <main class="flex-1 overflow-y-auto p-4">
+        <slot /> <!-- Контент приходит из App.vue -->
       </main>
-
     </div>
   </div>
 </template>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
