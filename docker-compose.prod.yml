@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: quickestimate-prod-app
     ports:
-      - "80:8000"
+      - "8000:8000"
     depends_on:
       - db
     environment:
