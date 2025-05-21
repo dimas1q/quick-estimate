@@ -9,17 +9,16 @@
         <h1 class="text-3xl font-bold">Шаблон: {{ template.name }}</h1>
 
         <div class="space-x-2">
-
-          <router-link :to="`/templates/${template.id}/edit`"
-            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium">
-            ✏️ Редактировать
-          </router-link>
           <button @click="downloadJson"
             class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-all text-sm font-medium">
-            📥 Экспортировать
+            Экспортировать
           </button>
+          <router-link :to="`/templates/${template.id}/edit`"
+            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium">
+            Редактировать
+          </router-link>
           <button @click="confirmDelete" class="btn-danger">
-            🗑️ Удалить
+            Удалить
           </button>
         </div>
       </div>

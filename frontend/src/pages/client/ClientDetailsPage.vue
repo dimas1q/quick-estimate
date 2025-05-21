@@ -7,10 +7,10 @@
                 <div class="flex space-x-3 items-center relative">
                     <RouterLink :to="`/clients/${client.id}/edit`"
                         class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">
-                        ✏️ Редактировать</RouterLink>
+                        Редактировать</RouterLink>
                     <button @click="confirmDelete"
                         class="inline-flex items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium shadow">
-                        🗑️ Удалить
+                        Удалить
                     </button>
                 </div>
             </div>

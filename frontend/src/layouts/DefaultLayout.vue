@@ -80,7 +80,7 @@ onClickOutside(menuRef, () => {
       <Sidebar v-if="auth.user" />
 
       <!-- MAIN -->
-      <main class="flex-1 overflow-y-auto max-h-screen">
+      <main ref="scrollArea" class="flex-1 overflow-y-auto max-h-screen">
         <RouterView v-slot="{ Component }">
           <Transition mode="out-in" enter-active-class="transition-opacity duration-100 ease-in-out"
             enter-from-class="opacity-0" enter-to-class="opacity-100"
@@ -91,7 +91,6 @@ onClickOutside(menuRef, () => {
         </RouterView>
       </main>
 
-
     </div>
   </div>
 </template>
@@ -101,6 +100,7 @@ onClickOutside(menuRef, () => {
 .fade-leave-active {
   transition: opacity 0.3s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

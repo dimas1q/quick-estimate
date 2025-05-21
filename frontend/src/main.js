@@ -17,7 +17,7 @@ app.use(pinia)
 
 const auth = useAuthStore()
 
-await auth.restoreSession()  // ⬅️ восстанавливаем сессию до mount()
+await auth.restoreSession()
 
 app.use(router)
 

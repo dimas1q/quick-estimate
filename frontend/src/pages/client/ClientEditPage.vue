@@ -1,19 +1,19 @@
 <template>
-<div>
-    <div v-if="error" class="text-red-500 text-center text-lg font-medium mt-10">
-        {{ error }}
+    <div>
+        <div v-if="error" class="text-red-500 text-center text-lg font-medium mt-10">
+            {{ error }}
+        </div>
+        <div v-if="client" class="space-y-6 max-w-6xl mx-auto px-16 py-8">
+            <h1 class="text-2xl font-bold mb-6 text-center py-2">Редактирование клиента: {{ client?.name }}</h1>
+            <ClientForm :mode="'edit'" :initial="client" @updated="onUpdated" />
+        </div>
     </div>
-    <div v-if="client" class="space-y-6 max-w-6xl mx-auto px-16 py-8">
-        <h1 class="text-2xl font-bold mb-10 text-center py-2">Редактирование клиента {{ client?.name }}</h1>
-        <ClientForm :mode="'edit'" :initial="client" @updated="onUpdated" />
-    </div>
-</div>
 </template>
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useClientsStore } from '@/store/clients'
-import ClientForm from '@/components/ClientForm.vue'    
+import ClientForm from '@/components/ClientForm.vue'
 import { useToast } from 'vue-toastification'
 
 const route = useRoute()
@@ -35,7 +35,7 @@ onMounted(async () => {
             error.value = '⚠️ Ошибка при загрузке клиента.'
         }
     }
-    
+
 })
 
 function onUpdated() {

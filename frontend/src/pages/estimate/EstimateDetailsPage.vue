@@ -7,14 +7,19 @@
         </div>
         <div v-if="estimate" class="space-y-6">
             <div class="flex justify-between items-center pb-2 mb-6">
-                <h1 class="text-3xl font-bold text-gray-800">Смета: {{ estimate.name }}</h1>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Смета: {{ estimate.name }}</h1>
+
+                    <!-- здесь индикатор режима -->
+                    <p v-if="isVersionView" class="mt-1 text-sm text-gray-500">
+                        Просмотр версии №{{ currentVersion }}
+                    </p>
+                </div>
 
                 <div class="flex space-x-3 items-center relative">
                     <!-- если мы в режиме версии, показываем другие кнопки -->
                     <template v-if="isVersionView">
-                        <span
-                            class="inline-flex items-center px-4 py-2 rounded-md bg-gray-300 text-gray-800 hover:bg-gray-400 transition-all text-sm font-medium shadow">Предпросмотр
-                            версии #{{ currentVersion }}</span>
+
                         <button @click="restoreVersion(currentVersion)"
                             class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">
                             Восстановить
@@ -38,26 +43,25 @@
                         <div class="relative" ref="menuRef">
                             <button @click="showExport = !showExport"
                                 class="inline-flex items-center px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-all text-sm font-medium shadow">
-                                🖨️ Экспорт
+                                Экспортировать
                                 <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-
                             <div v-if="showExport"
-                                class="absolute right-0 mt-2 w-34 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
+                                class="absolute right-0 mt-2 w-38 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
                                 <button @click="downloadJson(estimate.id)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700">
-                                    Скачать JSON
+                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-center text-sm text-gray-700">
+                                    JSON
                                 </button>
                                 <button @click="downloadExcel(estimate)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-b-xl">
-                                    Скачать Excel
+                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-b-xl">
+                                    Excel
                                 </button>
                                 <button @click="downloadPdf(estimate)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-t-xl">
-                                    Скачать PDF
+                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-t-xl">
+                                    PDF
                                 </button>
                             </div>
 
@@ -66,15 +70,15 @@
                         <!-- Основные кнопки -->
                         <RouterLink :to="`/estimates/${estimate.id}/edit`"
                             class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">
-                            ✏️ Редактировать
+                            Редактировать
                         </RouterLink>
                         <button @click="copyEstimate"
                             class="inline-flex items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium shadow">
-                            📋 Копировать
+                            Копировать
                         </button>
                         <button @click="confirmDelete"
                             class="inline-flex items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium shadow">
-                            🗑️ Удалить
+                            Удалить
                         </button>
                     </template>
                 </div>
@@ -98,7 +102,7 @@
                         <p><strong>Клиент:</strong> {{ estimate.client?.name || '—' }}</p>
                         <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
 
-                        <p><strong>Контакт:</strong> {{ estimate.client?.email || '—' }}</p>
+                        <p><strong>Контакт клиента:</strong> {{ estimate.client?.email || '—' }}</p>
                         <p><strong>НДС:</strong> {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}</p>
 
                         <p><strong>Компания клиента:</strong> {{ estimate.client?.company || '—' }}</p>
@@ -114,7 +118,8 @@
 
                     <div class="border bg-gray-50 rounded-2xl shadow-md p-6 mt-6">
                         <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-10">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center pb-1">{{ category }}</h3>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center pb-1">{{ category }}
+                            </h3>
 
                             <div class="space-y-4">
                                 <div v-for="(row, rowIndex) in chunkArray(groupItems, 3)" :key="rowIndex"
@@ -176,7 +181,8 @@
                         <table class="w-full text-sm text-gray-700">
                             <thead class="bg-gray-100 border-b text-left">
                                 <tr>
-                                    <th class="px-4 py-2 font-medium text-gray-600 whitespace-nowrap">Дата и время</th>
+                                    <th class="px-4 py-2 font-medium text-gray-600 whitespace-nowrap">Дата и время
+                                    </th>
                                     <th class="px-4 py-2 font-medium text-gray-600 whitespace-nowrap">Действие</th>
                                 </tr>
                             </thead>
@@ -207,7 +213,8 @@
                             <tbody>
                                 <tr v-for="v in versions" :key="v.version" class="border-b hover:bg-gray-50">
                                     <td class="px-4 py-2 text-gray-600">№{{ v.version }}</td>
-                                    <td class="px-4 py-2 text-gray-600"> {{ new Date(v.created_at).toLocaleString() }}
+                                    <td class="px-4 py-2 text-gray-600"> {{ new Date(v.created_at).toLocaleString()
+                                    }}
                                     </td>
                                     <td class="px-4 py-2 text-right space-x-2">
                                         <button @click="viewVersion(v.version)"
@@ -247,7 +254,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
+import { onMounted, onUnmounted, ref, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import { onClickOutside } from '@vueuse/core'
@@ -409,8 +416,14 @@ async function viewVersion(ver) {
     const id = route.params.id
     // 1. Навигация
     await router.push({ path: `/estimates/${id}`, query: { version: ver } })
-    // 4. Перезагрузить данные (чтобы loadAll учёл новый query.version)
+    // 2. Перезагрузить данные (чтобы loadAll учёл новый query.version)
     await loadAll()
+    setTimeout(() => {
+        const layoutMain = document.querySelector('main.overflow-y-auto')
+        if (layoutMain) {
+            layoutMain.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+    }, 50)
 }
 
 async function restoreVersion(version) {
@@ -435,14 +448,14 @@ async function copyVersion(version) {
 async function deleteVersion(version) {
     if (!confirm(`Вы точно хотите удалить версию №${version}?`)) return
 
-  try {
-      await store.deleteVersion(version, estimate.value.id)
-      toast.success(`Версия №${version} удалена`)
-      await router.push({ path: `/estimates/${estimate.value.id}` })
-      await loadAll()
-  } catch (err) {
-    console.error(err)
-    toast.error('Не удалось удалить версию')
-  }
+    try {
+        await store.deleteVersion(version, estimate.value.id)
+        toast.success(`Версия №${version} удалена`)
+        await router.push({ path: `/estimates/${estimate.value.id}` })
+        await loadAll()
+    } catch (err) {
+        console.error(err)
+        toast.error('Не удалось удалить версию')
+    }
 }
 </script>

@@ -5,7 +5,7 @@
             {{ error }}
         </div>
         <div v-if="estimate" class="space-y-6 max-w-6xl mx-auto px-16 py-8">
-            <h1 class="text-2xl font-bold mb-10 text-center">Редактирование сметы {{ estimate?.name }}</h1>
+            <h1 class="text-2xl font-bold mb-6 text-center py-2">Редактирование сметы: {{ estimate?.name }}</h1>
             <EstimateForm :initial="estimate" mode="edit" @updated="onUpdated" />
         </div>
     </div>
@@ -19,7 +19,7 @@ import EstimateForm from '@/components/EstimateForm.vue'
 import { useToast } from 'vue-toastification'
 
 const route = useRoute()
-const router = useRouter()  
+const router = useRouter()
 const store = useEstimatesStore()
 const toast = useToast()
 
