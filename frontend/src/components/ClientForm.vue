@@ -57,7 +57,6 @@
 <script setup>
 import { reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { defineProps, defineEmits } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import { useToast } from 'vue-toastification'
 

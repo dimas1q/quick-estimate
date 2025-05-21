@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quickestimate-prod-app
+    ports:
+      - "80:8000"
+    depends_on:
+      - db
+    environment:
+      POSTGRES_DB: quickestimate
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  db:
+    image: postgres:14
+    container_name: quickestimate-prod-db
+    environment:
+      POSTGRES_DB: quickestimate
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
