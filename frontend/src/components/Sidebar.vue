@@ -20,10 +20,10 @@ function isActive(path) {
 <template>
     <aside :class="[
       'bg-white border-r transition-all duration-300 ease-in-out flex flex-col relative',
-      collapsed ? 'w-16' : 'w-48'
+      collapsed ? 'w-16' : 'w-44'
     ]">
       <nav class="flex-1 space-y-2 px-3 py-4 text-sm">
-        <!-- Сметы -->
+
         <RouterLink
           to="/estimates"
           class="flex items-center rounded transition-all"
@@ -35,8 +35,19 @@ function isActive(path) {
           <FileText class="w-5 h-5 shrink-0" />
           <span v-if="!collapsed">Сметы</span>
         </RouterLink>
+
+         <RouterLink
+          to="/clients"
+          class="flex items-center rounded transition-all"
+          :class="[
+            collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
+            isActive('/clients') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
+          ]"
+        >
+          <Users class="w-5 h-5 shrink-0" />
+          <span v-if="!collapsed">Клиенты</span>
+        </RouterLink>
   
-        <!-- Шаблоны -->
         <RouterLink
           to="/templates"
           class="flex items-center rounded transition-all"
@@ -49,21 +60,9 @@ function isActive(path) {
           <span v-if="!collapsed">Шаблоны</span>
         </RouterLink>
   
-        <!-- Клиенты -->
-        <RouterLink
-          to="/clients"
-          class="flex items-center rounded transition-all"
-          :class="[
-            collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
-            isActive('/clients') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
-          ]"
-        >
-          <Users class="w-5 h-5 shrink-0" />
-          <span v-if="!collapsed">Клиенты</span>
-        </RouterLink>
+       
       </nav>
   
-      <!-- Кнопка сворачивания -->
       <button
         @click="toggleSidebar"
         class="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-white border rounded-full shadow p-1 hover:bg-blue-100 transition z-50"

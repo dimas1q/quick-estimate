@@ -87,8 +87,8 @@ onClickOutside(menuRef, () => {
       <Sidebar v-if="auth.user && showSidebar" />
 
       <!-- MAIN -->
-      <main class="flex-1 overflow-y-auto p-4">
-        <slot /> <!-- Контент приходит из App.vue -->
+      <main class="flex-1 overflow-y-auto">
+        <slot />
       </main>
     </div>
   </div>
