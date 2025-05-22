@@ -12,7 +12,7 @@ from app.utils.auth import get_current_user
 from app.models.estimate import Estimate
 from app.models.version import EstimateVersion
 from app.schemas.version import VersionOut
-from app.schemas.estimate import EstimateOut, EstimateCreate
+from app.schemas.estimate import EstimateOut
 from app.models.item import EstimateItem
 
 router = APIRouter(
@@ -97,7 +97,7 @@ async def restore_version(
     data = ver.payload
     # обновляем поля
     for f, v in data.items():
-        if f in {"name", "notes", "responsible", "vat_enabled", "client_id"}:
+        if f in {"name", "notes", "responsible", "vat_enabled", "client_id", "status"}:
             setattr(est, f, v)
     # удаляем старые item’ы и вставляем из payload
     await db.execute(

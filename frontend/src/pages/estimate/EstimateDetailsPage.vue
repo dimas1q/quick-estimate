@@ -1,14 +1,37 @@
 ## frontend/src/pages/EstimateDetailsPage.vue
 <template>
-    <div class="px-16 py-8 max-w-6xl mx-auto">
+    <div class="py-8 max-w-6xl mx-auto">
 
         <div v-if="error" class="text-center text-red-500 text-lg font-medium mt-10">
             {{ error }}
         </div>
         <div v-if="estimate" class="space-y-6">
             <div class="flex justify-between items-center pb-2 mb-6">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">Смета: {{ estimate.name }}</h1>
+                <div class="items-center">
+                    <h1 class="text-3xl font-bold text-gray-800">
+                        Смета: {{ estimate.name }}
+                        <span :class="[
+                            'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold',
+                            {
+                                'bg-gray-200 text-gray-800': estimate.status === 'draft',
+                                'bg-yellow-200 text-yellow-800': estimate.status === 'sent',
+                                'bg-green-200 text-green-800': estimate.status === 'approved',
+                                'bg-blue-200 text-blue-800': estimate.status === 'paid',
+                                'bg-red-200 text-red-800': estimate.status === 'cancelled'
+                            }
+                        ]">
+                            {{
+                                {
+                                    draft: 'Черновик',
+                                    sent: 'Отправлена',
+                                    approved: 'Согласована',
+                                    paid: 'Оплачена',
+                                    cancelled: 'Отменена'
+                                }[estimate.status]
+                            }}
+                        </span>
+
+                    </h1>
 
                     <!-- здесь индикатор режима -->
                     <p v-if="isVersionView" class="mt-1 text-sm text-gray-500">
@@ -165,18 +188,14 @@
                         </div>
 
                     </div>
-
-
                 </div>
             </div>
 
             <div v-else>
-
                 <div v-if="logs.length" class="text-sm w-full mt-6">
                     <h3 class="font-semibold text-gray-800 text-sm mb-4 flex items-center gap-2">
                         История изменений
                     </h3>
-
                     <div class="overflow-x-auto rounded-lg shadow-sm ">
                         <table class="w-full text-sm text-gray-700">
                             <thead class="bg-gray-100 border-b text-left">
@@ -196,7 +215,6 @@
                         </table>
                     </div>
                 </div>
-
 
                 <!-- 5. Версии -->
                 <div v-if="versions.length" class="mt-8 border-t pt-6 text-sm">
@@ -231,12 +249,8 @@
                         </table>
                     </div>
                 </div>
-
             </div>
-
         </div>
-
-
 
         <!-- Модалка -->
         <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -14,7 +14,7 @@
         <label class="block text-sm font-semibold text-gray-700 mb-1">Клиент</label>
         <select v-model="estimate.client_id"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300">
-          <option  :value="null">Выберите клиента</option>
+          <option :value="null">Выберите клиента</option>
           <option v-for="c in clients" :key="c.id" :value="c.id">
             {{ c.name }} <span v-if="c.company">({{ c.company }})</span>
           </option>
@@ -26,10 +26,22 @@
         <input v-model="estimate.responsible" type="text" placeholder="Кто отвечает за выполнение"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
       </div>
-      <!-- Заметки -->
+      <!-- Статус -->
       <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Статус</label>
+        <select v-model="estimate.status"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300">
+          <option value="draft">Черновик</option>
+          <option value="sent">Отправлена</option>
+          <option value="approved">Согласована</option>
+          <option value="paid">Оплачена</option>
+          <option value="cancelled">Отменена</option>
+        </select>
+      </div>
+      <!-- Заметки (на всю ширину) -->
+      <div class="md:col-span-2">
         <label class="block text-sm font-semibold text-gray-700 mb-1">Заметки</label>
-        <textarea v-model="estimate.notes" rows="1" placeholder="Дополнительная информация"
+        <textarea v-model="estimate.notes" rows="2" placeholder="Дополнительная информация"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
       </div>
       <!-- НДС -->
@@ -84,7 +96,9 @@ const estimate = reactive({
   client_id: null,
   responsible: '',
   notes: '',
-  items: []
+  items: [],
+  vat_enabled: true,
+  status: 'draft'
 })
 
 const clients = computed(() => clientsStore.clients)
@@ -97,6 +111,7 @@ onMounted(async () => {
     estimate.responsible = store.importedEstimate.responsible || ''
     estimate.notes = store.importedEstimate.notes || ''
     estimate.vat_enabled = store.importedEstimate.vat_enabled ?? true
+    estimate.status = store.importedEstimate.status || 'draft'
 
     estimate.items.splice(0)
     for (const item of store.importedEstimate.items || []) {
@@ -111,7 +126,6 @@ onMounted(async () => {
 })
 
 
-
 watch(() => props.initial, (value) => {
   if (value) {
     Object.assign(estimate, {
@@ -120,6 +134,7 @@ watch(() => props.initial, (value) => {
       responsible: value.responsible || '',
       notes: value.notes || '',
       vat_enabled: value.vat_enabled ?? true,
+      status: value.status || 'draft',
       items: (value.items || []).map(item => ({
         ...item,
         category_input: item.category || ''
@@ -175,9 +190,6 @@ function validateEstimate() {
 }
 
 </script>
-
-
-
 
 <script>
 export default {
