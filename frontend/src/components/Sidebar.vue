@@ -1,6 +1,8 @@
+<!-- frontend/src/components/Sidebar.vue -->
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { FileText, Folder, Users, ChevronLeft } from 'lucide-vue-next'
 
 const route = useRoute()
 const collapsed = ref(JSON.parse(localStorage.getItem('sidebar-collapsed')) || false)
@@ -17,30 +19,59 @@ function isActive(path) {
 
 <template>
     <aside :class="[
-        'bg-white border-r transition-all duration-300 ease-in-out flex flex-col relative',
-        collapsed ? 'w-16' : 'w-52'
+      'bg-white border-r transition-all duration-300 ease-in-out flex flex-col relative',
+      collapsed ? 'w-16' : 'w-48'
     ]">
-        <nav class="flex-1 space-y-2 px-3 py-4 text-sm">
-            <RouterLink to="/estimates" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-50 transition"
-                :class="{ 'bg-blue-100 font-semibold text-blue-700': isActive('/estimates') }">
-                📄 <span v-if="!collapsed">Сметы</span>
-            </RouterLink>
-            <RouterLink to="/templates" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-50 transition"
-                :class="{ 'bg-blue-100 font-semibold text-blue-700': isActive('/templates') }">
-                📁 <span v-if="!collapsed">Шаблоны</span>
-            </RouterLink>
-            <RouterLink to="/clients" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-50 transition"
-                :class="{ 'bg-blue-100 font-semibold text-blue-700': isActive('/clients') }">
-                👥 <span v-if="!collapsed">Клиенты</span>
-            </RouterLink>
-        </nav>
-
-        <button @click="toggleSidebar"
-            class="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-white border rounded-full shadow p-1 hover:bg-blue-100 transition z-50">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600 transition-transform duration-200"
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{ 'rotate-180': collapsed }">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-        </button>
+      <nav class="flex-1 space-y-2 px-3 py-4 text-sm">
+        <!-- Сметы -->
+        <RouterLink
+          to="/estimates"
+          class="flex items-center rounded transition-all"
+          :class="[
+            collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
+            isActive('/estimates') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
+          ]"
+        >
+          <FileText class="w-5 h-5 shrink-0" />
+          <span v-if="!collapsed">Сметы</span>
+        </RouterLink>
+  
+        <!-- Шаблоны -->
+        <RouterLink
+          to="/templates"
+          class="flex items-center rounded transition-all"
+          :class="[
+            collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
+            isActive('/templates') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
+          ]"
+        >
+          <Folder class="w-5 h-5 shrink-0" />
+          <span v-if="!collapsed">Шаблоны</span>
+        </RouterLink>
+  
+        <!-- Клиенты -->
+        <RouterLink
+          to="/clients"
+          class="flex items-center rounded transition-all"
+          :class="[
+            collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
+            isActive('/clients') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
+          ]"
+        >
+          <Users class="w-5 h-5 shrink-0" />
+          <span v-if="!collapsed">Клиенты</span>
+        </RouterLink>
+      </nav>
+  
+      <!-- Кнопка сворачивания -->
+      <button
+        @click="toggleSidebar"
+        class="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-white border rounded-full shadow p-1 hover:bg-blue-100 transition z-50"
+      >
+        <ChevronLeft
+          class="h-4 w-4 text-gray-600 transition-transform duration-200"
+          :class="{ 'rotate-180': collapsed }"
+        />
+      </button>
     </aside>
-</template>
+  </template>

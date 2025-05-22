@@ -9,10 +9,10 @@ const route = useRoute()
 
 <template>
   <Transition name="layout-fade" mode="out-in">
-    <component :is="route.meta.layout || DefaultLayout">
+    <component :is="route.meta.layout || DefaultLayout" :key="route.meta.layout?.name || 'default'">
       <RouterView v-slot="{ Component }">
         <Transition name="page-fade" mode="out-in">
-          <component :is="Component" />
+          <component :is="Component" :key="route.fullPath" />
         </Transition>
       </RouterView>
     </component>
@@ -22,21 +22,21 @@ const route = useRoute()
 <style>
 .layout-fade-enter-active,
 .layout-fade-leave-active {
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 120ms ease-in-out;
 }
 
 .layout-fade-enter-from,
 .layout-fade-leave-to {
-  opacity: 0.2s;
+  opacity: 0;
 }
 
 .page-fade-enter-active,
 .page-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 100ms ease-in;
 }
 
 .page-fade-enter-from,
 .page-fade-leave-to {
-  opacity: 0.2s;
+  opacity: 0;
 }
 </style>
