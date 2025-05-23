@@ -20,8 +20,5 @@ class Client(Base):
     user = relationship("User", back_populates="clients")
 
     estimates = relationship(
-        "Estimate",
-        back_populates="client",
-        passive_deletes=True, 
-        cascade="save-update"
+        "Estimate", back_populates="client", passive_deletes=True, cascade="save-update"
     )

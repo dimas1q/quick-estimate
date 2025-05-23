@@ -1,5 +1,5 @@
 <template>
-    <div class="px-16 py-8 max-w-6xl mx-auto">
+    <div class="py-8 max-w-6xl mx-auto">
         <div v-if="!client" class="text-center py-10">Загрузка…</div>
         <div v-else class="space-y-6">
             <div class="flex justify-between items-center border-b pb-4 mb-6">

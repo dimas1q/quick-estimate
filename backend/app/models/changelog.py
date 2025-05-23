@@ -7,6 +7,6 @@ class EstimateChangeLog(Base):
 
     id = Column(Integer, primary_key=True)
     estimate_id = Column(Integer, ForeignKey("estimates.id", ondelete="CASCADE"))
-    action = Column(String) 
+    action = Column(String)
     description = Column(Text)
     timestamp = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())

@@ -6,6 +6,7 @@ from app.api import user
 from app.api import templates
 from app.api import clients
 from app.api import versions
+from app.api import analytics
 from app.core.database import create_tables
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -21,9 +22,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 async def startup():
     await create_tables()
+
 
 app.include_router(auth.router, prefix="/api/auth")
 app.include_router(user.router, prefix="/api/users")
@@ -31,6 +34,7 @@ app.include_router(estimates.router, prefix="/api/estimates")
 app.include_router(templates.router, prefix="/api/templates")
 app.include_router(clients.router, prefix="/api/clients")
 app.include_router(versions.router, prefix="/api/versions")
+app.include_router(analytics.router, prefix="/api/analytics")
 
 frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 index_file = os.path.join(frontend_path, "index.html")

@@ -17,22 +17,20 @@ from app.utils.auth import get_current_user
 
 from typing import List
 
-router = APIRouter(
-    tags=["templates"],
-    dependencies=[Depends(get_current_user)]
-)
+router = APIRouter(tags=["templates"], dependencies=[Depends(get_current_user)])
+
 
 @router.post("/", response_model=EstimateTemplateOut)
 async def create_template(
     template: EstimateTemplateCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     new_template = EstimateTemplate(
         name=template.name,
         description=template.description,
         user_id=user.id,
-        notes=template.notes
+        notes=template.notes,
     )
     db.add(new_template)
     await db.flush()
@@ -55,10 +53,12 @@ async def create_template(
 async def list_templates(
     name: str = Query(None),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
-    query = select(EstimateTemplate).options(selectinload(EstimateTemplate.items)).where(
-        EstimateTemplate.user_id == user.id
+    query = (
+        select(EstimateTemplate)
+        .options(selectinload(EstimateTemplate.items))
+        .where(EstimateTemplate.user_id == user.id)
     )
 
     if name:
@@ -73,7 +73,7 @@ async def list_templates(
 async def get_template(
     template_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(EstimateTemplate)
@@ -93,7 +93,7 @@ async def update_template(
     template_id: int,
     updated_data: EstimateTemplateCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(EstimateTemplate).where(EstimateTemplate.id == template_id)
@@ -132,16 +132,20 @@ async def update_template(
 async def delete_template(
     template_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(EstimateTemplate).where(EstimateTemplate.id == template_id))
+    result = await db.execute(
+        select(EstimateTemplate).where(EstimateTemplate.id == template_id)
+    )
     template = result.scalar_one_or_none()
     if not template:
         raise HTTPException(status_code=404, detail="Шаблон не найден")
     if template.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этому шаблону")
 
-    await db.execute(delete(EstimateItem).where(EstimateItem.template_id == template_id))
+    await db.execute(
+        delete(EstimateItem).where(EstimateItem.template_id == template_id)
+    )
     await db.delete(template)
     await db.commit()
 

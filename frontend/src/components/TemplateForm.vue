@@ -15,7 +15,7 @@
       </div>
       <div class="md:col-span-2">
         <label class="block text-sm font-semibold text-gray-700 mb-1">Примечания</label>
-        <textarea v-model="template.notes" rows="4" placeholder="Примечания к шаблону"
+        <textarea v-model="template.notes" rows="2" placeholder="Примечания к шаблону"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
       </div>
     </div>

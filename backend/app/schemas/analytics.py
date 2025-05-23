@@ -1,37 +1,48 @@
-# backend/app/schemas/analytics.py
-
 from datetime import date
 from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel
 
+from app.models.estimate import EstimateStatus
 
-class PeriodEnum(str, Enum):
-    MONTH = "month"
-    QUARTER = "quarter"
+
+class GranularityEnum(str, Enum):
+    day = "day"
+    week = "week"
+    month = "month"
+    quarter = "quarter"
+    year = "year"
 
 
 class TimeSeriesItem(BaseModel):
-    period: str  # например, "2025-05" или "2025-Q2"
+    period: str  # напр. "2025-05" или "2025-Q2"
     value: float
 
 
 class ServiceMetric(BaseModel):
-    service_name: str
-    total_amount: float
+    name: str  # название услуги или клиента
+    total_amount: float  # сумма выручки
+
+
+class ResponsibleMetric(BaseModel):
+    name: str  # имя ответственного
+    estimates_count: int  # число смет
+    total_amount: float  # сумма выручки
 
 
 class ClientAnalytics(BaseModel):
     client_id: int
     total_estimates: int
-    total_estimates_period: Optional[int]  # если заданы start_date/end_date
     total_amount: float
-    total_amount_period: Optional[float]
     average_amount: float
-    # для графика динамики (месяц или квартал)
     timeseries: List[TimeSeriesItem]
+    by_responsible: List[ResponsibleMetric]
     top_services: List[ServiceMetric]
+    granularity: GranularityEnum
+    median_amount: float
+    mom_growth: Optional[float]
+    yoy_growth: Optional[float]
 
 
 class GlobalAnalytics(BaseModel):
@@ -39,7 +50,11 @@ class GlobalAnalytics(BaseModel):
     total_amount: float
     average_amount: float
     timeseries: List[TimeSeriesItem]
-    top_clients: List[ServiceMetric]       # переиспользуем ServiceMetric: здесь service_name = client_name
-    by_responsible: List[ServiceMetric]    # service_name = username
-    seasonality: List[TimeSeriesItem]      # сравнение периодов
+    top_clients: List[ServiceMetric]
+    by_responsible: List[ResponsibleMetric]
     top_services: List[ServiceMetric]
+    granularity: GranularityEnum
+    median_amount: float
+    arpu: float
+    mom_growth: Optional[float]
+    yoy_growth: Optional[float]

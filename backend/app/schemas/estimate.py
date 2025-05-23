@@ -1,3 +1,4 @@
+## backend/app/schemas/estimate.py
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
@@ -5,12 +6,14 @@ from app.schemas.item import EstimateItemOut, EstimateItemCreate
 from app.models.estimate import EstimateStatus
 from app.schemas.client import ClientOut
 
+
 class EstimateBase(BaseModel):
     name: str = Field(..., min_length=1)
     client_id: Optional[int]
     responsible: Optional[str]
     notes: Optional[str]
     status: EstimateStatus = EstimateStatus.DRAFT
+
 
 class EstimateCreate(EstimateBase):
     pass

@@ -26,21 +26,19 @@ from typing import List
 from urllib.parse import quote
 import re
 
-router = APIRouter(
-    tags=["estimates"], dependencies=[Depends(get_current_user)]
-)
+router = APIRouter(tags=["estimates"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/", response_model=EstimateOut)
 async def create_estimate(
     estimate: EstimateCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     items_data = estimate.items or []
     new_estimate = Estimate(**estimate.dict(exclude={"items"}), user_id=user.id)
     db.add(new_estimate)
-    await db.flush() 
+    await db.flush()
 
     for item in items_data:
         db.add(EstimateItem(**item.dict(), estimate_id=new_estimate.id))
@@ -71,9 +69,10 @@ async def list_estimates(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     from datetime import datetime
+
     query = (
         select(Estimate)
         .options(selectinload(Estimate.items), selectinload(Estimate.client))
@@ -83,7 +82,9 @@ async def list_estimates(
     if name:
         query = query.where(Estimate.name.ilike(f"%{name}%"))
     if client:
-        query = query.where(Estimate.client_id == client)  # Adjust to filter by client ID
+        query = query.where(
+            Estimate.client_id == client
+        )  # Adjust to filter by client ID
     if date_from:
         try:
             dt_from = datetime.fromisoformat(date_from)
@@ -101,11 +102,12 @@ async def list_estimates(
     result = await db.execute(query.order_by(Estimate.id.desc()))
     return result.scalars().all()
 
+
 @router.get("/{estimate_id}", response_model=EstimateOut)
 async def get_estimate(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Estimate)
@@ -126,12 +128,10 @@ async def get_estimate(
 async def get_logs(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     # Load the estimate and check access
-    result = await db.execute(
-        select(Estimate).where(Estimate.id == estimate_id)
-    )
+    result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
@@ -148,11 +148,12 @@ async def get_logs(
 
     return result.scalars().all()
 
+
 @router.get("/{estimate_id}/export/pdf")
 async def export_estimate_pdf(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Estimate)
@@ -169,7 +170,9 @@ async def export_estimate_pdf(
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"}
+        headers={
+            "Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"
+        },
     )
 
 
@@ -190,7 +193,7 @@ async def export_estimate_excel(
         raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
 
     filename = f"{estimate.name}.xlsx"
-    ascii_filename = re.sub(r'[^\x00-\x7F]+', '_', filename)
+    ascii_filename = re.sub(r"[^\x00-\x7F]+", "_", filename)
     utf8_filename = quote(filename)
 
     excel_file = generate_excel(estimate)
@@ -199,7 +202,7 @@ async def export_estimate_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
             "Content-Disposition": f"attachment; filename={ascii_filename}; filename*=UTF-8''{utf8_filename}"
-        }
+        },
     )
 
 
@@ -208,16 +211,16 @@ async def update_estimate(
     estimate_id: int,
     updated_data: EstimateCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
 
     result = await db.execute(
-         select(Estimate)
-         .options(selectinload(Estimate.items), selectinload(Estimate.client))
-         .where(Estimate.id == estimate_id)
-     )
+        select(Estimate)
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .where(Estimate.id == estimate_id)
+    )
 
     old_estimate = result.scalar_one_or_none()
 
@@ -283,14 +286,14 @@ async def update_estimate(
 async def delete_estimate(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
 
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
-    
+
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 

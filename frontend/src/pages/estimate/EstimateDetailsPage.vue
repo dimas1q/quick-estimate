@@ -232,7 +232,7 @@
                                 <tr v-for="v in versions" :key="v.version" class="border-b hover:bg-gray-50">
                                     <td class="px-4 py-2 text-gray-600">№{{ v.version }}</td>
                                     <td class="px-4 py-2 text-gray-600"> {{ new Date(v.created_at).toLocaleString()
-                                    }}
+                                        }}
                                     </td>
                                     <td class="px-4 py-2 text-right space-x-2">
                                         <button @click="viewVersion(v.version)"
@@ -254,12 +254,12 @@
 
         <!-- Модалка -->
         <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white p-6 rounded shadow max-w-sm w-full text-center">
+            <div class="bg-white p-6 rounded-lg shadow max-w-sm w-full text-center">
                 <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данную смету?</p>
                 <div class="flex justify-center gap-4">
-                    <button @click="deleteEstimate" class="bg-red-500 text-white px-4 py-2 rounded-md">Да,
+                    <button @click="deleteEstimate" class="bg-red-500 text-white px-4 py-2 rounded-lg">Да,
                         удалить</button>
-                    <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-md">Отмена</button>
+                    <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-lg">Отмена</button>
                 </div>
             </div>
         </div>

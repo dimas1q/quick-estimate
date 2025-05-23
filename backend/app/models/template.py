@@ -11,7 +11,9 @@ class EstimateTemplate(Base):
     description = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
 
-    items = relationship("EstimateItem", back_populates="template", cascade="all, delete-orphan")
+    items = relationship(
+        "EstimateItem", back_populates="template", cascade="all, delete-orphan"
+    )
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="templates")

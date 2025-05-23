@@ -80,11 +80,9 @@ def generate_excel(estimate: Estimate) -> BytesIO:
     service_rows = []
 
     for category, items in grouped.items():
-
         category_total = 0
         category_start = row
         for item in items:
-
             total = item.quantity * item.unit_price
             category_total += total
             values = [

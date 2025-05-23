@@ -17,8 +17,10 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_admin = Column(Boolean, default=False)
 
-    estimates = relationship(Estimate, back_populates="user", cascade="all, delete-orphan")
-    templates = relationship(EstimateTemplate, back_populates="user", cascade="all, delete-orphan")
-    clients = relationship(
-        Client, back_populates="user", cascade="all, delete-orphan"
+    estimates = relationship(
+        Estimate, back_populates="user", cascade="all, delete-orphan"
     )
+    templates = relationship(
+        EstimateTemplate, back_populates="user", cascade="all, delete-orphan"
+    )
+    clients = relationship(Client, back_populates="user", cascade="all, delete-orphan")

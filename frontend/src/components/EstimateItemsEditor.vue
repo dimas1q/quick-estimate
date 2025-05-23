@@ -18,7 +18,7 @@
     <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-4">
       <h3 class="text-md font-semibold text-gray-700 text-center">{{ category }}</h3>
 
-      <div v-for="(item, index) in groupItems" :key="index" class="grid grid-cols-8 gap-2 items-center">
+      <div v-for="(item, index) in groupItems" :key="index" class="grid grid-cols-8 gap-3 items-center">
         <input v-model="item.name" class="input-field" placeholder="Название" />
         <input v-model="item.description" class="input-field" placeholder="Описание" />
         <input type="text" v-model="item.quantity" @blur="normalizeNumber(item, 'quantity')" class="input-field" min="1"
@@ -192,4 +192,3 @@ function applyTemplate() {
   }
 }
 </script>
-

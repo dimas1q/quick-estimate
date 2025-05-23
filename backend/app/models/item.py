@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
+
 class EstimateItem(Base):
     __tablename__ = "estimate_items"
 

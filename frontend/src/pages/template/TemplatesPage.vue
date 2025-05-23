@@ -2,7 +2,7 @@
 # Component for displaying and managing templates.
 
 <template>
-  <div class="space-y-6 px-24 py-8 max-w-6xl mx-auto">
+  <div class="space-y-6 px-36 py-8 max-w-6xl mx-auto">
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">Шаблоны смет</h1>
       <div class="flex items-center space-x-2 ">
@@ -15,7 +15,8 @@
       <!-- Левая колонка — список шаблонов -->
       <div class="flex-1 space-y-4">
 
-        <div v-for="template in store.templates" :key="template.id" class="border p-4 rounded-lg shadow-sm space-y-1 py-4">
+        <div v-for="template in store.templates" :key="template.id"
+          class="border p-4 rounded-lg shadow-sm space-y-1 py-4">
           <div class="font-semibold text-lg ">{{ template.name }}</div>
           <div class="text-sm text-gray-600 ">Описание: {{ template.description || '—' }}</div>
 

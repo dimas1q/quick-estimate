@@ -84,9 +84,9 @@ async def restore_version(
     # 2) загрузить текущую смету и проверить права
 
     q_est = await db.execute(
-         select(Estimate)
-         .options(selectinload(Estimate.items), selectinload(Estimate.client))
-         .where(Estimate.id == estimate_id)
+        select(Estimate)
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .where(Estimate.id == estimate_id)
     )
 
     est = q_est.scalar_one_or_none()

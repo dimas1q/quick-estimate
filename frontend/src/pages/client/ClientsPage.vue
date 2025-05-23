@@ -1,5 +1,5 @@
 <template>
-    <div class="space-y-6 px-24 py-8 max-w-6xl mx-auto">
+    <div class="space-y-6 px-36 py-8 max-w-6xl mx-auto">
         <div class="flex justify-between items-center">
             <h1 class="text-2xl font-bold">Клиенты</h1>
             <!-- позже сюда можно кнопку импорта JSON -->
@@ -30,11 +30,13 @@
                     <h2 class="font-semibold text-lg">Фильтр</h2>
                     <div>
                         <label class="text-sm text-gray-600">Имя</label>
-                        <input v-model="filters.name" class="input-field mt-1" type="text" placeholder="Поиск по имени" />
+                        <input v-model="filters.name" class="input-field mt-1" type="text"
+                            placeholder="Поиск по имени" />
                     </div>
                     <div>
                         <label class="text-sm text-gray-600">Компания</label>
-                        <input v-model="filters.company" class="input-field mt-1" type="text" placeholder="Поиск по компании" />
+                        <input v-model="filters.company" class="input-field mt-1" type="text"
+                            placeholder="Поиск по компании" />
                     </div>
                     <div class="flex gap-2 pt-2">
                         <button @click="applyFilters" class="btn-secondary w-full">Применить</button>

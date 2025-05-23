@@ -9,15 +9,17 @@ from app.schemas.user import UserCreate, UserOut
 
 router = APIRouter(tags=["users"])
 
+
 @router.get("/me", response_model=UserOut)
 async def get_me(user: User = Depends(get_current_user)):
     return user
+
 
 @router.put("/me")
 async def update_user(
     data: UserUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     # проверка email
     if data.email != current_user.email:
@@ -39,11 +41,12 @@ async def update_user(
     await db.commit()
     return {"message": "Профиль обновлён"}
 
+
 @router.put("/me/password")
 async def change_password(
     data: PasswordUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     if not verify_password(data.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Неверный текущий пароль")
