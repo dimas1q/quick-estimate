@@ -197,19 +197,19 @@
                         История изменений
                     </h3>
                     <div class="overflow-x-auto rounded-lg shadow-sm ">
-                        <table class="w-full text-sm text-gray-700">
+                        <table class="w-full text-sm ">
                             <thead class="bg-gray-100 border-b text-left">
                                 <tr>
-                                    <th class="px-4 py-2 font-medium text-gray-600 whitespace-nowrap">Дата и время
+                                    <th class="px-4 py-2 font-medium  whitespace-nowrap">Дата и время
                                     </th>
-                                    <th class="px-4 py-2 font-medium text-gray-600 whitespace-nowrap">Действие</th>
+                                    <th class="px-4 py-2 font-medium whitespace-nowrap">Действие</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="log in logs" :key="log.id" class="hover:bg-gray-50 border-b">
-                                    <td class="px-4 py-2 text-gray-600 whitespace-nowrap">{{ new
+                                    <td class="px-4 py-2 whitespace-nowrap">{{ new
                                         Date(log.timestamp).toLocaleString() }}</td>
-                                    <td class="px-4 py-2 text-gray-600">{{ log.description }}</td>
+                                    <td class="px-4 py-2">{{ log.description }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -218,20 +218,20 @@
 
                 <!-- 5. Версии -->
                 <div v-if="versions.length" class="mt-8 border-t pt-6 text-sm">
-                    <h3 class="font-semibold text-gray-700 mb-4">История версий</h3>
+                    <h3 class="font-semibold mb-4">История версий</h3>
                     <div class="overflow-x-auto rounded-lg shadow-sm ">
-                        <table class="w-full text-left text-gray-700">
+                        <table class="w-full text-left">
                             <thead class="bg-gray-100 ">
                                 <tr>
-                                    <th class="px-4 py-2 font-medium text-gray-600">Версия</th>
-                                    <th class="px-4 py-2 font-medium text-gray-600">Дата создания</th>
-                                    <th class="px-4 py-2 font-medium text-gray-600 text-right">Действия</th>
+                                    <th class="px-4 py-2 font-medium ">Версия</th>
+                                    <th class="px-4 py-2 font-medium">Дата создания</th>
+                                    <th class="px-4 py-2 font-medium text-right">Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="v in versions" :key="v.version" class="border-b hover:bg-gray-50">
-                                    <td class="px-4 py-2 text-gray-600">№{{ v.version }}</td>
-                                    <td class="px-4 py-2 text-gray-600"> {{ new Date(v.created_at).toLocaleString()
+                                    <td class="px-4 py-2 ">№{{ v.version }}</td>
+                                    <td class="px-4 py-2 "> {{ new Date(v.created_at).toLocaleString()
                                         }}
                                     </td>
                                     <td class="px-4 py-2 text-right space-x-2">
@@ -249,6 +249,7 @@
                         </table>
                     </div>
                 </div>
+
             </div>
         </div>
 

@@ -3,6 +3,7 @@ import App from './App.vue'
 import './assets/main.css'
 
 import { createPinia } from 'pinia'
+import VueApexCharts from 'vue3-apexcharts'
 import router from './router'
 
 import Toast, { POSITION } from 'vue-toastification'
@@ -20,6 +21,8 @@ const auth = useAuthStore()
 await auth.restoreSession()
 
 app.use(router)
+
+app.component('apexchart', VueApexCharts)
 
 app.use(Toast, {
   position: POSITION.TOP_CENTER,

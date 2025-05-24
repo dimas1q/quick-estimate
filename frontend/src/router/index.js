@@ -22,6 +22,7 @@ import ClientsPage from '@/pages/client/ClientsPage.vue'
 import ClientCreatePage from '@/pages/client/ClientCreatePage.vue'
 import ClientDetailsPage from '@/pages/client/ClientDetailsPage.vue'
 import ClientEditPage from '@/pages/client/ClientEditPage.vue'
+import AnalyticsPage from '@/pages/analytics/AnalyticsPage.vue'
 import NotFoundPage from '@/pages/errors/NotFoundPage.vue'
 
 
@@ -65,6 +66,12 @@ const routes = [
       { path: 'account', component: () => import('@/pages/profile/AccountTab.vue'), meta: { layout: DefaultLayout } },
       { path: 'password', component: () => import('@/pages/profile/PasswordTab.vue'), meta: { layout: DefaultLayout } }
     ]
+  },
+
+  {
+    path: '/analytics',
+    component: AnalyticsPage,
+    meta: { layout: DefaultLayout }
   },
 
   // 404
