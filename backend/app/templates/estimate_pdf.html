@@ -60,10 +60,13 @@
         <p><strong>Клиент:</strong> {{ estimate.client.name }}</p>
         <p><strong>Компания клиента:</strong> {{ estimate.client.company }}</p>
         <p><strong>Контакт:</strong> {{ estimate.client.email }}</p>
+        {% set labels = {'draft':'Черновик','sent':'Отправлена','approved':'Одобрена','paid':'Оплачена','cancelled':'Отменена'}
+        %}
+        <p><strong>Статус:</strong> {{ labels[estimate.status.value] }}</p>
         <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
-        <p><strong>Заметки:</strong> {{ estimate.notes }}</p>
         <p><strong>НДС:</strong> {% if estimate.vat_enabled %}Включён (20%){% else %}Не включён{% endif %}</p>
-        <p><strong>Дата:</strong> {{ estimate.date.strftime('%d.%m.%Y %H:%M') }}</p>
+        <p><strong>Дата создания:</strong> {{ estimate.date.strftime('%d.%m.%Y %H:%M') }}</p>
+        <p><strong>Примечания:</strong> {{ estimate.notes }}</p>
     </div>
 
     <h1>Услуги</h1>

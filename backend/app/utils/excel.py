@@ -11,6 +11,15 @@ def generate_excel(estimate: Estimate) -> BytesIO:
     ws = wb.active
     ws.title = estimate.name[:31].replace(":", "-")
 
+    # Русские названия статусов
+    status_map = {
+        "draft":     "Черновик",
+        "sent":      "Отправлена",
+        "approved":  "Одобрена",
+        "paid":      "Оплачена",
+        "cancelled": "Отменена",
+    }
+
     currency_format = "₽#,##0.00"
 
     bold_font = Font(bold=True)
@@ -34,10 +43,11 @@ def generate_excel(estimate: Estimate) -> BytesIO:
         ("Клиент", estimate.client.name),
         ("Компания клиента", estimate.client.company),
         ("Контакт", estimate.client.email),
+        ("Статус", status_map.get(estimate.status.value, estimate.status.value)),
         ("Ответственный", estimate.responsible),
-        ("Заметки", estimate.notes),
-        ("Дата создания", estimate.date.strftime("%d.%m.%Y %H:%M:%S")),
         ("НДС", "Включён (20%)" if estimate.vat_enabled else "Не включён"),
+        ("Дата создания", estimate.date.strftime("%d.%m.%Y %H:%M:%S")),
+        ("Примечания", estimate.notes),
     ]
 
     row = 3
