@@ -21,13 +21,13 @@
                             }
                         ]">
                             {{
-                                {
-                                    draft: 'Черновик',
-                                    sent: 'Отправлена',
-                                    approved: 'Согласована',
-                                    paid: 'Оплачена',
-                                    cancelled: 'Отменена'
-                                }[estimate.status]
+                            {
+                            draft: 'Черновик',
+                            sent: 'Отправлена',
+                            approved: 'Согласована',
+                            paid: 'Оплачена',
+                            cancelled: 'Отменена'
+                            }[estimate.status]
                             }}
                         </span>
 
@@ -126,7 +126,13 @@
                         <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
 
                         <p><strong>Контакт клиента:</strong> {{ estimate.client?.email || '—' }}</p>
-                        <p><strong>НДС:</strong> {{ estimate.vat_enabled ? 'Включён (20%)' : 'Не включён' }}</p>
+                        <p>
+                            <strong>НДС:</strong>
+                            <span v-if="estimate.vat_enabled">
+                                Включён ({{ estimate.vat_rate }}%)
+                            </span>
+                            <span v-else> Не включён</span>
+                        </p>
 
                         <p><strong>Компания клиента:</strong> {{ estimate.client?.company || '—' }}</p>
                         <p class="text-sm text-gray-600">
@@ -182,7 +188,7 @@
                                 Общая сумма: {{ formatCurrency(total) }}
                             </p>
                             <p class="text-right text-gray-700">
-                                НДС (20%): {{ formatCurrency(vat) }} <br />
+                                НДС ({{ estimate.vat_rate }}%): {{ formatCurrency(vat) }}<br />
                                 Итого с НДС: {{ formatCurrency(totalWithVat) }}
                             </p>
                         </div>
@@ -392,8 +398,11 @@ const total = computed(() => {
 })
 
 const vat = computed(() =>
-    estimate.value?.vat_enabled ? total.value * 0.2 : 0
+    estimate.value?.vat_enabled
+        ? total.value * (estimate.value.vat_rate / 100)
+        : 0
 )
+
 const totalWithVat = computed(() => total.value + vat.value)
 
 function formatCurrency(val) {

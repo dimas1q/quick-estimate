@@ -28,5 +28,8 @@ COPY --from=frontend-builder /app/dist /app/backend/app/frontend
 
 WORKDIR /app/backend
 
-# Старт без hot-reload
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Копируем скрипт запуска
+COPY backend/start.sh /app/backend/start.sh
+RUN chmod +x /app/backend/start.sh
+
+CMD ["./start.sh"]

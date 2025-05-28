@@ -13,17 +13,24 @@ class EstimateBase(BaseModel):
     responsible: Optional[str]
     notes: Optional[str]
     status: EstimateStatus = EstimateStatus.DRAFT
+    vat_enabled: bool = True
+    vat_rate: int = 20
 
 
 class EstimateCreate(EstimateBase):
     pass
     items: Optional[List[EstimateItemCreate]] = []
-    vat_enabled: bool = True
 
     @validator("items")
     def must_have_at_least_one_item(cls, v):
         if not v:
             raise ValueError("Смета должна содержать хотя бы одну услугу")
+        return v
+    
+    @validator('vat_rate')
+    def check_vat_rate(cls, v):
+        if not isinstance(v, int) or v < 0 or v > 100:
+            raise ValueError("Ставка НДС должна быть целым числом от 0 до 100")
         return v
 
 
@@ -33,6 +40,7 @@ class EstimateOut(EstimateBase):
     updated_at: Optional[datetime] = None
     items: List[EstimateItemOut] = Field(..., min_items=1)
     vat_enabled: bool = True
+    vat_rate: int
     user_id: int
     client: Optional[ClientOut]
     status: EstimateStatus

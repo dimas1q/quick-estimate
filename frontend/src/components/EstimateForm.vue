@@ -38,22 +38,28 @@
           <option value="cancelled">Отменена</option>
         </select>
       </div>
+
       <!-- Заметки (на всю ширину) -->
       <div class="md:col-span-2">
         <label class="block text-sm font-semibold text-gray-700 mb-1">Заметки</label>
         <textarea v-model="estimate.notes" rows="2" placeholder="Дополнительная информация"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
       </div>
-      <!-- НДС -->
-      <div class="flex items-center space-x-2">
+
+      <!-- НДС и ставка НДС в одной строке -->
+      <div class="flex items-center space-x-2 px-1">
         <input type="checkbox" v-model="estimate.vat_enabled" id="vat" class="h-5 w-5 text-blue-600" />
         <label for="vat" class="text-sm font-medium text-gray-700">Включить НДС</label>
+        <input v-if="estimate.vat_enabled" type="number" min="0" max="100" step="1" v-model.number="estimate.vat_rate"
+          class="border rounded-lg px-2 py-1 w-16" placeholder="%" @input="checkVatRate" />
+        <span v-if="estimate.vat_enabled" class="ml-1 text-gray-600">%</span>
       </div>
+
     </div>
 
     <!-- 2. Редактор услуг — растягивается на всю ширину -->
     <div>
-      <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" />
+      <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" :vat-rate="estimate.vat_rate" />
     </div>
 
     <!-- 3. Кнопки -->
@@ -98,6 +104,7 @@ const estimate = reactive({
   notes: '',
   items: [],
   vat_enabled: true,
+  vat_rate: 20,
   status: 'draft'
 })
 
@@ -111,6 +118,7 @@ onMounted(async () => {
     estimate.responsible = store.importedEstimate.responsible || ''
     estimate.notes = store.importedEstimate.notes || ''
     estimate.vat_enabled = store.importedEstimate.vat_enabled ?? true
+    estimate.vat_rate = store.importedEstimate.vat_rate ?? 20.0
     estimate.status = store.importedEstimate.status || 'draft'
 
     estimate.items.splice(0)
@@ -134,6 +142,7 @@ watch(() => props.initial, (value) => {
       responsible: value.responsible || '',
       notes: value.notes || '',
       vat_enabled: value.vat_enabled ?? true,
+      vat_rate: value.vat_rate ?? 20.0,
       status: value.status || 'draft',
       items: (value.items || []).map(item => ({
         ...item,

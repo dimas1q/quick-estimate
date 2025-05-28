@@ -5,6 +5,7 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
+    Float,
     DateTime,
     Text,
     func,
@@ -66,6 +67,7 @@ class Estimate(Base):
     )
 
     vat_enabled = Column(Boolean, default=True)
+    vat_rate = Column(Integer, default=20, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="estimates")

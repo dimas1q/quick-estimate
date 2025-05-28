@@ -75,8 +75,8 @@
       <p class="text-right font-semibold text-lg">
         Общая сумма: {{ formatCurrency(total) }}
       </p>
-      <p class="text-right text-gray-700" v-if="props.showVatSummary">
-        НДС (20%): {{ formatCurrency(vat) }} <br />
+      <p class="text-right text-gray-700" v-if="showVatSummary">
+        НДС ({{ vatRate }}%): {{ formatCurrency(vat) }}<br/>
         Итого с НДС: {{ formatCurrency(totalWithVat) }}
       </p>
     </div>
@@ -101,6 +101,10 @@ const props = defineProps({
   vatEnabled: {
     type: Boolean,
     default: true
+  },
+  vatRate: {
+    type: Number,
+    default: 20
   },
   showVatSummary: {
     type: Boolean,
@@ -159,7 +163,7 @@ const total = computed(() => {
   return items.reduce((sum, item) => sum + getItemTotal(item), 0)
 })
 
-const vat = computed(() => props.vatEnabled ? total.value * 0.2 : 0)
+const vat = computed(() => props.vatEnabled ? total.value * (props.vatRate / 100) : 0)
 const totalWithVat = computed(() => total.value + vat.value)
 
 function formatCurrency(value) {

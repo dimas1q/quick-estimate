@@ -45,7 +45,9 @@ def generate_excel(estimate: Estimate) -> BytesIO:
         ("Контакт", estimate.client.email),
         ("Статус", status_map.get(estimate.status.value, estimate.status.value)),
         ("Ответственный", estimate.responsible),
-        ("НДС", "Включён (20%)" if estimate.vat_enabled else "Не включён"),
+        ("НДС",
+           "Включён" if estimate.vat_enabled else "Не включён"
+        ),
         ("Дата создания", estimate.date.strftime("%d.%m.%Y %H:%M:%S")),
         ("Примечания", estimate.notes),
     ]
@@ -124,7 +126,9 @@ def generate_excel(estimate: Estimate) -> BytesIO:
         row += 2
 
     total = sum(item.quantity * item.unit_price for item in estimate.items)
-    vat = total * 0.2 if estimate.vat_enabled else 0
+
+    rate = (estimate.vat_rate / 100) if estimate.vat_enabled else 0
+    vat = total * rate
     total_with_vat = total + vat
 
     if service_rows:
@@ -137,9 +141,11 @@ def generate_excel(estimate: Estimate) -> BytesIO:
         ws[f"G{row}"] = 0
         ws[f"G{row}"].number_format = currency_format
 
-    ws[f"F{row + 1}"] = "НДС (20%)"
-    ws[f"G{row + 1}"] = f"=G{row}*0.2"
-    ws[f"G{row + 1}"].number_format = currency_format
+
+    if estimate.vat_enabled:
+        ws[f"F{row + 1}"] = f"НДС ({estimate.vat_rate}%)"
+        ws[f"G{row + 1}"] = f"=G{row}*{rate}"
+        ws[f"G{row + 1}"].number_format = currency_format
 
     ws[f"F{row + 2}"] = "Итого с НДС"
     ws[f"G{row + 2}"] = f"=G{row}+G{row + 1}"

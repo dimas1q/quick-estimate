@@ -64,7 +64,13 @@
         %}
         <p><strong>Статус:</strong> {{ labels[estimate.status.value] }}</p>
         <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
-        <p><strong>НДС:</strong> {% if estimate.vat_enabled %}Включён (20%){% else %}Не включён{% endif %}</p>
+        <p><strong>НДС:</strong>
+           {% if estimate.vat_enabled %}
+           Включён
+           {% else %}
+           Не включён
+           {% endif %}
+        </p>
         <p><strong>Дата создания:</strong> {{ estimate.date.strftime('%d.%m.%Y %H:%M') }}</p>
         <p><strong>Примечания:</strong> {{ estimate.notes }}</p>
     </div>
@@ -117,11 +123,14 @@
     {% endfor %}
 
     <div class="details" style="margin-top: 30px; text-align: right">
-        <p><strong>Общая сумма:</strong> {{ "%.2f" | format(total) }} ₽</p>
-        {% if estimate.vat_enabled %}
-          <p><strong>НДС (20%):</strong> {{ "%.2f" | format(total * 0.2) }} ₽</p>
-          <p><strong>Итого с НДС:</strong> {{ "%.2f" | format(total * 1.2) }} ₽</p>
-        {% endif %}
+      <p><strong>Общая сумма:</strong> {{ "%.2f" | format(total) }} ₽</p>
+      {% if estimate.vat_enabled %}
+        {% set rate = estimate.vat_rate / 100 %}
+        <p><strong>НДС ({{ estimate.vat_rate }}%):</strong>
+           {{ "%.2f"|format(total * rate) }} ₽</p>
+        <p><strong>Итого с НДС:</strong>
+           {{ "%.2f"|format(total * (1 + rate)) }} ₽</p>
+      {% endif %}
     </div>
     
 </body>
