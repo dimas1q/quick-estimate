@@ -46,14 +46,23 @@
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
       </div>
 
-      <!-- НДС и ставка НДС в одной строке -->
-      <div class="flex items-center space-x-2 px-1">
-        <input type="checkbox" v-model="estimate.vat_enabled" id="vat" class="h-5 w-5 text-blue-600" />
-        <label for="vat" class="text-sm font-medium text-gray-700">Включить НДС</label>
-        <input v-if="estimate.vat_enabled" type="number" min="0" max="100" step="1" v-model.number="estimate.vat_rate"
-          class="border rounded-lg px-2 py-1 w-16" placeholder="%" @input="checkVatRate" />
-        <span v-if="estimate.vat_enabled" class="ml-1 text-gray-600">%</span>
+      <!-- НДС: красивый flex-блок на всю ширину -->
+      <div class="md:col-span-2">
+        <div class="flex items-center gap-2 bg-gray-50 rounded-lg px-2">
+          <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
+            class="h-5 w-5 text-blue-600 accent-blue-600 focus:ring-blue-500" />
+          <label for="vat" class="text-sm font-medium text-gray-700 select-none cursor-pointer">
+            НДС
+          </label>
+          <template v-if="estimate.vat_enabled">
+            <input type="number" min="0" max="100" step="1" v-model.number="estimate.vat_rate"
+              class="border border-gray-300 rounded-lg px-2 py-1 w-16 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              placeholder="%" @input="checkVatRate" />
+            <span class="text-gray-600 select-none">%</span>
+          </template>
+        </div>
       </div>
+
 
     </div>
 
