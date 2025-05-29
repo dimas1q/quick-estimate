@@ -184,6 +184,14 @@ function validateEstimate() {
     toast.error("Название сметы обязательно")
     return false
   }
+  if (!estimate.client_id) {
+    toast.error("Выберите клиента")
+    return false
+  }
+  if (!estimate.responsible?.trim()) {
+    toast.error("Ответственный обязателен")
+    return false
+  }
   if (!estimate.items.length) {
     toast.error("Добавьте хотя бы одну услугу")
     return false

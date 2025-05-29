@@ -9,8 +9,8 @@ from app.schemas.client import ClientOut
 
 class EstimateBase(BaseModel):
     name: str = Field(..., min_length=1)
-    client_id: Optional[int]
-    responsible: Optional[str]
+    client_id: int
+    responsible: str = Field(..., min_length=1)
     notes: Optional[str]
     status: EstimateStatus = EstimateStatus.DRAFT
     vat_enabled: bool = True

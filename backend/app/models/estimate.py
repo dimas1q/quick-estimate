@@ -36,15 +36,15 @@ class Estimate(Base):
     )
     client_id = Column(
         Integer,
-        ForeignKey("clients.id", ondelete="SET NULL"),
-        nullable=True,
+        ForeignKey("clients.id", ondelete="RESTRICT"),
+        nullable=False,
     )
     client = relationship(
         "Client",
         back_populates="estimates",
         passive_deletes=True,
     )
-    responsible = Column(String)
+    responsible = Column(String, nullable=False)
     notes = Column(Text, nullable=True)
 
     items = relationship(

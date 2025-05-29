@@ -1,3 +1,4 @@
+## frontend/src/pages/client/ClientDetailsPage.vue
 <template>
     <div class="py-8 max-w-6xl mx-auto">
         <div v-if="!client" class="text-center py-10">Загрузка…</div>
@@ -23,25 +24,25 @@
             </div>
             <div class="mt-8">
                 <h2 class="text-xl font-semibold mb-4">Сметы клиента</h2>
-                <ul class="space-y-2">
-                    <li v-for="e in estimates" :key="e.id" class="border p-4 rounded-lg shadow-sm">
+                <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-for="e in estimates" :key="e.id" class="border p-4 rounded-lg shadow-sm flex justify-between items-center">
                         <RouterLink :to="`/estimates/${e.id}`" class="font-medium">{{ e.name }}</RouterLink>
                         <span class="text-gray-500 text-sm ml-2">{{ new Date(e.date).toLocaleDateString() }}</span>
-                    </li>
-                    <li v-if="estimates.length === 0" class="text-center text-gray-500 border p-4 rounded py-8">
-                        Сметы отсутствуют.
-                    </li>
-                </ul>
+                    </div>
+                </div>
+                <div v-else class="text-center text-gray-500 border p-4 rounded py-8">
+                    Сметы отсутствуют.
+                </div>
             </div>
         </div>
 
         <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white p-6 rounded shadow max-w-sm w-full text-center">
+            <div class="bg-white p-6 rounded-lg shadow max-w-sm w-full text-center">
                 <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данного клиента?</p>
                 <div class="flex justify-center gap-4">
-                    <button @click="deleteClient" class="bg-red-500 text-white px-4 py-2 rounded-md">Да,
+                    <button @click="deleteClient" class="bg-red-500 text-white px-4 py-2 rounded-lg">Да,
                         удалить</button>
-                    <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-md">Отмена</button>
+                    <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-lg">Отмена</button>
                 </div>
             </div>
         </div>
@@ -73,8 +74,16 @@ function confirmDelete() {
 }
 
 async function deleteClient() {
-    await store.deleteClient(route.params.id)
-    toast.success('Клиент удален')
-    router.push('/clients')
+    try {
+        await store.deleteClient(route.params.id)
+        toast.success('Клиент удален')
+        router.push('/clients')
+    } catch (e) {
+        if (e.response?.data?.detail) {
+            toast.error(e.response.data.detail)
+        } else {
+            toast.error('Ошибка удаления клиента')
+        }
+    }
 }
 </script>

@@ -49,8 +49,10 @@ def generate_excel(estimate: Estimate) -> BytesIO:
            "Включён" if estimate.vat_enabled else "Не включён"
         ),
         ("Дата создания", estimate.date.strftime("%d.%m.%Y %H:%M:%S")),
-        ("Примечания", estimate.notes),
     ]
+
+    if estimate.notes and estimate.notes.strip():
+        fields.append(("Примечания", estimate.notes))   
 
     row = 3
     for label, value in fields:

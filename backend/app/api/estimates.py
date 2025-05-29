@@ -19,7 +19,6 @@ from app.utils.auth import get_current_user
 from app.utils.pdf import render_pdf
 from app.utils.excel import generate_excel
 from app.models.user import User
-from app.models.client import Client
 
 from typing import Optional
 from typing import List

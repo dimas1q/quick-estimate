@@ -122,10 +122,13 @@
             <div v-if="activeTab === 'details'">
                 <div class="grid gap-3 text-sm text-gray-800">
                     <div class="grid grid-cols-2 gap-4">
-                        <p><strong>Клиент:</strong> {{ estimate.client?.name || '—' }}</p>
-                        <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
-
-                        <p><strong>Контакт клиента:</strong> {{ estimate.client?.email || '—' }}</p>
+                        <p>
+                            <strong>Клиент:</strong>
+                            <RouterLink :to="`/clients/${estimate.client.id}`"
+                                class="ml-1 transition-colors text-gray-900 hover:text-blue-700">
+                                {{ estimate.client.name }}
+                            </RouterLink>
+                        </p>
                         <p>
                             <strong>НДС:</strong>
                             <span v-if="estimate.vat_enabled">
@@ -133,8 +136,7 @@
                             </span>
                             <span v-else> Не включён</span>
                         </p>
-
-                        <p><strong>Компания клиента:</strong> {{ estimate.client?.company || '—' }}</p>
+                        <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
                         <p class="text-sm text-gray-600">
                             Дата создания: {{ new Date(estimate.date).toLocaleString() }}
                         </p>

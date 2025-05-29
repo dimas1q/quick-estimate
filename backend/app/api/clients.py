@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.client import Client
+from app.models.estimate import Estimate
 from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
 from app.utils.auth import get_current_user
 from app.models.user import User
@@ -89,6 +91,17 @@ async def delete_client(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
+    
+    estimates_count = await db.scalar(
+        select(func.count()).select_from(Estimate).where(Estimate.client_id == client_id)
+    )
+
+    if estimates_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Сначала удалите все сметы, связанные с этим клиентом"
+        )
+    
     await db.delete(client)
     await db.commit()
     return

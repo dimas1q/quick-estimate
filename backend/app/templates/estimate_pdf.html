@@ -72,7 +72,9 @@
            {% endif %}
         </p>
         <p><strong>Дата создания:</strong> {{ estimate.date.strftime('%d.%m.%Y %H:%M') }}</p>
+        {% if estimate.notes %}
         <p><strong>Примечания:</strong> {{ estimate.notes }}</p>
+        {% endif %}
     </div>
 
     <h1>Услуги</h1>
