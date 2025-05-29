@@ -1,3 +1,4 @@
+## frontend/src/pages/auth/LoginPage.vue
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '@/store/auth'

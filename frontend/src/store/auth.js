@@ -1,3 +1,4 @@
+// frontend/src/store/auth.js
 import { defineStore } from 'pinia'
 import { useEstimatesStore } from '@/store/estimates'
 import axios from '@/lib/axios'
