@@ -27,16 +27,43 @@
                 <input v-model="client.phone" type="tel" placeholder="+7 (999) 123-45-67"
                     class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
             </div>
-            <!-- Адрес (на всю ширину) -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Адрес</label>
-                <input v-model="client.address" type="text" placeholder="Город, улица, дом"
-                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Юридический адрес</label>
+                <input v-model="client.legal_address" type="text" class="w-full border rounded-lg px-4 py-2" />
             </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Фактический адрес</label>
+                <input v-model="client.actual_address" type="text" class="w-full border rounded-lg px-4 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">ИНН</label>
+                <input v-model="client.inn" type="text" class="w-full border rounded-lg px-4 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">КПП</label>
+                <input v-model="client.kpp" type="text" class="w-full border rounded-lg px-4 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">БИК</label>
+                <input v-model="client.bik" type="text" class="w-full border rounded-lg px-4 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Расчетный счет</label>
+                <input v-model="client.account" type="text" class="w-full border rounded-lg px-4 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Банк</label>
+                <input v-model="client.bank" type="text" class="w-full border rounded-lg px-4 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Корреспондентский счет</label>
+                <input v-model="client.corr_account" type="text" class="w-full border rounded-lg px-4 py-2" />
+            </div>
+
             <!-- Примечания -->
             <div class="md:col-span-2">
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Примечания</label>
-                <textarea v-model="client.notes" rows="4" placeholder="Любые дополнительные данные"
+                <textarea v-model="client.notes" rows="2" placeholder="Любые дополнительные данные"
                     class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
             </div>
         </div>
@@ -71,7 +98,14 @@ const client = reactive({
     company: '',
     email: '',
     phone: '',
-    address: '',
+    legal_address: '',
+    actual_address: '',
+    inn: '',
+    kpp: '',
+    bik: '',
+    account_number: '',
+    bank: '',
+    corr_account: '',
     notes: ''
 })
 

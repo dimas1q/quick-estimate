@@ -31,7 +31,17 @@
           <option value="день">день</option>
           <option value="м²">м²</option>
           <option value="м">м</option>
+          <option value="чел.">чел.</option>
+          <option value="комп.">комп.</option>
+          <option value="усл.">усл.</option>
+          <option value="чел/час">чел/час</option>
+          <option value="чел/смена">чел/смена</option>
+          <option value="проект">проект</option>
+          <option value="пог.м">пог.м</option>
+          <option value="рейс">рейс</option>
+          <option value="машина">машина</option>
         </select>
+
 
         <input type="text" v-model="item.unit_price" @blur="normalizeNumber(item, 'unit_price')" class="input-field"
           placeholder="Цена за единицу" />
@@ -76,7 +86,7 @@
         Общая сумма: {{ formatCurrency(total) }}
       </p>
       <p class="text-right text-gray-700" v-if="showVatSummary">
-        НДС ({{ vatRate }}%): {{ formatCurrency(vat) }}<br/>
+        НДС ({{ vatRate }}%): {{ formatCurrency(vat) }}<br />
         Итого с НДС: {{ formatCurrency(totalWithVat) }}
       </p>
     </div>

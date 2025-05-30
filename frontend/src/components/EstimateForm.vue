@@ -39,12 +39,27 @@
         </select>
       </div>
 
+      <!-- Дата и место проведения -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Дата и время мероприятия</label>
+        <input v-model="eventDateTimeInput" type="datetime-local"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          placeholder="Выберите дату и время" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Место проведения мероприятия</label>
+        <input v-model="estimate.event_place" type="text" placeholder="Адрес или площадка"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2" />
+      </div>
+
       <!-- Заметки (на всю ширину) -->
       <div class="md:col-span-2">
         <label class="block text-sm font-semibold text-gray-700 mb-1">Заметки</label>
         <textarea v-model="estimate.notes" rows="2" placeholder="Дополнительная информация"
           class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
       </div>
+
+
 
       <!-- НДС: красивый flex-блок на всю ширину -->
       <div class="md:col-span-2">
@@ -111,6 +126,8 @@ const estimate = reactive({
   client_id: null,
   responsible: '',
   notes: '',
+  event_datetime: '',
+  event_place: '',
   items: [],
   vat_enabled: true,
   vat_rate: 20,
@@ -125,6 +142,8 @@ onMounted(async () => {
     estimate.name = store.importedEstimate.name || ''
     estimate.client_id = store.importedEstimate.client?.id || null
     estimate.responsible = store.importedEstimate.responsible || ''
+    estimate.event_datetime = store.importedEstimate.event_datetime || ''
+    estimate.event_place = store.importedEstimate.event_place || ''
     estimate.notes = store.importedEstimate.notes || ''
     estimate.vat_enabled = store.importedEstimate.vat_enabled ?? true
     estimate.vat_rate = store.importedEstimate.vat_rate ?? 20.0
@@ -149,6 +168,8 @@ watch(() => props.initial, (value) => {
       name: props.mode === 'copy' ? `Копия: ${value.name}` : value.name,
       client_id: value.client?.id || null,
       responsible: value.responsible || '',
+      event_datetime: value.event_datetime || '',
+      event_place: value.event_place || '',
       notes: value.notes || '',
       vat_enabled: value.vat_enabled ?? true,
       vat_rate: value.vat_rate ?? 20.0,
@@ -178,6 +199,20 @@ async function submit() {
 function cancel() {
   router.back()
 }
+
+const eventDateTimeInput = computed({
+  get() {
+    if (!estimate.event_datetime) return ''
+    // Обрезать лишнее: только yyyy-MM-ddTHH:mm
+    // Если приходит ISO: 2024-06-01T13:30:00.000Z
+    const dt = estimate.event_datetime
+    if (dt.length >= 16) return dt.slice(0, 16)
+    return dt
+  },
+  set(val) {
+    estimate.event_datetime = val
+  }
+})
 
 function validateEstimate() {
   if (!estimate.name?.trim()) {
@@ -215,18 +250,4 @@ function validateEstimate() {
   return true
 }
 
-</script>
-
-<script>
-export default {
-  data() {
-    return {
-      fieldLabels: {
-        name: 'Название сметы',
-        responsible: 'Ответственный',
-        notes: 'Заметки'
-      }
-    }
-  }
-}
 </script>

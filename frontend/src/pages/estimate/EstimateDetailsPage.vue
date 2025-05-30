@@ -129,6 +129,12 @@
                                 {{ estimate.client.name }}
                             </RouterLink>
                         </p>
+                        <p v-if="estimate.event_datetime"><strong>Дата и время мероприятия:</strong> {{ new
+                            Date(estimate.event_datetime).toLocaleString() }}</p>
+
+                        <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
+                        <p v-if="estimate.event_place"><strong>Место проведения мероприятия:</strong> {{
+                            estimate.event_place }}</p>
                         <p>
                             <strong>НДС:</strong>
                             <span v-if="estimate.vat_enabled">
@@ -136,7 +142,7 @@
                             </span>
                             <span v-else> Не включён</span>
                         </p>
-                        <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
+
                         <p class="text-sm text-gray-600">
                             Дата создания: {{ new Date(estimate.date).toLocaleString() }}
                         </p>

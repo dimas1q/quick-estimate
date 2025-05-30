@@ -19,13 +19,25 @@
                 <p><strong>Компания:</strong> {{ client.company || '—' }}</p>
                 <p><strong>Email:</strong> {{ client.email || '—' }}</p>
                 <p><strong>Телефон:</strong> {{ client.phone || '—' }}</p>
-                <p><strong>Адрес:</strong> {{ client.address || '—' }}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mt-2 border-t pt-4">
+                <p><strong>Юридический адрес:</strong> {{ client.legal_address || '—' }}</p>
+                <p><strong>Фактический адрес:</strong> {{ client.actual_address || '—' }}</p>
+                <p><strong>ИНН:</strong> {{ client.inn || '—' }}</p>
+                <p><strong>КПП:</strong> {{ client.kpp || '—' }}</p>
+                <p><strong>БИК:</strong> {{ client.bik || '—' }}</p>
+                <p><strong>Расчетный счет:</strong> {{ client.account || '—' }}</p>
+                <p><strong>Банк:</strong> {{ client.bank || '—' }}</p>
+                <p><strong>Корр. счет:</strong> {{ client.corr_account || '—' }}</p>
+            </div>
+            <div v-if="client.notes" class="text-sm mt-2 border-t pt-4">
                 <p><strong>Примечания:</strong> {{ client.notes || '—' }}</p>
             </div>
             <div class="mt-8">
                 <h2 class="text-xl font-semibold mb-4">Сметы клиента</h2>
                 <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div v-for="e in estimates" :key="e.id" class="border p-4 rounded-lg shadow-sm flex justify-between items-center">
+                    <div v-for="e in estimates" :key="e.id"
+                        class="border p-4 rounded-lg shadow-sm flex justify-between items-center">
                         <RouterLink :to="`/estimates/${e.id}`" class="font-medium">{{ e.name }}</RouterLink>
                         <span class="text-gray-500 text-sm ml-2">{{ new Date(e.date).toLocaleDateString() }}</span>
                     </div>

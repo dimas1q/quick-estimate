@@ -34,6 +34,10 @@ class Estimate(Base):
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()
     )
+
+    event_datetime = Column(DateTime(timezone=True), nullable=True)
+    event_place = Column(String, nullable=True)
+
     client_id = Column(
         Integer,
         ForeignKey("clients.id", ondelete="RESTRICT"),

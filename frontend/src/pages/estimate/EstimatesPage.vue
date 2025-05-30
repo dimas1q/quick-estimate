@@ -12,7 +12,7 @@
     <div class="flex gap-6 items-start">
 
       <div class="flex-1 space-y-4">
-        <div v-for="e in store.estimates" :key="e.id" class="border p-4 rounded-lg shadow-sm space-y-1">
+        <div v-for="e in estimatesStore.estimates" :key="e.id" class="border p-4 rounded-lg shadow-sm space-y-1">
           <div class="font-semibold text-lg">{{ e.name }}</div>
           <div class="text-sm">
             Клиент: {{ e.client?.name || '—' }}
@@ -24,7 +24,7 @@
             Подробнее →
           </router-link>
         </div>
-        <div v-if="store.estimates.length === 0" class="text-center text-gray-500 border p-4 rounded py-8">
+        <div v-if="estimatesStore.estimates.length === 0" class="text-center text-gray-500 border p-4 rounded py-8">
           <p>Сметы отсутствуют.</p>
         </div>
       </div>
@@ -48,7 +48,12 @@
 
           <div>
             <label class="text-sm text-gray-600">Клиент</label>
-            <input v-model="filters.client" class="input-field mt-1" type="text" />
+            <select v-model="filters.client" class="input-field mt-1">
+              <option :value="''">Все клиенты</option>
+              <option v-for="c in clients" :key="c.id" :value="c.id">
+                {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
+              </option>
+            </select>
           </div>
 
           <div>
@@ -75,10 +80,11 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEstimatesStore } from '@/store/estimates'
+import { useClientsStore } from '@/store/clients'
 
 const router = useRouter()
 const toast = useToast()
@@ -92,17 +98,24 @@ const filters = ref({
 
 const fileInput = ref(null)
 
-const store = useEstimatesStore()
-onMounted(() => store.fetchEstimates())
+const estimatesStore = useEstimatesStore()
+const clientsStore = useClientsStore()
+
+onMounted(async () => {
+  await clientsStore.fetchClients()
+  await estimatesStore.fetchEstimates()
+})
+
+const clients = computed(() => clientsStore.clients)
 
 function applyFilters() {
   const query = {
     name: filters.value.name,
-    client: filters.value.client,
+    client: filters.value.client ? Number(filters.value.client) : undefined, // важно число!
     date_from: toUTCStart(filters.value.date_from),
     date_to: toUTCEnd(filters.value.date_to)
   }
-  store.fetchEstimates(query)
+  estimatesStore.fetchEstimates(query)
 }
 
 function resetFilters() {
@@ -112,7 +125,7 @@ function resetFilters() {
     date_from: '',
     date_to: ''
   }
-  store.fetchEstimates()
+  estimatesStore.fetchEstimates()
 }
 
 function toUTCStart(dateStr) {
@@ -148,7 +161,7 @@ async function handleFile(event) {
       return
     }
 
-    store.setImportedEstimate(json)
+    estimatesStore.setImportedEstimate(json)
     router.push({ path: '/estimates/create', state: { importedData: json } })
 
   } catch (e) {

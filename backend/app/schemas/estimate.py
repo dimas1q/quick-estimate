@@ -11,6 +11,8 @@ class EstimateBase(BaseModel):
     name: str = Field(..., min_length=1)
     client_id: int
     responsible: str = Field(..., min_length=1)
+    event_datetime: Optional[datetime]
+    event_place: Optional[str]
     notes: Optional[str]
     status: EstimateStatus = EstimateStatus.DRAFT
     vat_enabled: bool = True

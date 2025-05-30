@@ -8,7 +8,14 @@ class ClientBase(BaseModel):
     company: Optional[str]
     email: Optional[EmailStr]
     phone: Optional[str]
-    address: Optional[str]
+    legal_address: Optional[str]
+    actual_address: Optional[str]
+    inn: Optional[str]
+    kpp: Optional[str]
+    bik: Optional[str]
+    account: Optional[str]
+    bank: Optional[str]
+    corr_account: Optional[str]
     notes: Optional[str]
 
 

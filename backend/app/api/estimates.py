@@ -46,7 +46,7 @@ async def create_estimate(
         EstimateChangeLog(
             estimate_id=new_estimate.id,
             action="Создание",
-            description=f"Смета создана",
+            description="Смета создана",
         )
     )
 
@@ -83,7 +83,7 @@ async def list_estimates(
     if client:
         query = query.where(
             Estimate.client_id == client
-        )  # Adjust to filter by client ID
+        )  
     if date_from:
         try:
             dt_from = datetime.fromisoformat(date_from)
