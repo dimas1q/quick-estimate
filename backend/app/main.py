@@ -1,17 +1,10 @@
-from http.client import HTTPException
 import os
-from urllib.request import Request
-from fastapi import FastAPI
-from app.api import estimates
-from app.api import auth
-from app.api import user
-from app.api import templates
-from app.api import clients
-from app.api import versions
-from app.api import analytics
-from app.core.database import create_tables
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
+from app.api import estimates, auth, user, templates, clients, versions, analytics
+from app.core.database import create_tables
+
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 app = FastAPI(title="QuickEstimate")
