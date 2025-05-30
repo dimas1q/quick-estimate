@@ -1,4 +1,6 @@
+from http.client import HTTPException
 import os
+from urllib.request import Request
 from fastapi import FastAPI
 from app.api import estimates
 from app.api import auth
@@ -14,6 +16,7 @@ from starlette.responses import FileResponse
 
 app = FastAPI(title="QuickEstimate")
 
+# CORS (только для разработки)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -22,12 +25,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 @app.on_event("startup")
 async def startup():
     await create_tables()
 
-
+# API
 app.include_router(auth.router, prefix="/api/auth")
 app.include_router(user.router, prefix="/api/users")
 app.include_router(estimates.router, prefix="/api/estimates")
@@ -36,12 +38,15 @@ app.include_router(clients.router, prefix="/api/clients")
 app.include_router(versions.router, prefix="/api/versions")
 app.include_router(analytics.router, prefix="/api/analytics")
 
+# SPA frontend fallback
 frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 index_file = os.path.join(frontend_path, "index.html")
 
 if os.path.exists(index_file):
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="assets")
 
     @app.get("/{full_path:path}")
-    async def serve_vue_app(full_path: str):
+    async def serve_vue_app(request: Request, full_path: str):
+        if request.url.path.startswith("/api"):
+            raise HTTPException(status_code=404, detail="API route not found")
         return FileResponse(index_file)
