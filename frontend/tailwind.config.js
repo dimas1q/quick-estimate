@@ -10,4 +10,5 @@ export default {
     extend: {},
   },
   plugins: [],
+  darkMode: 'class', // Enable dark mode support
 }

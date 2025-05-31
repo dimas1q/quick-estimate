@@ -1,94 +1,17 @@
-# frontend/src/pages/EstimatesPage.vue
-# Component for displaying a list of estimates with filtering options.
-<template>
-  <div class="space-y-6 px-36 py-8 max-w-6xl mx-auto">
-
-    <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Сметы</h1>
-    </div>
-
-    <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
-
-    <div class="flex gap-6 items-start">
-
-      <div class="flex-1 space-y-4">
-        <div v-for="e in estimatesStore.estimates" :key="e.id" class="border p-4 rounded-lg shadow-sm space-y-1">
-          <div class="font-semibold text-lg">{{ e.name }}</div>
-          <div class="text-sm">
-            Клиент: {{ e.client?.name || '—' }}
-            <span v-if="e.client?.company">({{ e.client.company }})</span>
-          </div>
-          <div class="text-sm">Ответственный: {{ e.responsible || '—' }}</div>
-          <div class="text-xs text-gray-500">Создана: {{ new Date(e.date).toLocaleString() }}</div>
-          <router-link :to="`/estimates/${e.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">
-            Подробнее →
-          </router-link>
-        </div>
-        <div v-if="estimatesStore.estimates.length === 0" class="text-center text-gray-500 border p-4 rounded py-8">
-          <p>Сметы отсутствуют.</p>
-        </div>
-      </div>
-
-      <div class="w-64 space-y-4">
-        <router-link to="/estimates/create" class="btn-primary block w-full text-center">
-          Создать смету
-        </router-link>
-
-        <button @click="triggerFileInput" class="btn-primary block w-full text-center">Импорт сметы</button>
-
-        <!-- Блок фильтров -->
-        <div class="border rounded p-4 shadow-sm space-y-4 text-center">
-
-
-          <h2 class="font-semibold text-lg">Фильтры</h2>
-          <div>
-            <label class="text-sm text-gray-600">Название</label>
-            <input v-model="filters.name" class="input-field mt-1" type="text" />
-          </div>
-
-          <div>
-            <label class="text-sm text-gray-600">Клиент</label>
-            <select v-model="filters.client" class="input-field mt-1">
-              <option :value="''">Все клиенты</option>
-              <option v-for="c in clients" :key="c.id" :value="c.id">
-                {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label class="text-sm text-gray-600">Дата с</label>
-            <input v-model="filters.date_from" class="input-field mt-1" type="date" />
-          </div>
-
-          <div>
-            <label class="text-sm text-gray-600">Дата по</label>
-            <input v-model="filters.date_to" class="input-field mt-1" type="date" />
-          </div>
-
-          <div class="flex gap-2 pt-2">
-            <button @click="applyFilters" class="btn-secondary w-full">Применить</button>
-            <button @click="resetFilters" class="btn-secondary w-full">Сбросить</button>
-          </div>
-        </div>
-
-      </div>
-
-
-    </div>
-  </div>
-</template>
-
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEstimatesStore } from '@/store/estimates'
 import { useClientsStore } from '@/store/clients'
+import { Star, StarOff } from 'lucide-vue-next'
 
 const router = useRouter()
 const toast = useToast()
 
+const isLoading = ref(true)
+const viewMode = ref('my')
+const fileInput = ref(null)
 const filters = ref({
   name: '',
   client: '',
@@ -96,36 +19,47 @@ const filters = ref({
   date_to: ''
 })
 
-const fileInput = ref(null)
-
 const estimatesStore = useEstimatesStore()
 const clientsStore = useClientsStore()
 
-onMounted(async () => {
-  await clientsStore.fetchClients()
-  await estimatesStore.fetchEstimates()
-})
-
 const clients = computed(() => clientsStore.clients)
 
-function applyFilters() {
+const filteredEstimates = computed(() => {
+  if (viewMode.value === 'fav') {
+    return estimatesStore.estimates.filter(e => e.is_favorite)
+  }
+  return estimatesStore.estimates
+})
+
+onMounted(async () => {
+  isLoading.value = true
+  await clientsStore.fetchClients()
+  await estimatesStore.fetchEstimates()
+  isLoading.value = false
+})
+
+async function applyFilters() {
+  isLoading.value = true
   const query = {
     name: filters.value.name,
-    client: filters.value.client ? Number(filters.value.client) : undefined, // важно число!
+    client: filters.value.client ? Number(filters.value.client) : undefined,
     date_from: toUTCStart(filters.value.date_from),
     date_to: toUTCEnd(filters.value.date_to)
   }
-  estimatesStore.fetchEstimates(query)
+  await estimatesStore.fetchEstimates(query)
+  isLoading.value = false
 }
 
-function resetFilters() {
+async function resetFilters() {
+  isLoading.value = true
   filters.value = {
     name: '',
     client: '',
     date_from: '',
     date_to: ''
   }
-  estimatesStore.fetchEstimates()
+  await estimatesStore.fetchEstimates()
+  isLoading.value = false
 }
 
 function toUTCStart(dateStr) {
@@ -152,8 +86,6 @@ async function handleFile(event) {
   try {
     const text = await file.text()
     const json = JSON.parse(text)
-
-    // удалим id, если есть
     if ('id' in json) delete json.id
     json.items?.forEach(item => delete item.id)
 
@@ -177,31 +109,145 @@ function isValidEstimate(estimate) {
 
   for (const [i, item] of estimate.items.entries()) {
     if (!item || typeof item !== 'object') return false
-
     const { name, quantity, unit, unit_price } = item
-
     if (!name || typeof name !== 'string' || !name.trim()) {
       toast.error(`Ошибка в услуге №${i + 1}: отсутствует название`)
       return false
     }
-
     if (!['шт', 'час', 'день', 'м²', 'м'].includes(unit)) {
       toast.error(`Ошибка в услуге №${i + 1}: недопустимая единица измерения`)
       return false
     }
-
     if (typeof quantity !== 'number' || quantity <= 0) {
       toast.error(`Ошибка в услуге №${i + 1}: количество должно быть > 0`)
       return false
     }
-
     if (typeof unit_price !== 'number' || unit_price <= 0) {
       toast.error(`Ошибка в услуге №${i + 1}: цена должна быть > 0`)
       return false
     }
   }
-
   return true
 }
 
+function setViewMode(mode) {
+  viewMode.value = mode
+  // Можно сделать фильтрацию на сервере: estimatesStore.fetchEstimates({ favorite: mode === 'fav' })
+  // Сейчас фильтруем на клиенте
+}
+
+async function toggleFavorite(estimate) {
+  try {
+    if (estimate.is_favorite) {
+      await estimatesStore.removeFavorite(estimate.id)
+      estimate.is_favorite = false
+      toast.success('Удалено из избранного')
+    } else {
+      await estimatesStore.addFavorite(estimate.id)
+      estimate.is_favorite = true
+      toast.success('Добавлено в избранное')
+    }
+  } catch (e) {
+    toast.error('Ошибка при изменении избранного')
+  }
+}
 </script>
+
+<template>
+  <div class="space-y-6 px-6 py-8 max-w-6xl mx-auto">
+    <!-- Навигационный переключатель -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+        <button
+          :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'my' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+          @click="setViewMode('my')">Мои сметы</button>
+        <button
+          :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'fav' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+          @click="setViewMode('fav')">Избранное</button>
+      </div>
+    </div>
+
+    <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
+
+    <div class="flex gap-6 items-start">
+      <div class="flex-1 space-y-4">
+        <!-- Скелетон-карточки -->
+        <div v-if="isLoading" class="flex flex-col gap-5">
+          <div v-for="n in 3" :key="n"
+            class="border rounded-xl shadow-sm p-5 bg-white dark:bg-gray-900 animate-pulse flex flex-col gap-3 relative">
+            <div class="h-6 bg-gray-200 dark:bg-gray-800 rounded w-2/3 mb-2"></div>
+            <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
+            <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+            <div class="h-3 bg-gray-100 dark:bg-gray-700 rounded w-1/4"></div>
+          </div>
+        </div>
+
+        <!-- Список смет -->
+        <template v-else>
+          <div v-for="e in filteredEstimates" :key="e.id"
+            class="border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 bg-white dark:bg-gray-900 transition hover:shadow-md flex flex-col gap-1 relative">
+            <!-- Звезда -->
+            <button
+              class="absolute top-2 right-2 rounded-full bg-transparent p-1 transition flex items-center justify-center"
+              style="width: 44px; height: 44px; overflow: visible;"
+              :aria-label="e.is_favorite ? 'Убрать из избранного' : 'Добавить в избранное'" @click="toggleFavorite(e)">
+              <Star v-if="e.is_favorite" class="w-6 h-6 text-yellow-400 fill-yellow-400" :stroke-width="1.5" />
+              <Star v-else class="w-6 h-6 text-gray-300 hover:text-yellow-400 transition" :stroke-width="1.5" />
+            </button>
+            <div class="font-semibold text-lg">{{ e.name }}</div>
+            <div class="text-sm">
+              Клиент: {{ e.client?.name || '—' }}
+              <span v-if="e.client?.company">({{ e.client.company }})</span>
+            </div>
+            <div class="text-sm">Ответственный: {{ e.responsible || '—' }}</div>
+            <div class="text-xs text-gray-500">Создана: {{ new Date(e.date).toLocaleString() }}</div>
+            <router-link :to="`/estimates/${e.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">
+              Подробнее →
+            </router-link>
+          </div>
+          <div v-if="filteredEstimates.length === 0"
+            class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded py-8">
+            <p>Сметы отсутствуют.</p>
+          </div>
+        </template>
+      </div>
+
+      <!-- Боковая панель с фильтрами и импортом -->
+      <div class="w-72 space-y-4">
+        <router-link to="/estimates/create" class="qe-btn block w-full text-center">
+          Создать смету
+        </router-link>
+        <button @click="triggerFileInput" class="qe-btn block w-full text-center">Импорт сметы</button>
+        <div
+          class="border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-gray-900">
+          <h2 class="font-semibold text-lg">Фильтры</h2>
+          <div>
+            <label class="text-sm text-gray-600 dark:text-gray-300">Название</label>
+            <input v-model="filters.name" class="qe-input mt-1" type="text" />
+          </div>
+          <div>
+            <label class="text-sm text-gray-600 dark:text-gray-300">Клиент</label>
+            <select v-model="filters.client" class="qe-input mt-1">
+              <option :value="''">Все клиенты</option>
+              <option v-for="c in clients" :key="c.id" :value="c.id">
+                {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm text-gray-600 dark:text-gray-300">Дата с</label>
+            <input v-model="filters.date_from" class="qe-input mt-1" type="date" />
+          </div>
+          <div>
+            <label class="text-sm text-gray-600 dark:text-gray-300">Дата по</label>
+            <input v-model="filters.date_to" class="qe-input mt-1" type="date" />
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button @click="applyFilters" class="qe-btn w-full">Применить</button>
+            <button @click="resetFilters" class="qe-btn w-full ">Сбросить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

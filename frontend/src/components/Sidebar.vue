@@ -1,4 +1,3 @@
-<!-- frontend/src/components/Sidebar.vue -->
 <script setup>
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -19,14 +18,15 @@ function isActive(path) {
 
 <template>
   <aside :class="[
-    'bg-white border-r transition-all duration-300 ease-in-out flex flex-col relative',
+    'bg-white dark:bg-gray-900 border-r dark:border-gray-800 transition-all duration-300 ease-in-out flex flex-col relative',
     collapsed ? 'w-16' : 'w-48'
   ]">
     <nav class="flex-1 space-y-2 px-3 py-4 text-sm">
-
       <RouterLink to="/estimates" class="flex items-center rounded transition-all" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
-        isActive('/estimates') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
+        isActive('/estimates')
+          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+          : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <FileText class="w-5 h-5 shrink-0" />
         <span v-if="!collapsed">Сметы</span>
@@ -34,7 +34,9 @@ function isActive(path) {
 
       <RouterLink to="/clients" class="flex items-center rounded transition-all" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
-        isActive('/clients') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
+        isActive('/clients')
+          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+          : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <Users class="w-5 h-5 shrink-0" />
         <span v-if="!collapsed">Клиенты</span>
@@ -42,7 +44,9 @@ function isActive(path) {
 
       <RouterLink to="/templates" class="flex items-center rounded transition-all" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
-        isActive('/templates') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
+        isActive('/templates')
+          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+          : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <Folder class="w-5 h-5 shrink-0" />
         <span v-if="!collapsed">Шаблоны</span>
@@ -50,18 +54,18 @@ function isActive(path) {
 
       <RouterLink to="/analytics" class="flex items-center rounded transition-all" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
-        isActive('/analytics') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-blue-50 text-gray-700'
+        isActive('/analytics')
+          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+          : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <ChartNoAxesCombined class="w-5 h-5 shrink-0" />
         <span v-if="!collapsed">Аналитика</span>
       </RouterLink>
-
-
     </nav>
 
     <button @click="toggleSidebar"
-      class="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-white border rounded-full shadow p-1 hover:bg-blue-100 transition z-50">
-      <ChevronLeft class="h-4 w-4 text-gray-600 transition-transform duration-200"
+      class="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-full shadow p-1 hover:bg-blue-100 dark:hover:bg-gray-800 transition z-50">
+      <ChevronLeft class="h-4 w-4 text-gray-600 dark:text-gray-300 transition-transform duration-200"
         :class="{ 'rotate-180': collapsed }" />
     </button>
   </aside>
