@@ -182,7 +182,19 @@ watch(() => props.initial, (value) => {
   }
 }, { immediate: true })
 
+function flattenItems(categories) {
+  // Возвращает плоский массив с подставленной категорией
+  return categories.flatMap(cat =>
+    cat.items.map(item => ({ ...item, category: cat.name }))
+  )
+}
+
+
 async function submit() {
+  // Преобразовать из categories в плоский массив услуг (если нужно)
+  if (estimate.items.length && estimate.items[0]?.items) {
+    estimate.items = flattenItems(estimate.items)
+  }
   if (!validateEstimate()) return
 
   let result
@@ -238,11 +250,15 @@ function validateEstimate() {
       return false
     }
     if (!item.quantity || item.quantity <= 0) {
-      toast.error(`Услуга №${i + 1}: количество должно быть > 0`)
+      toast.error(`Услуга ${item.name}: количество должно быть > 0`)
       return false
     }
-    if (!item.unit_price || item.unit_price <= 0) {
-      toast.error(`Услуга №${i + 1}: цена должна быть > 0`)
+    if (!item.internal_price || item.internal_price <= 0) {
+      toast.error(`Услуга ${item.name}: внутренняя цена должна быть > 0`)
+      return false
+    }
+    if (!item.external_price || item.external_price <= 0) {
+      toast.error(`Услуга ${item.name}: внешняя цена должна быть > 0`)
       return false
     }
   }

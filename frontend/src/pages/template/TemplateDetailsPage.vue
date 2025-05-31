@@ -1,3 +1,4 @@
+# frontend/src/pages/template/TemplateDetailsPage.vue
 <template>
   <div class="py-8 max-w-6xl mx-auto">
     <div v-if="error" class="text-center text-red-500 text-lg font-medium mt-10">
@@ -50,35 +51,50 @@
                     </div>
                   </div>
                   <div class="flex justify-between text-sm text-gray-700 pt-2">
-                    <span>Цена за единицу:</span>
-                    <span>{{ formatCurrency(item.unit_price) }}</span>
+                    <span>Внутр. цена за единицу:</span>
+                    <span>{{ formatCurrency(item.internal_price) }}</span>
+                  </div>
+                  <div class="flex justify-between text-sm text-gray-700">
+                    <span>Внеш. цена за единицу:</span>
+                    <span>{{ formatCurrency(item.external_price) }}</span>
                   </div>
                   <div class="flex justify-between font-semibold text-sm text-gray-900">
-                    <span>Итог:</span>
-                    <span>{{ formatCurrency(getItemTotal(item)) }}</span>
+                    <span>Итог (внутр.):</span>
+                    <span>{{ formatCurrency(getItemInternal(item)) }}</span>
+                  </div>
+                  <div class="flex justify-between font-semibold text-sm text-gray-900">
+                    <span>Итог (внешн.):</span>
+                    <span>{{ formatCurrency(getItemExternal(item)) }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="text-right font-semibold text-base text-gray-700 mt-4">
-              Сумма по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
+            <div class="text-right font-semibold text-base text-gray-900 mt-4">
+              <div>Итог по категории (внутр.): {{ formatCurrency(getGroupInternal(groupItems)) }}
+              </div>
+              <div>Итог по категории (внешн.): {{ formatCurrency(getGroupExternal(groupItems)) }}
+              </div>
             </div>
           </div>
 
 
           <div v-if="template?.items?.length" class="pt-6">
             <p class="text-right font-semibold text-lg pt-4 border-t">
-              Общая сумма: {{ formatCurrency(total) }}
+              Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
+            </p>
+            <p class="text-right font-semibold text-lg">
+              Общая сумма (внешн.): {{ formatCurrency(totalExternal) }}
+            </p>
+            <p class="text-right font-semibold text-lg">
+              Разница: {{ formatCurrency(totalDiff) }}
             </p>
           </div>
 
         </div>
       </div>
-
-
-
     </div>
+
     <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white p-6 rounded shadow max-w-sm w-full text-center">
         <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данный шаблон?</p>
@@ -147,17 +163,25 @@ const groupedItems = computed(() => {
   return groups
 })
 
-function getItemTotal(item) {
-  return item.quantity * item.unit_price
+function getItemInternal(item) {
+  return item.quantity * item.internal_price;
 }
 
-function getGroupTotal(items) {
-  return items.reduce((sum, item) => sum + getItemTotal(item), 0)
+function getItemExternal(item) {
+  return item.quantity * item.external_price;
 }
 
-const total = computed(() => {
-  return template.value?.items?.reduce((sum, item) => sum + getItemTotal(item), 0) || 0
-})
+function getGroupInternal(group) {
+  return group.reduce((sum, item) => sum + getItemInternal(item), 0)
+}
+function getGroupExternal(group) {
+  return group.reduce((sum, item) => sum + getItemExternal(item), 0)
+}
+
+const totalInternal = computed(() => template.value?.items?.reduce((sum, item) => sum + getItemInternal(item), 0) || 0)
+const totalExternal = computed(() => template.value?.items?.reduce((sum, item) => sum + getItemExternal(item), 0) || 0)
+
+const totalDiff = computed(() => totalExternal.value - totalInternal.value)
 
 function formatCurrency(val) {
   return `${val.toFixed(2)} ₽`

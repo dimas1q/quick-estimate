@@ -7,7 +7,8 @@ class TemplateItemBase(BaseModel):
     description: Optional[str] = None
     quantity: float = Field(..., gt=0)
     unit: str
-    unit_price: float = Field(..., gt=0)
+    internal_price: float = Field(..., gt=0)
+    external_price: float = Field(..., gt=0)
     category: Optional[str] = None
 
 

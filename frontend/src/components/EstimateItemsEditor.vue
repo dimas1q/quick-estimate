@@ -1,208 +1,276 @@
-# frontend/src/components/EstimateItemsEditor.vue
 <template>
-  <div class="space-y-4">
-
-    <h2 class="text-lg font-semibold text-center">Услуги</h2>
-
-    <div class="grid grid-cols-8 gap-4 font-semibold text-sm text-gray-600 py-2">
-      <div class="w-full px-4 text-center">Название</div>
-      <div class="w-full px-4 text-center">Описание</div>
-      <div class="w-full px-4 text-center">Кол-во</div>
-      <div class="w-full px-4 text-center">Ед. изм.</div>
-      <div class="w-full px-4 text-center">Цена</div>
-      <div class="w-full px-4 text-center">Категория</div>
-      <div class="w-full px-4 text-center">Итог</div>
-      <div class="w-full px-4 text-center">Действие</div>
-    </div>
-
-    <div v-for="(groupItems, category) in groupedItems" :key="category" class="space-y-4">
-      <h3 class="text-md font-semibold text-gray-700 text-center">{{ category }}</h3>
-
-      <div v-for="(item, index) in groupItems" :key="index" class="grid grid-cols-8 gap-3 items-center">
-        <input v-model="item.name" class="input-field" placeholder="Название" />
-        <input v-model="item.description" class="input-field" placeholder="Описание" />
-        <input type="text" v-model="item.quantity" @blur="normalizeNumber(item, 'quantity')" class="input-field" min="1"
-          placeholder="Кол-во" />
+  <div class="space-y-8">
 
 
-        <select v-model="item.unit" class="input-field">
-          <option value="шт">шт</option>
-          <option value="час">час</option>
-          <option value="день">день</option>
-          <option value="м²">м²</option>
-          <option value="м">м</option>
-          <option value="чел.">чел.</option>
-          <option value="комп.">комп.</option>
-          <option value="усл.">усл.</option>
-          <option value="чел/час">чел/час</option>
-          <option value="чел/смена">чел/смена</option>
-          <option value="проект">проект</option>
-          <option value="пог.м">пог.м</option>
-          <option value="рейс">рейс</option>
-          <option value="машина">машина</option>
-        </select>
-
-
-        <input type="text" v-model="item.unit_price" @blur="normalizeNumber(item, 'unit_price')" class="input-field"
-          placeholder="Цена за единицу" />
-
-        <input v-model="item.category_input" @blur="applyCategory(item)" class="input-field" placeholder="Категория" />
-
-        <div class="text-sm font-semibold flex items-center justify-center h-full">
-          {{ formatCurrency(getItemTotal(item)) }}
+    <!-- Категории -->
+    <transition-group name="fade" tag="div" class="space-y-8">
+      <div v-for="(cat, idx) in categories" :key="cat.id" class="rounded-2xl border bg-gray-50 shadow-md p-4 space-y-4">
+        <!-- Категория: название и действия -->
+        <div class="flex items-center gap-3 mb-2">
+          <input v-model="cat.name" placeholder="Название категории"
+            class="flex-1 border-0 border-b text-lg font-semibold bg-transparent focus:ring-0 focus:border-blue-400" />
+          <button @click="removeCategory(idx)" type="button" class="text-red-500 hover:text-red-700 text-sm">Удалить
+            категорию</button>
         </div>
 
-        <div class="flex items-center justify-center">
-          <button type="button" @click="removeItem(item)" class="text-red-600 hover:underline text-sm">
-            Удалить
+        <!-- Таблица услуг -->
+        <div>
+          <div class="grid grid-cols-9 gap-3 text-gray-600 text-xs font-semibold mb-2 text-center">
+            <div>Название</div>
+            <div>Описание</div>
+            <div>Кол-во</div>
+            <div>Ед.</div>
+            <div>Внутр. цена</div>
+            <div>Внеш. цена</div>
+            <div>Итог (внутр.)</div>
+            <div>Итог (внеш.)</div>
+            <div>Действие</div>
+          </div>
+
+          <transition-group name="fade" tag="div">
+            <div v-for="(item, itemIdx) in cat.items" :key="item.id" class="grid grid-cols-9 gap-3 items-center py-1">
+              <input v-model="item.name" class="input-field" placeholder="Название" />
+              <input v-model="item.description" class="input-field" placeholder="Описание" />
+              <input type="number" min="0" step="any" v-model.number="item.quantity" class="input-field"
+                placeholder="Кол-во" />
+              <select v-model="item.unit" class="input-field">
+                <option v-for="u in units" :key="u">{{ u }}</option>
+              </select>
+              <input type="number" min="0" step="any" v-model.number="item.internal_price" class="input-field"
+                placeholder="Внутр. цена" />
+              <input type="number" min="0" step="any" v-model.number="item.external_price" class="input-field"
+                placeholder="Внеш. цена" />
+              <div class="text-sm font-semibold text-center pr-2">
+                {{ formatCurrency(getItemInternal(item)) }}
+              </div>
+              <div class="text-sm font-semibold text-center pr-2">
+                {{ formatCurrency(getItemExternal(item)) }}
+              </div>
+              <button type="button" @click="removeItem(idx, itemIdx)" class="text-red-600 hover:underline text-xs">
+                Удалить
+              </button>
+            </div>
+          </transition-group>
+        </div>
+
+        <!-- Итоги по категории -->
+            <div class="flex flex-col text-sm font-semibold mt-3 border-t pt-2 items-end text-right">
+            <span>Итог по категории (внутр.): {{ formatCurrency(getCategoryInternal(cat)) }}</span>
+            <span>Итог по категории (внешн.): {{ formatCurrency(getCategoryExternal(cat)) }}</span>
+            </div>
+
+        <!-- Кнопка добавления услуги внутри категории -->
+        <div class="flex justify-end">
+          <button type="button" class="btn-secondary" @click="addItem(idx)">
+            + Добавить услугу
           </button>
         </div>
-
       </div>
+    </transition-group>
 
-      <!-- промежуточный итог -->
-      <div class="text-right font-semibold text-sm text-gray-600 border-t pt-2">
-        Итог: {{ formatCurrency(getGroupTotal(groupItems)) }}
-      </div>
-    </div>
-
+    <!-- Использовать шаблон -->
     <div class="flex flex-wrap items-center gap-4">
-      <select v-model="selectedTemplateId" class="input-field">
-        <option :value="null" disabled>Выберите шаблон</option>
-        <option v-for="template in templatesStore.templates" :key="template.id" :value="template.id">
-          {{ template.name }}
-        </option>
-      </select>
-      <button type="button" @click="applyTemplate" class="btn-secondary">
-        Добавить услуги из шаблона
+      <button type="button" @click="addCategory" class="btn-secondary">
+        Добавить категорию
       </button>
-      <button type="button" @click="addItem" class="btn-secondary">
-        Добавить услугу
+
+      <button type="button" class="btn-secondary" @click="showTemplateSelect = !showTemplateSelect">
+        Добавить из шаблона
       </button>
+
+      <transition name="fade">
+        <select v-if="showTemplateSelect" v-model="selectedTemplateId" @change="applyTemplate"
+          class="input-field min-w-[220px] max-w-[340px] transition-all" style="margin-left: 0">
+          <option :value="null" disabled selected>Выберите шаблон</option>
+          <option v-for="t in templatesStore.templates" :key="t.id" :value="t.id">
+            {{ t.name }}
+          </option>
+        </select>
+      </transition>
+
+
     </div>
 
-    <div class="pt-6 border-t">
+
+    <!-- Итоги по всем категориям -->
+    <div
+      v-if="categories.some(cat => (cat.items && cat.items.length > 0))"
+      class="pt-6 border-t"
+    >
       <p class="text-right font-semibold text-lg">
-        Общая сумма: {{ formatCurrency(total) }}
+      Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
       </p>
-      <p class="text-right text-gray-700" v-if="showVatSummary">
-        НДС ({{ vatRate }}%): {{ formatCurrency(vat) }}<br />
-        Итого с НДС: {{ formatCurrency(totalWithVat) }}
+      <p class="text-right font-semibold text-lg">
+      Общая сумма (внешняя): {{ formatCurrency(totalExternal) }}
+      </p>
+      <p class="text-right font-semibold text-lg">
+      Разница: {{ formatCurrency(totalDiff) }}
+      </p>
+      <p class="text-right text-gray-700" v-if="props.vatEnabled">
+      НДС ({{ props.vatRate }}%): {{ formatCurrency(vat) }}<br />
+      Итог с НДС: {{ formatCurrency(totalWithVat) }}
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, reactive, watch, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useTemplatesStore } from '@/store/templates'
-import { useToast } from 'vue-toastification'
 
 const templatesStore = useTemplatesStore()
-const toast = useToast()
-const selectedTemplateId = ref(null)
-
-onMounted(() => {
-  templatesStore.fetchTemplates()
-})
+const units = [
+  "шт", "час", "день", "м²", "м", "чел.", "комп.", "усл.", "чел/час", "чел/смена", "проект", "пог.м", "рейс", "машина"
+]
 
 const props = defineProps({
   modelValue: Array,
-  vatEnabled: {
-    type: Boolean,
-    default: true
-  },
-  vatRate: {
-    type: Number,
-    default: 20
-  },
-  showVatSummary: {
-    type: Boolean,
-    default: true
-  }
+  vatEnabled: Boolean,
+  vatRate: Number,
 })
 const emit = defineEmits(['update:modelValue'])
 
-const items = reactive(props.modelValue || [])
+// Категории для работы
+const categories = ref([])
 
-watch(items, () => {
-  emit('update:modelValue', items)
+// --- Инициализация и преобразование modelValue (важно!)
+onMounted(() => {
+  templatesStore.fetchTemplates() // Загружаем шаблоны при монтировании
+  if (props.modelValue && Array.isArray(props.modelValue)) {
+    if (props.modelValue.length && props.modelValue[0]?.items) {
+      // Уже новая структура
+      categories.value = JSON.parse(JSON.stringify(props.modelValue))
+    } else {
+      // Плоский массив услуг — преобразуем в категории
+      const groups = {}
+      for (const item of props.modelValue) {
+        const cat = (item.category || 'Без категории').trim()
+        if (!groups[cat]) groups[cat] = []
+        groups[cat].push({ ...item, id: Date.now() + Math.random() })
+      }
+      categories.value = Object.entries(groups).map(([name, items]) => ({
+        id: Date.now() + Math.random(),
+        name,
+        items,
+      }))
+    }
+  }
+})
+
+// Всегда синхронизируем наружу
+watch(categories, () => {
+  emit('update:modelValue', categories.value)
 }, { deep: true })
 
-function addItem() {
-  items.push({
+// Категории/услуги
+function addCategory() {
+  categories.value.push({
+    id: Date.now() + Math.random(),
     name: '',
-    description: '',
-    quantity: '',
-    unit: 'шт',
-    unit_price: '',
-    category_input: '',
-    category: ''
+    items: [],
   })
 }
-
-function removeItem(itemToRemove) {
-  const index = items.indexOf(itemToRemove)
-  if (index !== -1) items.splice(index, 1)
+function removeCategory(idx) {
+  categories.value.splice(idx, 1)
+}
+function addItem(catIdx) {
+  categories.value[catIdx].items.push({
+    id: Date.now() + Math.random(),
+    name: '',
+    description: '',
+    quantity: 1,
+    unit: 'шт',
+    internal_price: 0,
+    external_price: 0,
+  })
+}
+function removeItem(catIdx, itemIdx) {
+  categories.value[catIdx].items.splice(itemIdx, 1)
 }
 
-function getItemTotal(item) {
-  const raw = item.quantity * item.unit_price
-  return raw
+// --- Итоги
+function getItemInternal(item) {
+  return (item.quantity || 0) * (item.internal_price || 0)
 }
-
-function getGroupTotal(group) {
-  return group.reduce((sum, item) => sum + getItemTotal(item), 0)
+function getItemExternal(item) {
+  return (item.quantity || 0) * (item.external_price || 0)
 }
-
-const groupedItems = computed(() => {
-  const groups = {}
-  for (const item of items) {
-    const category = item.category?.trim() || 'Без категории'
-    if (!groups[category]) groups[category] = []
-    groups[category].push(item)
-  }
-  return groups
-})
-
-function applyCategory(item) {
-  item.category = item.category_input.trim()
+function getCategoryInternal(cat) {
+  return (cat.items || []).reduce((sum, item) => sum + getItemInternal(item), 0)
 }
-
-const total = computed(() => {
-  return items.reduce((sum, item) => sum + getItemTotal(item), 0)
-})
-
-const vat = computed(() => props.vatEnabled ? total.value * (props.vatRate / 100) : 0)
-const totalWithVat = computed(() => total.value + vat.value)
+function getCategoryExternal(cat) {
+  return (cat.items || []).reduce((sum, item) => sum + getItemExternal(item), 0)
+}
+const totalInternal = computed(() => categories.value.reduce((sum, cat) => sum + getCategoryInternal(cat), 0))
+const totalExternal = computed(() => categories.value.reduce((sum, cat) => sum + getCategoryExternal(cat), 0))
+const totalDiff = computed(() => totalExternal.value - totalInternal.value)
+const vat = computed(() => props.vatEnabled ? totalExternal.value * (props.vatRate / 100) : 0)
+const totalWithVat = computed(() => totalExternal.value + vat.value)
 
 function formatCurrency(value) {
-  return `${value.toFixed(2)} ₽`
+  return `${(value || 0).toFixed(2)} ₽`
 }
 
-function normalizeNumber(item, field) {
-  let value = item[field]
-  if (value === '') {
-    return
-  }
-  if (typeof value === 'string') {
-    value = value.replace(',', '.')
-  }
-  const parsed = parseFloat(value)
-  item[field] = isNaN(parsed) ? 0 : parsed
-}
+
+const showTemplateSelect = ref(false)
+const selectedTemplateId = ref(null)
 
 function applyTemplate() {
   const template = templatesStore.templates.find(t => t.id === selectedTemplateId.value)
   if (template) {
-    items.push(
-      ...template.items.map(item => ({
+    // Группируем услуги по категориям из шаблона
+    const tplCats = getTemplateCategories(template)
+
+    for (const tplCat of tplCats) {
+      // Проверяем — есть такая категория уже?
+      let cat = categories.value.find(c => c.name.trim() === tplCat.name.trim())
+      if (!cat) {
+        cat = {
+          id: Date.now() + Math.random(),
+          name: tplCat.name,
+          items: [],
+        }
+        categories.value.push(cat)
+      }
+      cat.items.push(...tplCat.items.map(item => ({
         ...item,
-        category_input: item.category || ''
-      }))
-    )
-    toast.success(`Добавлены услуги из шаблона "${template.name}"`)
+        id: Date.now() + Math.random()
+      })))
+    }
+
+    // Сброс селектора
+    showTemplateSelect.value = false
     selectedTemplateId.value = null
   }
 }
+
+// вспомогательная функция группировки
+function getTemplateCategories(template) {
+  // Если template.items плоский, сгруппировать
+  const groups = {}
+  for (const item of template.items) {
+    const cat = (item.category || 'Без категории').trim()
+    if (!groups[cat]) groups[cat] = []
+    groups[cat].push({ ...item, id: Date.now() + Math.random() })
+  }
+  return Object.entries(groups).map(([name, items]) => ({
+    name,
+    items,
+  }))
+}
+
+
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.18s cubic-bezier(.4, 0, .2, 1);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+}
+</style>

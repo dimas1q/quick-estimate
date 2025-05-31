@@ -154,7 +154,7 @@
                     </div>
 
                     <div class="border bg-gray-50 rounded-2xl shadow-md p-6 mt-6">
-                        <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-10">
+                        <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-4">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center pb-1">{{ category }}
                             </h3>
 
@@ -174,28 +174,46 @@
                                             </div>
                                         </div>
                                         <div class="flex justify-between text-sm text-gray-700 pt-2">
-                                            <span>Цена за единицу:</span>
-                                            <span>{{ formatCurrency(item.unit_price) }}</span>
+                                            <span>Внутр. цена за единицу:</span>
+                                            <span>{{ formatCurrency(item.internal_price) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm text-gray-700">
+                                            <span>Внеш. цена за единицу:</span>
+                                            <span>{{ formatCurrency(item.external_price) }}</span>
                                         </div>
                                         <div class="flex justify-between font-semibold text-sm text-gray-900">
-                                            <span>Итог:</span>
-                                            <span>{{ formatCurrency(getItemTotal(item)) }}</span>
+                                            <span>Итог (внутр.):</span>
+                                            <span>{{ formatCurrency(getItemInternal(item)) }}</span>
                                         </div>
+                                        <div class="flex justify-between font-semibold text-sm text-gray-900">
+                                            <span>Итог (внешн.):</span>
+                                            <span>{{ formatCurrency(getItemExternal(item)) }}</span>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="text-right font-semibold text-base text-gray-700 mt-4">
-                                Сумма по категории: {{ formatCurrency(getGroupTotal(groupItems)) }}
+                            <div class="text-right font-semibold text-base text-gray-900 mt-4">
+                                <div>Итог по категории (внутр.): {{ formatCurrency(getGroupInternal(groupItems)) }}
+                                </div>
+                                <div>Итог по категории (внешн.): {{ formatCurrency(getGroupExternal(groupItems)) }}
+                                </div>
                             </div>
                         </div>
 
 
                         <div v-if="estimate?.items?.length" class="pt-6">
                             <p class="text-right font-semibold text-lg pt-4 border-t">
-                                Общая сумма: {{ formatCurrency(total) }}
+                                Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
                             </p>
-                            <p class="text-right text-gray-700">
+                            <p class="text-right font-semibold text-lg">
+                                Общая сумма (внешняя): {{ formatCurrency(totalExternal) }}
+                            </p>
+                            <p class="text-right font-semibold text-lg">
+                                Разница: {{ formatCurrency(totalDiff) }}
+                            </p>
+                            <p class="text-right text-gray-700" v-if="estimate.vat_enabled">
                                 НДС ({{ estimate.vat_rate }}%): {{ formatCurrency(vat) }}<br />
                                 Итого с НДС: {{ formatCurrency(totalWithVat) }}
                             </p>
@@ -381,7 +399,6 @@ function chunkArray(array) {
 }
 
 
-
 const groupedItems = computed(() => {
     const groups = {}
     for (const item of estimate.value?.items || []) {
@@ -392,26 +409,28 @@ const groupedItems = computed(() => {
     return groups
 })
 
-function getGroupTotal(items) {
-    return items.reduce((sum, item) => sum + getItemTotal(item), 0)
+function getGroupInternal(group) {
+    return group.reduce((sum, item) => sum + getItemInternal(item), 0)
+}
+function getGroupExternal(group) {
+    return group.reduce((sum, item) => sum + getItemExternal(item), 0)
 }
 
-const getItemTotal = (item) => {
-    const raw = item.quantity * item.unit_price
-    return raw
+function getItemInternal(item) {
+    return item.quantity * item.internal_price;
 }
 
-const total = computed(() => {
-    return estimate.value?.items?.reduce((sum, item) => sum + getItemTotal(item), 0) || 0
-})
+function getItemExternal(item) {
+    return item.quantity * item.external_price;
+}
 
-const vat = computed(() =>
-    estimate.value?.vat_enabled
-        ? total.value * (estimate.value.vat_rate / 100)
-        : 0
-)
+const totalInternal = computed(() => estimate.value?.items?.reduce((sum, item) => sum + getItemInternal(item), 0) || 0)
+const totalExternal = computed(() => estimate.value?.items?.reduce((sum, item) => sum + getItemExternal(item), 0) || 0)
 
-const totalWithVat = computed(() => total.value + vat.value)
+const totalDiff = computed(() => totalExternal.value - totalInternal.value)
+
+const vat = computed(() => estimate.value?.vat_enabled ? totalExternal.value * (estimate.value.vat_rate / 100) : 0)
+const totalWithVat = computed(() => totalExternal.value + vat.value)
 
 function formatCurrency(val) {
     return `${val.toFixed(2)} ₽`
@@ -469,12 +488,6 @@ async function restoreVersion(version) {
         console.error(err)
         toast.error('Не удалось восстановить версию')
     }
-}
-
-async function copyVersion(version) {
-    const id = route.params.id
-    store.setCopiedEstimate({ ...estimate.value })
-    router.push('/estimates/create')
 }
 
 async function deleteVersion(version) {

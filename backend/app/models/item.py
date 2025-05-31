@@ -1,7 +1,7 @@
+# backend/app/models/item.py
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-
 
 class EstimateItem(Base):
     __tablename__ = "estimate_items"
@@ -11,7 +11,8 @@ class EstimateItem(Base):
     description = Column(String)
     quantity = Column(Float, default=1)
     unit = Column(String, default="шт")
-    unit_price = Column(Float, default=0)
+    internal_price = Column(Float, default=0)
+    external_price = Column(Float, default=0)
     category = Column(String)
 
     estimate_id = Column(Integer, ForeignKey("estimates.id"), nullable=True)
