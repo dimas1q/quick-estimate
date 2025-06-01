@@ -18,14 +18,14 @@ function isActive(path) {
 
 <template>
   <aside :class="[
-    'bg-white dark:bg-gray-900 border-r dark:border-gray-800 transition-all duration-300 ease-in-out flex flex-col relative',
+    'bg-white dark:bg-qe-black border-r dark:border-gray-800 transition-all duration-300 ease-in-out flex flex-col relative',
     collapsed ? 'w-16' : 'w-48'
   ]">
     <nav class="flex-1 space-y-2 px-3 py-4 text-sm">
       <RouterLink to="/estimates" class="flex items-center rounded transition-all" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
         isActive('/estimates')
-          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+          ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
           : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <FileText class="w-5 h-5 shrink-0" />
@@ -35,7 +35,7 @@ function isActive(path) {
       <RouterLink to="/clients" class="flex items-center rounded transition-all" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
         isActive('/clients')
-          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+          ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
           : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <Users class="w-5 h-5 shrink-0" />
@@ -45,7 +45,7 @@ function isActive(path) {
       <RouterLink to="/templates" class="flex items-center rounded transition-all" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
         isActive('/templates')
-          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+          ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
           : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <Folder class="w-5 h-5 shrink-0" />
@@ -55,7 +55,7 @@ function isActive(path) {
       <RouterLink to="/analytics" class="flex items-center rounded transition-all" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
         isActive('/analytics')
-          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+          ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
           : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <ChartNoAxesCombined class="w-5 h-5 shrink-0" />

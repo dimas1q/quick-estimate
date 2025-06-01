@@ -174,7 +174,7 @@ async def get_client_analytics(
         raise HTTPException(404, "Смет по данным фильтрам не найдено")
 
     # total revenue
-    revenue_expr = EstimateItem.quantity * EstimateItem.unit_price
+    revenue_expr = EstimateItem.quantity * EstimateItem.internal_price
     q_sum = (
         select(func.coalesce(func.sum(revenue_expr), 0.0))
         .select_from(Estimate)
@@ -319,7 +319,7 @@ async def get_global_analytics(
         raise HTTPException(404, "Смет по данным фильтрам не найдено")
 
     # total revenue
-    revenue_expr = EstimateItem.quantity * EstimateItem.unit_price
+    revenue_expr = EstimateItem.quantity * EstimateItem.internal_price
     q_sum = (
         select(func.coalesce(func.sum(revenue_expr), 0.0))
         .select_from(Estimate)

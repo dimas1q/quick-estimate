@@ -6,6 +6,7 @@ from app.models.estimate import Estimate
 from app.models.client import Client
 
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -16,6 +17,14 @@ class User(Base):
     company = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     is_admin = Column(Boolean, default=False)
+
+    from app.models.estimate_favorite import EstimateFavorite
+
+    favorites = relationship(
+        "EstimateFavorite",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
     estimates = relationship(
         Estimate, back_populates="user", cascade="all, delete-orphan"

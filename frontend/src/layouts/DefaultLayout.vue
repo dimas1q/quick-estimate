@@ -46,12 +46,12 @@ onClickOutside(menuRef, () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+  <div class="flex flex-col h-screen bg-gray-50 dark:bg-qe-black text-gray-900 dark:text-gray-100">
     <!-- HEADER -->
     <header
-      class="bg-white/80 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm px-6 py-3 flex justify-between items-center">
+      class="bg-white/80 dark:bg-qe-black border-b border-gray-200 dark:border-gray-800 shadow-sm px-6 py-3 flex justify-between items-center">
       <div class="flex items-center gap-3">
-        <RouterLink to="/" class="flex items-center gap-2 text-xl font-extrabold text-blue-600 dark:text-blue-400">
+        <RouterLink to="/" class="flex items-center gap-2 text-xl font-extrabold text-blue-600 dark:text-blue-600">
           <img src="/vite.svg" class="h-7 w-7" alt="QuickEstimate" />
           QuickEstimate
         </RouterLink>
@@ -63,7 +63,7 @@ onClickOutside(menuRef, () => {
 
         <div v-else class="relative" ref="menuRef">
           <button @click="showMenu = !showMenu"
-            class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-blue-100 transition-all">
+            class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-gray-100 dark:bg-qe-black2 hover:bg-blue-100 transition-all">
             <User class="w-4 h-4" />
             <span>{{ auth.user.login }}</span>
             <ChevronDown class="w-3 h-3 text-gray-500 transition-transform duration-200"
@@ -71,7 +71,7 @@ onClickOutside(menuRef, () => {
           </button>
 
           <div v-show="showMenu"
-            class="absolute right-0 mt-2 w-42 bg-white dark:bg-gray-900 rounded-xl shadow-xl ring-1 ring-black/10 dark:ring-white/10 z-50 text-sm animate-fade-in">
+            class="absolute right-0 mt-2 w-42 bg-white dark:bg-qe-black2 rounded-xl shadow-xl ring-1 ring-black/10 dark:ring-white/10 z-50 text-sm animate-fade-in">
             <RouterLink to="/profile"
               class="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
               <Settings class="w-4 h-4 text-gray-600" />
@@ -93,7 +93,7 @@ onClickOutside(menuRef, () => {
       <Sidebar v-if="auth.user && showSidebar" />
 
       <!-- MAIN -->
-      <main class="flex-1 overflow-y-auto dark:bg-gray-900 bg-gray-50 p-4">
+      <main class="flex-1 overflow-y-auto dark:bg-qe-black  bg-gray-50 p-4">
         <slot />
       </main>
     </div>

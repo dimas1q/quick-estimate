@@ -15,6 +15,7 @@ from app.schemas.changelog import ChangeLogOut
 from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
 from app.models.version import EstimateVersion
+from app.models.estimate_favorite import EstimateFavorite
 from app.utils.auth import get_current_user
 from app.utils.pdf import render_pdf
 from app.utils.excel import generate_excel
@@ -69,6 +70,7 @@ async def list_estimates(
     date_to: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    favorite: Optional[bool] = Query(None),
 ):
     from datetime import datetime
 
@@ -97,9 +99,24 @@ async def list_estimates(
             query = query.where(Estimate.date < dt_to)
         except ValueError:
             pass
+    if favorite:
+        query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
 
     result = await db.execute(query.order_by(Estimate.id.desc()))
-    return result.scalars().all()
+    
+    estimates = result.scalars().all()
+
+    # Получаем id всех избранных смет для текущего пользователя
+    fav_result = await db.execute(
+        select(EstimateFavorite.estimate_id).where(EstimateFavorite.user_id == user.id)
+    )
+    favorite_ids = set(fav_result.scalars().all())
+
+    for estimate in estimates:
+        estimate.is_favorite = estimate.id in favorite_ids
+
+    return estimates
+
 
 
 @router.get("/{estimate_id}", response_model=EstimateOut)
@@ -120,6 +137,14 @@ async def get_estimate(
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
+    fav = await db.execute(
+        select(EstimateFavorite)
+        .where(
+            EstimateFavorite.user_id == user.id,
+            EstimateFavorite.estimate_id == estimate_id,
+        )
+    )
+    estimate.is_favorite = fav.scalar_one_or_none() is not None
     return estimate
 
 
@@ -299,3 +324,48 @@ async def delete_estimate(
     await db.delete(estimate)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.post("/{estimate_id}/favorite/", status_code=204)
+async def add_favorite(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    # Проверяем, что смета существует и принадлежит этому пользователю
+    result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
+    estimate = result.scalar_one_or_none()
+    if not estimate or estimate.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
+
+    # Проверяем, есть ли уже избранное
+    res = await db.execute(
+        select(EstimateFavorite)
+        .where(
+            EstimateFavorite.user_id == user.id,
+            EstimateFavorite.estimate_id == estimate_id,
+        )
+    )
+    fav = res.scalar_one_or_none()
+    if not fav:
+        db.add(EstimateFavorite(user_id=user.id, estimate_id=estimate_id))
+        await db.commit()
+    return Response(status_code=204)
+
+@router.delete("/{estimate_id}/favorite/", status_code=204)
+async def remove_favorite(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    res = await db.execute(
+        select(EstimateFavorite)
+        .where(
+            EstimateFavorite.user_id == user.id,
+            EstimateFavorite.estimate_id == estimate_id,
+        )
+    )
+    fav = res.scalar_one_or_none()
+    if fav:
+        await db.delete(fav)
+        await db.commit()
+    return Response(status_code=204)

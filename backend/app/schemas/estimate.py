@@ -46,4 +46,5 @@ class EstimateOut(EstimateBase):
     user_id: int
     client: Optional[ClientOut]
     status: EstimateStatus
+    is_favorite: Optional[bool] = False
     model_config = {"from_attributes": True}

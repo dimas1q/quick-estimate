@@ -7,7 +7,12 @@ export default {
     './node_modules/@heroicons/vue/**/*.{js,ts}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'qe-black': '#1A1D1F',
+        'qe-black2': '#25282D'
+      }
+    },
   },
   plugins: [],
   darkMode: 'class', // Enable dark mode support

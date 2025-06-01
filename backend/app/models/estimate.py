@@ -17,6 +17,8 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
+
+
 class EstimateStatus(str, enum.Enum):
     DRAFT = "draft"
     SENT = "sent"
@@ -59,6 +61,14 @@ class Estimate(Base):
         SQLEnum(EstimateStatus, name="estimate_status"),
         nullable=False,
         default=EstimateStatus.DRAFT,
+    )
+
+    from app.models.estimate_favorite import EstimateFavorite
+
+    favorites = relationship(
+        "EstimateFavorite",
+        back_populates="estimate",
+        cascade="all, delete-orphan"
     )
 
     from app.models.version import EstimateVersion

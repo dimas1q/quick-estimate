@@ -6,6 +6,7 @@ import { useEstimatesStore } from '@/store/estimates'
 import { useClientsStore } from '@/store/clients'
 import { Star, StarOff } from 'lucide-vue-next'
 
+
 const router = useRouter()
 const toast = useToast()
 
@@ -157,7 +158,7 @@ async function toggleFavorite(estimate) {
   <div class="space-y-6 px-6 py-8 max-w-6xl mx-auto">
     <!-- Навигационный переключатель -->
     <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+      <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
         <button
           :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'my' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
           @click="setViewMode('my')">Мои сметы</button>
@@ -185,7 +186,7 @@ async function toggleFavorite(estimate) {
         <!-- Список смет -->
         <template v-else>
           <div v-for="e in filteredEstimates" :key="e.id"
-            class="border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 bg-white dark:bg-gray-900 transition hover:shadow-md flex flex-col gap-1 relative">
+            class="border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black transition hover:shadow-md flex flex-col gap-1 relative">
             <!-- Звезда -->
             <button
               class="absolute top-2 right-2 rounded-full bg-transparent p-1 transition flex items-center justify-center"
@@ -219,15 +220,15 @@ async function toggleFavorite(estimate) {
         </router-link>
         <button @click="triggerFileInput" class="qe-btn block w-full text-center">Импорт сметы</button>
         <div
-          class="border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-gray-900">
+          class="border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black">
           <h2 class="font-semibold text-lg">Фильтры</h2>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Название</label>
-            <input v-model="filters.name" class="qe-input mt-1" type="text" />
+            <input v-model="filters.name" class="qe-input mt-2" type="text" />
           </div>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Клиент</label>
-            <select v-model="filters.client" class="qe-input mt-1">
+            <select v-model="filters.client" class="qe-input mt-2">
               <option :value="''">Все клиенты</option>
               <option v-for="c in clients" :key="c.id" :value="c.id">
                 {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
