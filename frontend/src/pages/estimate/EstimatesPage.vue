@@ -6,6 +6,19 @@ import { useEstimatesStore } from '@/store/estimates'
 import { useClientsStore } from '@/store/clients'
 import { Star, StarOff } from 'lucide-vue-next'
 
+import DatePicker from 'vue-datepicker-next'
+import 'vue-datepicker-next/index.css'
+import ru from 'vue-datepicker-next/locale/ru'
+
+const datePickerConfig = {
+  lang: ru,
+  type: 'date',
+  format: 'DD-MM-YYYY',
+  clearable: true,
+  inputClass:
+    'qe-input '
+}
+
 
 const router = useRouter()
 const toast = useToast()
@@ -224,7 +237,7 @@ async function toggleFavorite(estimate) {
           <h2 class="font-semibold text-lg">Фильтры</h2>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Название</label>
-            <input v-model="filters.name" class="qe-input mt-2" type="text" />
+            <input v-model="filters.name" class="qe-input mt-2" type="text" placeholder="Название сметы" />
           </div>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Клиент</label>
@@ -235,14 +248,51 @@ async function toggleFavorite(estimate) {
               </option>
             </select>
           </div>
+
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Дата с</label>
-            <input v-model="filters.date_from" class="qe-input mt-1" type="date" />
+            <DatePicker v-model:value="filters.date_from" :lang="ru" type="date" format="YYYY-MM-DD"
+              popup-class="my-datepicker-popup" placeholder="Выберите дату c" :value-type="'format'" clearable
+              input-class="block w-full qe-input" class="mt-2" style="width: 100%;">
+              <template #icon-calendar>
+                <svg class="w-5 h-5 text-gray-600 dark:text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M6 2a1 1 0 00-1 1v1H5a2 2 0 00-2 2v1h14V6a2 2 0 00-2-2h-.001V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zM3 9v7a2 2 0 002 2h10a2 2 0 002-2V9H3zm4 2a1 1 0 012 0v2a1 1 0 01-2 0v-2z"
+                    clip-rule="evenodd" />
+                </svg>
+              </template>
+              <template #icon-clear>
+                <svg
+                  class="w-5 h-5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition"
+                  fill="none" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6" />
+                </svg>
+              </template>
+            </DatePicker>
           </div>
+
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Дата по</label>
-            <input v-model="filters.date_to" class="qe-input mt-1" type="date" />
+            <DatePicker v-model:value="filters.date_to" :lang="ru" type="date" format="YYYY-MM-DD"
+              popup-class="my-datepicker-popup" placeholder="Выберите дату по" :value-type="'format'" clearable
+              input-class="block w-full qe-input" class="mt-2" style="width: 100%;">
+              <template #icon-calendar>
+                <svg class="w-5 h-5 text-gray-600 dark:text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M6 2a1 1 0 00-1 1v1H5a2 2 0 00-2 2v1h14V6a2 2 0 00-2-2h-.001V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zM3 9v7a2 2 0 002 2h10a2 2 0 002-2V9H3zm4 2a1 1 0 012 0v2a1 1 0 01-2 0v-2z"
+                    clip-rule="evenodd" />
+                </svg>
+              </template>
+              <template #icon-clear>
+                <svg
+                  class="w-5 h-5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition"
+                  fill="none" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6" />
+                </svg>
+              </template>
+            </DatePicker>
           </div>
+
           <div class="flex gap-2 pt-2">
             <button @click="applyFilters" class="qe-btn w-full">Применить</button>
             <button @click="resetFilters" class="qe-btn w-full ">Сбросить</button>
@@ -252,3 +302,5 @@ async function toggleFavorite(estimate) {
     </div>
   </div>
 </template>
+
+
