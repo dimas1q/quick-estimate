@@ -4,21 +4,17 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEstimatesStore } from '@/store/estimates'
 import { useClientsStore } from '@/store/clients'
-import { Star, StarOff } from 'lucide-vue-next'
+import { Star } from 'lucide-vue-next'
 
-import DatePicker from 'vue-datepicker-next'
-import 'vue-datepicker-next/index.css'
-import ru from 'vue-datepicker-next/locale/ru'
+import QeDatePicker from '@/components/QeDatePicker.vue'
 
-const datePickerConfig = {
-  lang: ru,
-  type: 'date',
-  format: 'DD-MM-YYYY',
-  clearable: true,
-  inputClass:
-    'qe-input '
+function formatDateToYYYYMMDD(date) {
+  if (!date) return ''
+  const d = new Date(date)
+  const month = `${d.getMonth() + 1}`.padStart(2, '0')
+  const day = `${d.getDate()}`.padStart(2, '0')
+  return `${d.getFullYear()}-${month}-${day}`
 }
-
 
 const router = useRouter()
 const toast = useToast()
@@ -52,13 +48,22 @@ onMounted(async () => {
   isLoading.value = false
 })
 
+const format = (date) => {
+  if (!date) return ''
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}.${month}.${year}`
+}
+
+
 async function applyFilters() {
   isLoading.value = true
   const query = {
     name: filters.value.name,
     client: filters.value.client ? Number(filters.value.client) : undefined,
-    date_from: toUTCStart(filters.value.date_from),
-    date_to: toUTCEnd(filters.value.date_to)
+    date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : undefined,
+    date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : undefined
   }
   await estimatesStore.fetchEstimates(query)
   isLoading.value = false
@@ -74,19 +79,6 @@ async function resetFilters() {
   }
   await estimatesStore.fetchEstimates()
   isLoading.value = false
-}
-
-function toUTCStart(dateStr) {
-  if (!dateStr) return ''
-  const local = new Date(dateStr + 'T00:00:00')
-  return local.toISOString()
-}
-
-function toUTCEnd(dateStr) {
-  if (!dateStr) return ''
-  const local = new Date(dateStr + 'T00:00:00')
-  const endOfDay = new Date(local.getTime() + 24 * 60 * 60 * 1000)
-  return endOfDay.toISOString()
 }
 
 function triggerFileInput() {
@@ -146,8 +138,6 @@ function isValidEstimate(estimate) {
 
 function setViewMode(mode) {
   viewMode.value = mode
-  // Можно сделать фильтрацию на сервере: estimatesStore.fetchEstimates({ favorite: mode === 'fav' })
-  // Сейчас фильтруем на клиенте
 }
 
 async function toggleFavorite(estimate) {
@@ -250,47 +240,12 @@ async function toggleFavorite(estimate) {
           </div>
 
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Дата с</label>
-            <DatePicker v-model:value="filters.date_from" :lang="ru" type="date" format="YYYY-MM-DD"
-              popup-class="my-datepicker-popup" placeholder="Выберите дату c" :value-type="'format'" clearable
-              input-class="block w-full qe-input" class="mt-2" style="width: 100%;">
-              <template #icon-calendar>
-                <svg class="w-5 h-5 text-gray-600 dark:text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd"
-                    d="M6 2a1 1 0 00-1 1v1H5a2 2 0 00-2 2v1h14V6a2 2 0 00-2-2h-.001V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zM3 9v7a2 2 0 002 2h10a2 2 0 002-2V9H3zm4 2a1 1 0 012 0v2a1 1 0 01-2 0v-2z"
-                    clip-rule="evenodd" />
-                </svg>
-              </template>
-              <template #icon-clear>
-                <svg
-                  class="w-5 h-5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition"
-                  fill="none" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6" />
-                </svg>
-              </template>
-            </DatePicker>
+            <QeDatePicker v-model="filters.date_from" label="Дата с" placeholder="Выберите дату с" :format="format"
+              input-class="qe-input" />
           </div>
-
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Дата по</label>
-            <DatePicker v-model:value="filters.date_to" :lang="ru" type="date" format="YYYY-MM-DD"
-              popup-class="my-datepicker-popup" placeholder="Выберите дату по" :value-type="'format'" clearable
-              input-class="block w-full qe-input" class="mt-2" style="width: 100%;">
-              <template #icon-calendar>
-                <svg class="w-5 h-5 text-gray-600 dark:text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd"
-                    d="M6 2a1 1 0 00-1 1v1H5a2 2 0 00-2 2v1h14V6a2 2 0 00-2-2h-.001V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zM3 9v7a2 2 0 002 2h10a2 2 0 002-2V9H3zm4 2a1 1 0 012 0v2a1 1 0 01-2 0v-2z"
-                    clip-rule="evenodd" />
-                </svg>
-              </template>
-              <template #icon-clear>
-                <svg
-                  class="w-5 h-5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition"
-                  fill="none" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8M6 14L14 6" />
-                </svg>
-              </template>
-            </DatePicker>
+            <QeDatePicker v-model="filters.date_to" label="Дата по" placeholder="Выберите дату по" :format="format"
+              input-class="qe-input" />
           </div>
 
           <div class="flex gap-2 pt-2">
@@ -304,3 +259,31 @@ async function toggleFavorite(estimate) {
 </template>
 
 
+<style scoped>
+.dp__theme_dark {
+  --dp-background-color: #1a1d1f;
+}
+
+.dp__input {
+  width: 100% !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  /* rounded-lg */
+  border: 1px solid #d1d5db !important;
+  /* gray-300 */
+  font-size: 1rem !important;
+  background: #fff !important;
+  color: #18181b !important;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.dark .dp__input {
+  background: #1a1d1f !important;
+  /* твой qe-black */
+  color: #f3f4f6 !important;
+  /* text-gray-100 */
+  border-color: #374151 !important;
+  /* dark:border-gray-700 */
+}
+</style>
