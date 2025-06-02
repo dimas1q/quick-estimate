@@ -32,7 +32,7 @@ const showSuffix = computed(() => {
 </script>
 
 <template>
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-xl shadow flex items-center space-x-3 min-h-[94px]"
+    <div class="bg-white dark:bg-qe-black border border-gray-200 dark:border-gray-800 p-5 rounded-xl shadow flex items-center space-x-3 min-h-[94px]"
         :class="{ 'opacity-50': disabled }" :title="title">
         <div class="text-2xl">
             <component :is="icon" class="w-6 h-6" />

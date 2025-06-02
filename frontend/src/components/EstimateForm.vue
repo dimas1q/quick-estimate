@@ -1,16 +1,16 @@
 # frontend/src/components/EstimateForm.vue
 <template>
-  <form @submit.prevent="submit" class="space-y-8 border bg-gray rounded-2xl shadow-md p-6">
+  <form @submit.prevent="submit" class="space-y-8 border dark:border-qe-black2 bg-gray rounded-2xl shadow-md p-6">
     <!-- 1. Основные поля в две колонки -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Название -->
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Название сметы</label>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Название сметы</label>
         <input v-model="estimate.name" type="text" placeholder="Введите название" class="w-full qe-input" />
       </div>
       <!-- Клиент -->
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Клиент</label>
+        <label class="block text-sm font-semibold dark:text-white text-gray-700 mb-1">Клиент</label>
         <select v-model="estimate.client_id" class="w-full qe-input">
           <option :value="null">Выберите клиента</option>
           <option v-for="c in clients" :key="c.id" :value="c.id">
@@ -20,13 +20,13 @@
       </div>
       <!-- Ответственный (на всю ширину) -->
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Ответственный</label>
+        <label class="block text-sm font-semibold dark:text-white text-gray-700 mb-1">Ответственный</label>
         <input v-model="estimate.responsible" type="text" placeholder="Кто отвечает за выполнение"
           class="w-full qe-input" />
       </div>
       <!-- Статус -->
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Статус</label>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Статус</label>
         <select v-model="estimate.status" class="w-full qe-input">
           <option value="draft">Черновик</option>
           <option value="sent">Отправлена</option>
@@ -38,18 +38,19 @@
 
       <!-- Дата и место проведения -->
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Дата и время мероприятия</label>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Дата и время мероприятия</label>
         <input v-model="eventDateTimeInput" type="datetime-local" class="w-full qe-input"
           placeholder="Выберите дату и время" />
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Место проведения мероприятия</label>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Место проведения
+          мероприятия</label>
         <input v-model="estimate.event_place" type="text" placeholder="Адрес или площадка" class="w-full qe-input" />
       </div>
 
       <!-- Заметки (на всю ширину) -->
       <div class="md:col-span-2">
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Заметки</label>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Заметки</label>
         <textarea v-model="estimate.notes" rows="2" placeholder="Дополнительная информация"
           class="w-full qe-input resize-none" />
       </div>
@@ -58,21 +59,20 @@
 
       <!-- НДС: красивый flex-блок на всю ширину -->
       <div class="md:col-span-2">
-        <div class="flex items-center gap-2 bg-gray-50 rounded-lg px-2">
+        <div class="flex items-center gap-2 bg-gray-50 dark:bg-qe-black rounded-lg px-2">
           <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
             class="h-5 w-5 text-blue-600 accent-blue-600 focus:ring-blue-500" />
-          <label for="vat" class="text-sm font-medium text-gray-700 select-none cursor-pointer">
+          <label for="vat" class="text-sm font-medium text-gray-700 dark:text-white select-none cursor-pointer">
             НДС
           </label>
           <template v-if="estimate.vat_enabled">
             <input type="number" min="0" max="100" step="1" v-model.number="estimate.vat_rate"
-              class="border border-gray-300 rounded-lg px-2 py-1 w-16 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              class="border border-gray-300 rounded-lg px-2 py-1 w-16 focus:outline-none dark:text-white dark:bg-qe-black dark:border-qe-black2 focus:ring-2 focus:ring-blue-300"
               placeholder="%" @input="checkVatRate" />
-            <span class="text-gray-600 select-none">%</span>
+            <span class="text-gray-600 dark:text-white   select-none">%</span>
           </template>
         </div>
       </div>
-
 
     </div>
 

@@ -8,10 +8,10 @@
         <div v-if="estimate" class="space-y-6">
             <div class="flex justify-between items-center pb-2 mb-6">
                 <div class="items-center">
-                    <h1 class="text-3xl font-bold text-gray-800">
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
                         Смета: {{ estimate.name }}
                         <span :class="[
-                            'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold',
+                            'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1',
                             {
                                 'bg-gray-200 text-gray-800': estimate.status === 'draft',
                                 'bg-yellow-200 text-yellow-800': estimate.status === 'sent',
@@ -107,21 +107,25 @@
                 </div>
             </div>
 
-            <div class="flex border-b mb-6">
-                <button @click="activeTab = 'details'" :class="tabClass('details')"
-                    class="px-4 py-2 -mb-px font-medium">
+            <!-- СОВРЕМЕННЫЙ ТАБ-ПЕРЕКЛЮЧАТЕЛЬ -->
+            <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 mb-6 w-fit">
+                <button
+                    :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', activeTab === 'details' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+                    @click="activeTab = 'details'">
                     Сведения
                 </button>
-                <button @click="activeTab = 'history'" :class="tabClass('history')"
-                    class="px-4 py-2 -mb-px font-medium">
+                <button
+                    :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', activeTab === 'history' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+                    @click="activeTab = 'history'">
                     История
                 </button>
             </div>
 
 
             <div v-if="activeTab === 'details'">
-                <div class="grid gap-3 text-sm text-gray-800">
-                    <div class="grid grid-cols-2 gap-4">
+                <div class="grid gap-3 text-sm text-gray-800 dark:text-gray-200">
+                    <div
+                        class="grid grid-cols-2 gap-4 border dark:border-qe-black2 bg-white dark:bg-qe-black rounded-2xl p-6">
                         <p>
                             <strong>Клиент:</strong>
                             <RouterLink :to="`/clients/${estimate.client.id}`"
@@ -143,49 +147,55 @@
                             <span v-else> Не включён</span>
                         </p>
 
-                        <p class="text-sm text-gray-600">
-                            Дата создания: {{ new Date(estimate.date).toLocaleString() }}
+                        <p>
+                            <strong>Дата создания: </strong> {{ new Date(estimate.date).toLocaleString() }}
                         </p>
                         <p><strong>Примечания:</strong> {{ estimate.notes || '—' }}</p>
 
-                        <p class="text-sm text-gray-600">
-                            Последнее обновление: {{ new Date(estimate.updated_at).toLocaleString() }}
+                        <p>
+                            <strong>Последнее обновление:</strong> {{ new Date(estimate.updated_at).toLocaleString() }}
                         </p>
                     </div>
 
-                    <div class="border bg-gray-50 rounded-2xl shadow-md p-6 mt-6">
+                    <div class="border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl p-6 mt-6 ">
                         <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center pb-1">{{ category }}
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 text-center pb-1 ">{{
+                                category }}
                             </h3>
 
-                            <div class="space-y-4">
+                            <div class="space-y-4 ">
                                 <div v-for="(row, rowIndex) in chunkArray(groupItems, 3)" :key="rowIndex"
                                     class="flex gap-4">
                                     <div v-for="item in row" :key="item.id"
                                         :class="`flex-1 ${row.length === 1 ? 'max-w-full' : row.length === 2 ? 'max-w-1/2' : 'max-w-1/3'}`"
-                                        class="bg-gray border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
+                                        class="bg-white border border-gray-200 dark:bg-qe-black dark:border-qe-black2 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
                                         <div class="flex justify-between items-start mb-2">
                                             <div>
-                                                <p class="text-base font-semibold text-gray-900">{{ item.name }}</p>
-                                                <p class="text-sm text-gray-600">{{ item.description }}</p>
+                                                <p class="text-base font-semibold text-gray-900 dark:text-white">{{
+                                                    item.name }}</p>
+                                                <p class="text-sm text-gray-600 dark:text-white">{{ item.description }}
+                                                </p>
                                             </div>
-                                            <div class="text-sm text-gray-500 text-right whitespace-nowrap">
+                                            <div
+                                                class="text-sm text-gray-500 dark:text-white text-right whitespace-nowrap">
                                                 {{ item.quantity }} {{ item.unit }}
                                             </div>
                                         </div>
-                                        <div class="flex justify-between text-sm text-gray-700 pt-2">
+                                        <div class="flex justify-between text-sm text-gray-700 dark:text-white pt-2">
                                             <span>Внутр. цена за единицу:</span>
                                             <span>{{ formatCurrency(item.internal_price) }}</span>
                                         </div>
-                                        <div class="flex justify-between text-sm text-gray-700">
+                                        <div class="flex justify-between text-sm text-gray-700 dark:text-white">
                                             <span>Внешн. цена за единицу:</span>
                                             <span>{{ formatCurrency(item.external_price) }}</span>
                                         </div>
-                                        <div class="flex justify-between font-semibold text-sm text-gray-900">
+                                        <div
+                                            class="flex justify-between font-semibold text-sm dark:text-white text-gray-900">
                                             <span>Итог (внутр.):</span>
                                             <span>{{ formatCurrency(getItemInternal(item)) }}</span>
                                         </div>
-                                        <div class="flex justify-between font-semibold text-sm text-gray-900">
+                                        <div
+                                            class="flex justify-between font-semibold text-sm  dark:text-white text-gray-900">
                                             <span>Итог (внешн.):</span>
                                             <span>{{ formatCurrency(getItemExternal(item)) }}</span>
                                         </div>
@@ -194,7 +204,7 @@
                                 </div>
                             </div>
 
-                            <div class="text-right font-semibold text-base text-gray-900 mt-4">
+                            <div class="text-right font-semibold text-base text-gray-900 dark:text-white mt-4">
                                 <div>Итог по категории (внутр.): {{ formatCurrency(getGroupInternal(groupItems)) }}
                                 </div>
                                 <div>Итог по категории (внешн.): {{ formatCurrency(getGroupExternal(groupItems)) }}
@@ -204,7 +214,7 @@
 
 
                         <div v-if="estimate?.items?.length" class="pt-6">
-                            <p class="text-right font-semibold text-lg pt-4 border-t">
+                            <p class="text-right font-semibold text-lg pt-4 border-t dark:border-qe-black2">
                                 Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
                             </p>
                             <p class="text-right font-semibold text-lg">
@@ -213,7 +223,7 @@
                             <p class="text-right font-semibold text-lg">
                                 Разница: {{ formatCurrency(totalDiff) }}
                             </p>
-                            <p class="text-right text-gray-700" v-if="estimate.vat_enabled">
+                            <p class="text-right text-gray-700 dark:text-white" v-if="estimate.vat_enabled">
                                 НДС ({{ estimate.vat_rate }}%): {{ formatCurrency(vat) }}<br />
                                 Итого с НДС: {{ formatCurrency(totalWithVat) }}
                             </p>
@@ -225,48 +235,47 @@
 
             <div v-else>
                 <div v-if="logs.length" class="text-sm w-full mt-6">
-                    <h3 class="font-semibold text-gray-800 text-sm mb-4 flex items-center gap-2">
+                    <h3 class="font-semibold mb-4 ">
                         История изменений
                     </h3>
-                    <div class="overflow-x-auto rounded-lg shadow-sm ">
-                        <table class="w-full text-sm ">
-                            <thead class="bg-gray-100 border-b text-left">
-                                <tr>
-                                    <th class="px-4 py-2 font-medium  whitespace-nowrap">Дата и время
-                                    </th>
-                                    <th class="px-4 py-2 font-medium whitespace-nowrap">Действие</th>
+                    <div
+                        class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 dark:bg-qe-black">
+                                    <th class="qe-table-th text-left">Дата и время</th>
+                                    <th class="qe-table-th text-left">Действие</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="log in logs" :key="log.id" class="hover:bg-gray-50 border-b">
-                                    <td class="px-4 py-2 whitespace-nowrap">{{ new
-                                        Date(log.timestamp).toLocaleString() }}</td>
-                                    <td class="px-4 py-2">{{ log.description }}</td>
+                                <tr v-for="log in logs" :key="log.id"
+                                    class="hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                    <td class="qe-table-td">{{ new Date(log.timestamp).toLocaleString() }}</td>
+                                    <td class="qe-table-td">{{ log.description }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- 5. Версии -->
-                <div v-if="versions.length" class="mt-8 border-t pt-6 text-sm">
+                <div v-if="versions.length" class="mt-2 pt-6 text-sm">
                     <h3 class="font-semibold mb-4">История версий</h3>
-                    <div class="overflow-x-auto rounded-lg shadow-sm ">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-100 ">
-                                <tr>
-                                    <th class="px-4 py-2 font-medium ">Версия</th>
-                                    <th class="px-4 py-2 font-medium">Дата создания</th>
-                                    <th class="px-4 py-2 font-medium text-right">Действия</th>
+                    <div
+                        class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
+                        <table class="w-full text-sm qe-table">
+                            <thead>
+                                <tr class="bg-gray-50 dark:bg-qe-black">
+                                    <th class="qe-table-th text-left">Версия</th>
+                                    <th class="qe-table-th text-left">Дата создания</th>
+                                    <th class="qe-table-th text-right">Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="v in versions" :key="v.version" class="border-b hover:bg-gray-50">
-                                    <td class="px-4 py-2 ">№{{ v.version }}</td>
-                                    <td class="px-4 py-2 "> {{ new Date(v.created_at).toLocaleString()
-                                        }}
-                                    </td>
-                                    <td class="px-4 py-2 text-right space-x-2">
+                                <tr v-for="v in versions" :key="v.version"
+                                    class="hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 transition">
+                                    <td class="qe-table-td">№{{ v.version }}</td>
+                                    <td class="qe-table-td">{{ new Date(v.created_at).toLocaleString() }}</td>
+                                    <td class="qe-table-td text-right space-x-2">
                                         <button @click="viewVersion(v.version)"
                                             class="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
                                             Просмотр
@@ -281,10 +290,8 @@
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
-
         <!-- Модалка -->
         <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white p-6 rounded-lg shadow max-w-sm w-full text-center">

@@ -84,7 +84,7 @@
                 <MetricCard title="Средняя сумма" :value="data.average_amount" :icon="Sliders" suffix=" ₽" />
                 <MetricCard title="Медиана" :value="data.median_amount" :icon="BarChart2" suffix=" ₽" />
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4"> 
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <MetricCard title="Рост мес. к мес." :value="data.mom_growth" suffix=" %" :icon="TrendingUp"
                     :isPercent="true" />
                 <MetricCard title="Рост год к году" :value="data.yoy_growth" suffix=" %" :icon="Calendar"
@@ -103,7 +103,7 @@
                     class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-gray-50 dark:bg-gray-900">
+                            <tr class="bg-gray-50 dark:bg-qe-black">
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">
                                     Ответственный</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Количество
@@ -114,10 +114,10 @@
                         </thead>
                         <tbody>
                             <tr v-for="r in data.by_responsible" :key="r.name"
-                                class="hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 transition">
-                                <td class="px-4 py-2 whitespace-nowrap" :title="r.name">{{ r.name }}</td>
-                                <td class="px-4 py-2 whitespace-nowrap">{{ r.estimates_count }}</td>
-                                <td class="px-4 py-2 whitespace-nowrap">{{ formatCurrency(r.total_amount) }}</td>
+                                class="hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                <td class="qe-table-td" :title="r.name">{{ r.name }}</td>
+                                <td class="qe-table-td">{{ r.estimates_count }}</td>
+                                <td class="qe-table-td">{{ formatCurrency(r.total_amount) }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -129,7 +129,7 @@
                 <div
                     class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 dark:bg-gray-900">
+                        <thead class="bg-gray-50 dark:bg-qe-black">
                             <tr>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Клиент</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Выручка
@@ -138,9 +138,9 @@
                         </thead>
                         <tbody>
                             <tr v-for="c in data.top_clients" :key="c.name"
-                                class="hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 transition">
-                                <td class="px-4 py-2 whitespace-nowrap" :title="c.name">{{ c.name }}</td>
-                                <td class="px-4 py-2 whitespace-nowrap">{{ formatCurrency(c.total_amount) }}</td>
+                                class="hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                <td class="qe-table-td" :title="c.name">{{ c.name }}</td>
+                                <td class="qe-table-td">{{ formatCurrency(c.total_amount) }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -152,7 +152,7 @@
                 <div
                     class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 dark:bg-gray-900">
+                        <thead class="bg-gray-50 dark:bg-qe-black">
                             <tr>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Услуга</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Выручка
@@ -161,9 +161,9 @@
                         </thead>
                         <tbody>
                             <tr v-for="s in data.top_services" :key="s.name"
-                                class="hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 transition">
-                                <td class="px-4 py-2 whitespace-nowrap" :title="s.name">{{ s.name }}</td>
-                                <td class="px-4 py-2 whitespace-nowrap">{{ formatCurrency(s.total_amount) }}</td>
+                                class="hover:bg-gray-100 dark:hover:bg-gray-800 transition ">
+                                <td class="qe-table-td" :title="s.name">{{ s.name }}</td>
+                                <td class="qe-table-td">{{ formatCurrency(s.total_amount) }}</td>
                             </tr>
                         </tbody>
                     </table>
