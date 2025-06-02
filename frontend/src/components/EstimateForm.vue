@@ -6,14 +6,12 @@
       <!-- Название -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1">Название сметы</label>
-        <input v-model="estimate.name" type="text" placeholder="Введите название"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        <input v-model="estimate.name" type="text" placeholder="Введите название" class="w-full qe-input" />
       </div>
       <!-- Клиент -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1">Клиент</label>
-        <select v-model="estimate.client_id"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300">
+        <select v-model="estimate.client_id" class="w-full qe-input">
           <option :value="null">Выберите клиента</option>
           <option v-for="c in clients" :key="c.id" :value="c.id">
             {{ c.name }} <span v-if="c.company">({{ c.company }})</span>
@@ -24,13 +22,12 @@
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1">Ответственный</label>
         <input v-model="estimate.responsible" type="text" placeholder="Кто отвечает за выполнение"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          class="w-full qe-input" />
       </div>
       <!-- Статус -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1">Статус</label>
-        <select v-model="estimate.status"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300">
+        <select v-model="estimate.status" class="w-full qe-input">
           <option value="draft">Черновик</option>
           <option value="sent">Отправлена</option>
           <option value="approved">Согласована</option>
@@ -42,21 +39,19 @@
       <!-- Дата и место проведения -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1">Дата и время мероприятия</label>
-        <input v-model="eventDateTimeInput" type="datetime-local"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+        <input v-model="eventDateTimeInput" type="datetime-local" class="w-full qe-input"
           placeholder="Выберите дату и время" />
       </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1">Место проведения мероприятия</label>
-        <input v-model="estimate.event_place" type="text" placeholder="Адрес или площадка"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2" />
+        <input v-model="estimate.event_place" type="text" placeholder="Адрес или площадка" class="w-full qe-input" />
       </div>
 
       <!-- Заметки (на всю ширину) -->
       <div class="md:col-span-2">
         <label class="block text-sm font-semibold text-gray-700 mb-1">Заметки</label>
         <textarea v-model="estimate.notes" rows="2" placeholder="Дополнительная информация"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
+          class="w-full qe-input resize-none" />
       </div>
 
 
@@ -87,12 +82,11 @@
     </div>
 
     <!-- 3. Кнопки -->
-    <div class="flex justify-end space-x-4">
-      <button type="button" @click="cancel"
-        class="px-6 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
+    <div class="flex justify-end space-x-2">
+      <button type="button" @click="cancel" class="qe-btn-secondary">
         Отмена
       </button>
-      <button type="submit" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+      <button type="submit" class="qe-btn">
         Сохранить
       </button>
     </div>

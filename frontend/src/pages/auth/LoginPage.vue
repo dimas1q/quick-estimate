@@ -66,7 +66,7 @@ async function handleLogin() {
                     </button>
                 </div>
             </div>
-            <button type="submit" class="qe-btn mb-2">Войти</button>
+            <button type="submit" class="qe-btn mb-2 w-full">Войти</button>
         </form>
         <p v-if="error" class="text-red-500 text-sm mt-3 text-center animate-pulse">{{ error }}</p>
         <p class="text-sm text-gray-600 mt-6 text-center dark:text-gray-400">

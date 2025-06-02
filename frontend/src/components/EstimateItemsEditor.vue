@@ -15,7 +15,7 @@
 
         <!-- Таблица услуг -->
         <div>
-          <div class="grid grid-cols-9 gap-3 text-gray-600 text-xs font-semibold mb-2 text-center">
+          <div class="grid grid-cols-9 gap-4 text-gray-600 text-xs font-semibold mb-2 text-center">
             <div>Название</div>
             <div>Описание</div>
             <div>Кол-во</div>
@@ -28,17 +28,17 @@
           </div>
 
           <transition-group name="fade" tag="div">
-            <div v-for="(item, itemIdx) in cat.items" :key="item.id" class="grid grid-cols-9 gap-3 items-center py-1">
-              <input v-model="item.name" class="input-field" placeholder="Название" />
-              <input v-model="item.description" class="input-field" placeholder="Описание" />
-              <input type="number" min="0" step="any" v-model.number="item.quantity" class="input-field"
+            <div v-for="(item, itemIdx) in cat.items" :key="item.id" class="grid grid-cols-9 items-center py-1 gap-3">
+              <input v-model="item.name" class="qe-input" placeholder="Название" />
+              <input v-model="item.description" class="qe-input" placeholder="Описание" />
+              <input type="number" min="0" step="any" v-model.number="item.quantity" class="qe-input"
                 placeholder="Кол-во" />
-              <select v-model="item.unit" class="input-field">
+              <select v-model="item.unit" class="qe-input">
                 <option v-for="u in units" :key="u">{{ u }}</option>
               </select>
-              <input type="number" min="0" step="any" v-model.number="item.internal_price" class="input-field"
+              <input type="number" min="0" step="any" v-model.number="item.internal_price" class="qe-input"
                 placeholder="Внутр. цена" />
-              <input type="number" min="0" step="any" v-model.number="item.external_price" class="input-field"
+              <input type="number" min="0" step="any" v-model.number="item.external_price" class="qe-input"
                 placeholder="Внеш. цена" />
               <div class="text-sm font-semibold text-center pr-2">
                 {{ formatCurrency(getItemInternal(item)) }}
@@ -54,14 +54,14 @@
         </div>
 
         <!-- Итоги по категории -->
-            <div class="flex flex-col text-sm font-semibold mt-3 border-t pt-2 items-end text-right">
-            <span>Итог по категории (внутр.): {{ formatCurrency(getCategoryInternal(cat)) }}</span>
-            <span>Итог по категории (внешн.): {{ formatCurrency(getCategoryExternal(cat)) }}</span>
-            </div>
+        <div class="flex flex-col text-sm font-semibold mt-3 border-t pt-2 items-end text-right">
+          <span>Итог по категории (внутр.): {{ formatCurrency(getCategoryInternal(cat)) }}</span>
+          <span>Итог по категории (внешн.): {{ formatCurrency(getCategoryExternal(cat)) }}</span>
+        </div>
 
         <!-- Кнопка добавления услуги внутри категории -->
         <div class="flex justify-end">
-          <button type="button" class="btn-secondary" @click="addItem(idx)">
+          <button type="button" class="qe-btn-secondary" @click="addItem(idx)">
             + Добавить услугу
           </button>
         </div>
@@ -70,17 +70,17 @@
 
     <!-- Использовать шаблон -->
     <div class="flex flex-wrap items-center gap-4">
-      <button type="button" @click="addCategory" class="btn-secondary">
+      <button type="button" @click="addCategory" class="qe-btn-secondary">
         Добавить категорию
       </button>
 
-      <button type="button" class="btn-secondary" @click="showTemplateSelect = !showTemplateSelect">
+      <button type="button" class="qe-btn-secondary" @click="showTemplateSelect = !showTemplateSelect">
         Добавить из шаблона
       </button>
 
       <transition name="fade">
         <select v-if="showTemplateSelect" v-model="selectedTemplateId" @change="applyTemplate"
-          class="input-field min-w-[220px] max-w-[340px] transition-all" style="margin-left: 0">
+          class="qe-input min-w-[220px] max-w-[340px] transition-all qe-select" style="margin-left: 0">
           <option :value="null" disabled selected>Выберите шаблон</option>
           <option v-for="t in templatesStore.templates" :key="t.id" :value="t.id">
             {{ t.name }}
@@ -93,22 +93,19 @@
 
 
     <!-- Итоги по всем категориям -->
-    <div
-      v-if="categories.some(cat => (cat.items && cat.items.length > 0))"
-      class="pt-6 border-t"
-    >
+    <div v-if="categories.some(cat => (cat.items && cat.items.length > 0))" class="pt-6 border-t">
       <p class="text-right font-semibold text-lg">
-      Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
+        Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
       </p>
       <p class="text-right font-semibold text-lg">
-      Общая сумма (внешняя): {{ formatCurrency(totalExternal) }}
+        Общая сумма (внешняя): {{ formatCurrency(totalExternal) }}
       </p>
       <p class="text-right font-semibold text-lg">
-      Разница: {{ formatCurrency(totalDiff) }}
+        Разница: {{ formatCurrency(totalDiff) }}
       </p>
       <p class="text-right text-gray-700" v-if="props.vatEnabled">
-      НДС ({{ props.vatRate }}%): {{ formatCurrency(vat) }}<br />
-      Итог с НДС: {{ formatCurrency(totalWithVat) }}
+        НДС ({{ props.vatRate }}%): {{ formatCurrency(vat) }}<br />
+        Итог с НДС: {{ formatCurrency(totalWithVat) }}
       </p>
     </div>
   </div>
@@ -262,15 +259,3 @@ function getTemplateCategories(template) {
 
 </script>
 
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.18s cubic-bezier(.4, 0, .2, 1);
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(16px) scale(0.96);
-}
-</style>

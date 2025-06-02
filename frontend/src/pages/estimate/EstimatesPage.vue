@@ -158,7 +158,7 @@ async function toggleFavorite(estimate) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-6xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
     <!-- Навигационный переключатель -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
@@ -188,8 +188,9 @@ async function toggleFavorite(estimate) {
 
         <!-- Список смет -->
         <template v-else>
+          
           <div v-for="e in filteredEstimates" :key="e.id"
-            class="border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black transition hover:shadow-md flex flex-col gap-1 relative">
+            class="border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black transition hover:shadow-md flex flex-col gap-1 relative ">
             <!-- Звезда -->
             <button
               class="absolute top-2 right-2 rounded-full bg-transparent p-1 transition flex items-center justify-center"
@@ -231,7 +232,7 @@ async function toggleFavorite(estimate) {
           </div>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Клиент</label>
-            <select v-model="filters.client" class="qe-input mt-2">
+            <select v-model="filters.client" class="qe-select w-full mt-2">
               <option :value="''">Все клиенты</option>
               <option v-for="c in clients" :key="c.id" :value="c.id">
                 {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
@@ -250,7 +251,7 @@ async function toggleFavorite(estimate) {
 
           <div class="flex gap-2 pt-2">
             <button @click="applyFilters" class="qe-btn w-full">Применить</button>
-            <button @click="resetFilters" class="qe-btn w-full ">Сбросить</button>
+            <button @click="resetFilters" class="qe-btn-secondary w-full ">Сбросить</button>
           </div>
         </div>
       </div>

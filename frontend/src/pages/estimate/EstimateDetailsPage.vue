@@ -178,7 +178,7 @@
                                             <span>{{ formatCurrency(item.internal_price) }}</span>
                                         </div>
                                         <div class="flex justify-between text-sm text-gray-700">
-                                            <span>Внеш. цена за единицу:</span>
+                                            <span>Внешн. цена за единицу:</span>
                                             <span>{{ formatCurrency(item.external_price) }}</span>
                                         </div>
                                         <div class="flex justify-between font-semibold text-sm text-gray-900">

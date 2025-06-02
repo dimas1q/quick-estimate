@@ -112,7 +112,7 @@ async function handleRegister() {
                     </button>
                 </div>
             </div>
-            <button type="submit" class="qe-btn mt-4">Зарегистрироваться</button>
+            <button type="submit" class="qe-btn mt-4 w-full">Зарегистрироваться</button>
         </form>
         <p v-if="success" class="text-green-600 mt-4 text-center animate-pulse">Успешно! Перенаправляем...</p>
         <p v-if="error" class="text-red-500 text-sm mt-4 text-center animate-pulse">{{ error }}</p>
