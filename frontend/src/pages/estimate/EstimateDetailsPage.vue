@@ -125,7 +125,7 @@
             <div v-if="activeTab === 'details'">
                 <div class="grid gap-3 text-sm text-gray-800 dark:text-gray-200">
                     <div
-                        class="grid grid-cols-2 gap-4 border dark:border-qe-black2 bg-white dark:bg-qe-black rounded-2xl p-6">
+                        class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black rounded-2xl p-6">
                         <p>
                             <strong>Клиент:</strong>
                             <RouterLink :to="`/clients/${estimate.client.id}`"
@@ -157,7 +157,7 @@
                         </p>
                     </div>
 
-                    <div class="border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl p-6 mt-6 ">
+                    <div class="border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl p-6 mt-6 shadow-sm">
                         <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-4">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 text-center pb-1 ">{{
                                 category }}

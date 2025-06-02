@@ -15,7 +15,7 @@
                     <!-- Клиент -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Клиент</label>
-                        <select v-model="filters.clientId" class="qe-select mt-1">
+                        <select v-model="filters.clientId" class="qe-input mt-1">
                             <option :value="null">Все клиенты</option>
                             <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
@@ -39,7 +39,7 @@
                     <!-- НДС -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">НДС включён</label>
-                        <select v-model="filters.vat_enabled" class="qe-select mt-1">
+                        <select v-model="filters.vat_enabled" class="qe-input  mt-1">
                             <option :value="null">Все</option>
                             <option :value="true">Да</option>
                             <option :value="false">Нет</option>
@@ -48,7 +48,7 @@
                     <!-- Гранулярность -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Гранулярность</label>
-                        <select v-model="filters.granularity" class="qe-select mt-1">
+                        <select v-model="filters.granularity" class="qe-input  mt-1">
                             <option v-for="g in granularityOptions" :key="g.value" :value="g.value">{{ g.label }}
                             </option>
                         </select>

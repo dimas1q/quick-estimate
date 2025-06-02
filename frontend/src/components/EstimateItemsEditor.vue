@@ -30,16 +30,16 @@
 
           <transition-group name="fade" tag="div">
             <div v-for="(item, itemIdx) in cat.items" :key="item.id" class="grid grid-cols-9 items-center py-1 gap-4">
-              <input v-model="item.name" class="qe-items-input" placeholder="Название" />
-              <input v-model="item.description" class="qe-items-input" placeholder="Описание" />
-              <input type="number" min="0" step="any" v-model.number="item.quantity" class="qe-items-input"
+              <input v-model="item.name" class="qe-input-sm" placeholder="Название" />
+              <input v-model="item.description" class="qe-input-sm" placeholder="Описание" />
+              <input type="number" min="0" step="any" v-model.number="item.quantity" class="qe-input-sm"
                 placeholder="Кол-во" />
-              <select v-model="item.unit" class="qe-items-input">
+              <select v-model="item.unit" class="qe-input-sm">
                 <option v-for="u in units" :key="u">{{ u }}</option>
               </select>
-              <input type="number" min="0" step="any" v-model.number="item.internal_price" class="qe-items-input"
+              <input type="number" min="0" step="any" v-model.number="item.internal_price" class="qe-input-sm"
                 placeholder="Внутр. цена" />
-              <input type="number" min="0" step="any" v-model.number="item.external_price" class="qe-items-input"
+              <input type="number" min="0" step="any" v-model.number="item.external_price" class="qe-input-sm"
                 placeholder="Внеш. цена" />
               <div class="text-sm font-semibold text-center pr-2">
                 {{ formatCurrency(getItemInternal(item)) }}
@@ -81,7 +81,7 @@
 
       <transition name="fade">
         <select v-if="showTemplateSelect" v-model="selectedTemplateId" @change="applyTemplate"
-          class="qe-items-input min-w-[220px] max-w-[340px] transition-all qe-select" style="margin-left: 0">
+          class="qe-input-sm min-w-[220px] max-w-[340px] transition-all qe-select" style="margin-left: 0">
           <option :value="null" disabled selected>Выберите шаблон</option>
           <option v-for="t in templatesStore.templates" :key="t.id" :value="t.id">
             {{ t.name }}

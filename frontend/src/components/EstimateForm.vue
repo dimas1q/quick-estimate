@@ -1,6 +1,6 @@
 # frontend/src/components/EstimateForm.vue
 <template>
-  <form @submit.prevent="submit" class="space-y-8 border dark:border-qe-black2 bg-gray rounded-2xl shadow-md p-6">
+  <form @submit.prevent="submit" class="space-y-8 border dark:border-qe-black2 bg-white dark:bg-qe-black rounded-2xl shadow-md p-6">
     <!-- 1. Основные поля в две колонки -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Название -->
@@ -52,27 +52,47 @@
       <div class="md:col-span-2">
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Заметки</label>
         <textarea v-model="estimate.notes" rows="2" placeholder="Дополнительная информация"
-          class="w-full qe-input resize-none" />
+          class="w-full qe-textarea resize-none" />
       </div>
 
 
 
-      <!-- НДС: красивый flex-блок на всю ширину -->
+      <!-- НДС: современный и компактный блок -->
       <div class="md:col-span-2">
-        <div class="flex items-center gap-2 bg-gray-50 dark:bg-qe-black rounded-lg px-2">
-          <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
-            class="h-5 w-5 text-blue-600 accent-blue-600 focus:ring-blue-500" />
-          <label for="vat" class="text-sm font-medium text-gray-700 dark:text-white select-none cursor-pointer">
-            НДС
+        <div :class="[
+          'flex items-center gap-4 rounded-xl p-3 border shadow-sm transition min-h-[64px]',
+          estimate.vat_enabled
+            ? 'bg-white-50  dark:bg-qe-black2 dark:border-blue-600'
+            : 'bg-white-50  dark:bg-qe-black dark:border-qe-black2'
+        ]">
+          <label for="vat" class="flex items-center gap-3 cursor-pointer select-none">
+            <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
+              class="h-5 w-5 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
+            <span class="text-base font-semibold text-gray-800 dark:text-white">НДС</span>
           </label>
-          <template v-if="estimate.vat_enabled">
-            <input type="number" min="0" max="100" step="1" v-model.number="estimate.vat_rate"
-              class="border border-gray-300 rounded-lg px-2 py-1 w-16 focus:outline-none dark:text-white dark:bg-qe-black dark:border-qe-black2 focus:ring-2 focus:ring-blue-300"
-              placeholder="%" @input="checkVatRate" />
-            <span class="text-gray-600 dark:text-white   select-none">%</span>
-          </template>
+
+          <transition name="fade">
+            <div v-if="estimate.vat_enabled" class="flex items-center gap-2">
+              <div class="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  v-model.number="estimate.vat_rate"
+                  class="w-22 pr-8 pl-3 py-1.5 border rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white dark:bg-qe-black dark:text-white dark:border-blue-800"
+                  placeholder="%"
+                  @input="checkVatRate"
+                />
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-base text-gray-700 dark:text-white pointer-events-none">%</span>
+              </div>
+            </div>
+          </transition>
+          <span class="ml-auto text-xs text-gray-400 dark:text-gray-500 font-normal" v-if="estimate.vat_enabled">НДС
+            будет включён в итоговую сумму</span>
         </div>
       </div>
+
 
     </div>
 
@@ -261,3 +281,15 @@ function validateEstimate() {
 }
 
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

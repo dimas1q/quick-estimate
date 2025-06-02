@@ -232,7 +232,7 @@ async function toggleFavorite(estimate) {
           </div>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Клиент</label>
-            <select v-model="filters.client" class="qe-select w-full mt-2">
+            <select v-model="filters.client" class="qe-input w-full mt-2">
               <option :value="''">Все клиенты</option>
               <option v-for="c in clients" :key="c.id" :value="c.id">
                 {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
