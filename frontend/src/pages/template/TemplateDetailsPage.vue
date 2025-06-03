@@ -104,15 +104,11 @@
       </div>
     </div>
 
-    <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white p-6 rounded shadow max-w-sm w-full text-center">
-        <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данный шаблон?</p>
-        <div class="flex justify-center gap-4">
-          <button @click="deleteTemplate" class="bg-red-500 text-white px-4 py-2 rounded-md">Да, удалить</button>
-          <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-md">Отмена</button>
-        </div>
-      </div>
-    </div>
+    <QeModal v-model="showConfirm" @confirm="deleteTemplate">
+      Вы уверены, что хотите удалить данный шаблон?
+      <template #confirm>Да, удалить</template>
+      <template #cancel>Отмена</template>
+    </QeModal>
   </div>
 </template>
 
@@ -121,6 +117,9 @@ import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTemplatesStore } from '@/store/templates'
 import { useToast } from 'vue-toastification'
+
+import QeModal from '@/components/QeModal.vue'
+
 
 const route = useRoute()
 const router = useRouter()

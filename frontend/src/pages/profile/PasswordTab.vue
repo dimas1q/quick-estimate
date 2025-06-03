@@ -1,21 +1,21 @@
 <template>
-    <form @submit.prevent="save" class="space-y-6 max-w-2xl">
-      <div class="space-y-1">
-        <label class="block text-sm font-medium text-gray-700">Текущий пароль</label>
-        <input v-model="current" placeholder="Введите текущий пароль" type="password" class="input-field" />
-      </div>
-      <div class="space-y-1">
-        <label class="block text-sm font-medium text-gray-700">Новый пароль</label>
-        <input v-model="newPassword" placeholder="Введите новый пароль" type="password" class="input-field" />
-      </div>
-      <div class="space-y-1">
-        <label class="block text-sm font-medium text-gray-700">Подтвердите новый пароль</label>
-        <input v-model="confirm" placeholder="Повторите новый пароль" type="password" class="input-field" />
-      </div>
-  
-      <button type="submit" class="btn-primary">Сохранить</button>
-    </form>
-  </template>
+  <form @submit.prevent="save" class="space-y-6 max-w-2xl">
+    <div class="space-y-1">
+      <label class="block text-sm font-medium text-gray-700">Текущий пароль</label>
+      <input v-model="current" placeholder="Введите текущий пароль" type="password" class="qe-input w-full" />
+    </div>
+    <div class="space-y-1">
+      <label class="block text-sm font-medium text-gray-700">Новый пароль</label>
+      <input v-model="newPassword" placeholder="Введите новый пароль" type="password" class="qe-input w-full" />
+    </div>
+    <div class="space-y-1">
+      <label class="block text-sm font-medium text-gray-700">Подтвердите новый пароль</label>
+      <input v-model="confirm" placeholder="Повторите новый пароль" type="password" class="qe-input w-full" />
+    </div>
+
+    <button type="submit" class="qe-btn">Сохранить</button>
+  </form>
+</template>
   
   <script setup>
   import { ref } from 'vue'

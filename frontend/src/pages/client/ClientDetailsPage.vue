@@ -54,8 +54,7 @@
                     <div v-for="e in estimates" :key="e.id"
                         class="border bg-white dark:bg-qe-black dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
                         <div class="flex justify-between items-center">
-                            <RouterLink :to="`/estimates/${e.id}`"
-                                class="font-semibold ">
+                            <RouterLink :to="`/estimates/${e.id}`" class="font-semibold ">
                                 {{ e.name }}
                             </RouterLink>
                             <span class="text-gray-500 text-xs">{{ new Date(e.date).toLocaleDateString() }}</span>
@@ -70,16 +69,11 @@
         </div>
 
         <!-- Модалка подтверждения удаления -->
-        <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white p-6 rounded-lg shadow max-w-sm w-full text-center">
-                <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данного клиента?</p>
-                <div class="flex justify-center gap-4">
-                    <button @click="deleteClient" class="bg-red-500 text-white px-4 py-2 rounded-lg">Да,
-                        удалить</button>
-                    <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-lg">Отмена</button>
-                </div>
-            </div>
-        </div>
+        <QeModal v-model="showConfirm" @confirm="deleteClient">
+            Вы уверены, что хотите удалить данного клиента?
+            <template #confirm>Да, удалить</template>
+            <template #cancel>Отмена</template>
+        </QeModal>
     </div>
 </template>
   
@@ -90,6 +84,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useClientsStore } from '@/store/clients'
 import { useToast } from 'vue-toastification'
+import QeModal from '@/components/QeModal.vue'
 
 const route = useRoute()
 const router = useRouter()

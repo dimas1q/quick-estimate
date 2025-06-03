@@ -22,7 +22,7 @@ function toggleTheme() {
 
 <template>
   <button @click="toggleTheme"
-    class="relative w-16 h-8 flex items-center rounded-full bg-gray-100 dark:bg-qe-black2 transition-colors border-2 border-transparent  outline-none"
+    class="relative w-16 h-8 flex items-center rounded-full bg-gray-100  dark:bg-qe-black2 transition-colors border border-gray-200 dark:border-qe-black2 shadow-sm outline-none"
     :aria-label="isDark ? 'Светлая тема' : 'Темная тема'" tabindex="0" style="min-width:56px; min-height:32px;">
     <!-- Солнце (слева, поверх бегунка) -->
     <Sun

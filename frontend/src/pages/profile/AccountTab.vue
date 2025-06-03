@@ -1,20 +1,15 @@
 <template>
-    <form @submit.prevent="save" class="space-y-6 max-w-2xl">
-      <div v-for="(value, key) in form" :key="key" class="space-y-1">
-        <label class="block text-sm font-medium text-gray-700">
-          {{ fieldLabels[key] }}
-        </label>
-        <input
-          v-model="form[key]"
-          :placeholder="fieldLabels[key]"
-          class="input-field"
-          type="text"
-        />
-      </div>
-  
-      <button type="submit" class="btn-primary">Сохранить</button>
-    </form>
-  </template>
+  <form @submit.prevent="save" class="space-y-6 max-w-2xl">
+    <div v-for="(value, key) in form" :key="key" class="space-y-1">
+      <label class="block text-sm font-medium text-gray-700">
+        {{ fieldLabels[key] }}
+      </label>
+      <input v-model="form[key]" :placeholder="fieldLabels[key]" class="qe-input w-full" type="text" />
+    </div>
+
+    <button type="submit" class="qe-btn">Сохранить</button>
+  </form>
+</template>
   
   <script setup>
   import { ref } from 'vue'

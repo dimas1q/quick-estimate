@@ -293,16 +293,11 @@
             </div>
         </div>
         <!-- Модалка -->
-        <div v-if="showConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white p-6 rounded-lg shadow max-w-sm w-full text-center">
-                <p class="mb-4 font-semibold">Вы уверены, что хотите удалить данную смету?</p>
-                <div class="flex justify-center gap-4">
-                    <button @click="deleteEstimate" class="bg-red-500 text-white px-4 py-2 rounded-lg">Да,
-                        удалить</button>
-                    <button @click="showConfirm = false" class="bg-gray-300 px-4 py-2 rounded-lg">Отмена</button>
-                </div>
-            </div>
-        </div>
+        <QeModal v-model="showConfirm" @confirm="doDelete">
+            Вы уверены, что хотите удалить данную смету?
+            <template #confirm>Да, удалить</template>
+            <template #cancel>Отмена</template>
+        </QeModal>
 
     </div>
 </template>
@@ -313,7 +308,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import { onClickOutside } from '@vueuse/core'
 import { useToast } from 'vue-toastification'
-
+import QeModal from '@/components/QeModal.vue'
 import fileDownload from 'js-file-download'
 
 const route = useRoute()
