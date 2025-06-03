@@ -78,11 +78,11 @@ async function resetFilters() {
           <h2 class="font-semibold text-lg">Фильтры</h2>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Имя</label>
-            <input v-model="filters.name" class="qe-input mt-2" type="text" placeholder="Поиск по имени" />
+            <input v-model="filters.name" class="qe-input w-full mt-2" type="text" placeholder="Поиск по имени" />
           </div>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Компания</label>
-            <input v-model="filters.company" class="qe-input mt-2" type="text" placeholder="Поиск по компании" />
+            <input v-model="filters.company" class="qe-input w-full mt-2" type="text" placeholder="Поиск по компании" />
           </div>
           <div class="flex gap-2 pt-2">
             <button @click="applyFilters" class="qe-btn w-full">Применить</button>

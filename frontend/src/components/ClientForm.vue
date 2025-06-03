@@ -1,80 +1,76 @@
 ## frontend/src/components/ClientForm.vue
 <template>
-    <form @submit.prevent="submit" class="space-y-8 border bg-gray rounded-2xl shadow-md p-6">
+    <form @submit.prevent="submit" class="space-y-8 border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl shadow-md p-6">
         <!-- 1. Двухколоночные поля -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Имя клиента -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Имя клиента</label>
-                <input v-model="client.name" type="text" placeholder="ФИО или имя"
-                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <input v-model="client.name" type="text" placeholder="ФИО или имя" class="w-full qe-input" />
             </div>
             <!-- Компания -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Компания</label>
-                <input v-model="client.company" type="text" placeholder="Название компании"
-                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <input v-model="client.company" type="text" placeholder="Название компании" class="w-full qe-input" />
             </div>
             <!-- Email -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-                <input v-model="client.email" type="email" placeholder="email@example.com"
-                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <input v-model="client.email" type="email" placeholder="email@example.com" class="w-full qe-input" />
             </div>
             <!-- Телефон -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Телефон</label>
-                <input v-model="client.phone" type="tel" placeholder="+7 (999) 123-45-67"
-                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <input v-model="client.phone" type="tel" placeholder="+7 (999) 123-45-67" class="w-full qe-input" />
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Юридический адрес</label>
-                <input v-model="client.legal_address" type="text" class="w-full border rounded-lg px-4 py-2" />
+                <input v-model="client.legal_address" type="text" class="w-full qe-input" />
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Фактический адрес</label>
-                <input v-model="client.actual_address" type="text" class="w-full border rounded-lg px-4 py-2" />
+                <input v-model="client.actual_address" type="text" class="w-full qe-input" />
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">ИНН</label>
-                <input v-model="client.inn" type="text" class="w-full border rounded-lg px-4 py-2" />
+                <input v-model="client.inn" type="text" class="w-full qe-input" />
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">КПП</label>
-                <input v-model="client.kpp" type="text" class="w-full border rounded-lg px-4 py-2" />
+                <input v-model="client.kpp" type="text" class="w-full qe-input" />
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">БИК</label>
-                <input v-model="client.bik" type="text" class="w-full border rounded-lg px-4 py-2" />
+                <input v-model="client.bik" type="text" class="w-full qe-input" />
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Расчетный счет</label>
-                <input v-model="client.account" type="text" class="w-full border rounded-lg px-4 py-2" />
+                <input v-model="client.account" type="text" class="w-full qe-input" />
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Банк</label>
-                <input v-model="client.bank" type="text" class="w-full border rounded-lg px-4 py-2" />
+                <input v-model="client.bank" type="text" class="w-full qe-input" />
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Корреспондентский счет</label>
-                <input v-model="client.corr_account" type="text" class="w-full border rounded-lg px-4 py-2" />
+                <input v-model="client.corr_account" type="text" class="w-full qe-input" />
             </div>
 
             <!-- Примечания -->
             <div class="md:col-span-2">
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Примечания</label>
                 <textarea v-model="client.notes" rows="2" placeholder="Любые дополнительные данные"
-                    class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
+                    class="w-full qe-textarea resize-none" />
             </div>
         </div>
 
         <!-- 2. Кнопки -->
         <div class="flex justify-end space-x-4">
             <button type="button" @click="cancel"
-                class="px-6 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
+                class="qe-btn-secondary">
                 Отмена
             </button>
-            <button type="submit" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+            <button type="submit" class="qe-btn">
                 Сохранить
             </button>
         </div>

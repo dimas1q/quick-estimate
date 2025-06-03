@@ -228,7 +228,7 @@ async function toggleFavorite(estimate) {
           <h2 class="font-semibold text-lg">Фильтры</h2>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Название</label>
-            <input v-model="filters.name" class="qe-input mt-2" type="text" placeholder="Название сметы" />
+            <input v-model="filters.name" class="qe-input w-full mt-2" type="text" placeholder="Название сметы" />
           </div>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Клиент</label>

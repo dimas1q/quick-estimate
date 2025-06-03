@@ -5,7 +5,7 @@
     <!-- Категории -->
     <transition-group name="fade" tag="div" class="space-y-8">
       <div v-for="(cat, idx) in categories" :key="cat.id"
-        class="rounded-2xl border bg-gray-50 dark:bg-qe-black dark:border-qe-black2 shadow-md p-4 space-y-4">
+        class="rounded-2xl border bg-white dark:bg-qe-black dark:border-qe-black2 shadow-md p-4 space-y-4">
         <!-- Категория: название и действия -->
         <div class="flex items-center gap-3 mb-2">
           <input v-model="cat.name" placeholder="Название категории"
@@ -81,7 +81,7 @@
 
       <transition name="fade">
         <select v-if="showTemplateSelect" v-model="selectedTemplateId" @change="applyTemplate"
-          class="qe-input-sm min-w-[220px] max-w-[340px] transition-all qe-select" style="margin-left: 0">
+          class="qe-input " style="margin-left: 0">
           <option :value="null" disabled selected>Выберите шаблон</option>
           <option v-for="t in templatesStore.templates" :key="t.id" :value="t.id">
             {{ t.name }}

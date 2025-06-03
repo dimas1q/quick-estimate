@@ -4,7 +4,7 @@
         <div v-if="error" class="text-red-500 text-center text-lg font-medium mt-10">
             {{ error }}
         </div>
-        <div v-if="estimate" class="space-y-6 max-w-7xl mx-auto px-16 py-2">
+        <div v-if="estimate" class="space-y-6 max-w-7xl mx-auto px-16 py-4">
             <h1 class="text-2xl font-bold mb-6 text-center py-2">Редактирование сметы: {{ estimate?.name }}</h1>
             <EstimateForm :initial="estimate" mode="edit" @updated="onUpdated" />
         </div>

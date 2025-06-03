@@ -142,7 +142,7 @@ function isValidTemplate(template) {
           <h2 class="font-semibold text-lg">Фильтр</h2>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Название</label>
-            <input v-model="filters.name" class="qe-input mt-2" type="text" placeholder="Название шаблона" />
+            <input v-model="filters.name" class="qe-input w-full mt-2" type="text" placeholder="Название шаблона" />
           </div>
           <div class="flex gap-2 pt-2">
             <button @click="applyFilters" class="qe-btn w-full">Применить</button>
