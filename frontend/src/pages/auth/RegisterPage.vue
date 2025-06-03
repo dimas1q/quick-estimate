@@ -57,13 +57,13 @@ async function handleRegister() {
             <div class="mb-4">
                 <label class="block mb-1 text-sm font-semibold text-gray-800 dark:text-gray-300"
                     for="login">Логин</label>
-                <input v-model="login" id="login" type="text" class="qe-input" autocomplete="username"
+                <input v-model="login" id="login" type="text" class="qe-input w-full" autocomplete="username"
                     placeholder="Придумайте логин" required />
             </div>
             <div class="mb-4">
                 <label class="block mb-1 text-sm font-semibold text-gray-800 dark:text-gray-300"
                     for="email">Email</label>
-                <input v-model="email" id="email" type="email" class="qe-input" autocomplete="email"
+                <input v-model="email" id="email" type="email" class="qe-input w-full" autocomplete="email"
                     placeholder="Введите email" required />
             </div>
             <div class="mb-4">
@@ -71,7 +71,8 @@ async function handleRegister() {
                     for="password">Пароль</label>
                 <div class="relative">
                     <input :type="showPassword ? 'text' : 'password'" v-model="password" id="password"
-                        class="qe-input pr-12" autocomplete="new-password" placeholder="Придумайте пароль" required />
+                        class="qe-input w-full pr-12" autocomplete="new-password" placeholder="Придумайте пароль"
+                        required />
                     <button type="button" class="absolute right-3 top-2.5 text-gray-400 hover:text-blue-500 transition"
                         @click="showPassword = !showPassword" tabindex="-1" aria-label="Показать пароль">
                         <svg v-if="!showPassword" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"
@@ -94,7 +95,8 @@ async function handleRegister() {
                     for="confirmPassword">Повторите пароль</label>
                 <div class="relative">
                     <input :type="showConfirm ? 'text' : 'password'" v-model="confirmPassword" id="confirmPassword"
-                        class="qe-input pr-12" autocomplete="new-password" placeholder="Повторите пароль" required />
+                        class="qe-input w-full pr-12" autocomplete="new-password" placeholder="Повторите пароль"
+                        required />
                     <button type="button" class="absolute right-3 top-2.5 text-gray-400 hover:text-blue-500 transition"
                         @click="showConfirm = !showConfirm" tabindex="-1" aria-label="Показать пароль">
                         <svg v-if="!showConfirm" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"

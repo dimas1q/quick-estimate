@@ -22,7 +22,8 @@ async function handleLogin() {
 </script>
 
 <template>
-    <div class="w-full max-w-sm bg-white dark:bg-qe-black2 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
+    <div
+        class="w-full max-w-sm bg-white dark:bg-qe-black2 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
         <div class="flex flex-col items-center mb-7">
             <img src="/vite.svg" class="h-10 mb-2 opacity-90" alt="QuickEstimate" />
             <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">QuickEstimate</span>
@@ -33,8 +34,8 @@ async function handleLogin() {
                     Email или логин
                 </label>
                 <div class="relative">
-                    <input v-model="email" id="identifier" type="text" autocomplete="username" class="qe-input pr-10"
-                        placeholder="Введите email или логин" required />
+                    <input v-model="email" id="identifier" type="text" autocomplete="username"
+                        class="qe-input w-full pr-10" placeholder="Введите email или логин" required />
                     <span class="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -48,7 +49,8 @@ async function handleLogin() {
                     for="password">Пароль</label>
                 <div class="relative">
                     <input :type="showPassword ? 'text' : 'password'" v-model="password" id="password"
-                        autocomplete="current-password" class="qe-input pr-12" placeholder="Введите пароль" required />
+                        autocomplete="current-password" class="qe-input w-full pr-12" placeholder="Введите пароль"
+                        required />
                     <button type="button" class="absolute right-3 top-2.5 text-gray-400 hover:text-blue-500 transition"
                         @click="showPassword = !showPassword" tabindex="-1" aria-label="Показать пароль">
                         <svg v-if="!showPassword" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"

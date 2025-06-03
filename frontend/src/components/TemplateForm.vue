@@ -1,22 +1,20 @@
 # frontend/src/components/TemplateForm.vue
 <template>
-  <form @submit.prevent="submit" class="space-y-8 border bg-gray rounded-2xl shadow-md p-6">
+  <form @submit.prevent="submit"
+    class="space-y-8 border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl shadow-md p-6">
     <!-- 1. Основные поля: название и описание -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Название шаблона</label>
-        <input v-model="template.name" type="text" placeholder="Введите название"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Название шаблона</label>
+        <input v-model="template.name" type="text" placeholder="Введите название" class="w-full qe-input" />
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Описание</label>
-        <textarea v-model="template.description" rows="1" placeholder="Краткое описание шаблона"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Описание</label>
+        <input v-model="template.description" placeholder="Краткое описание шаблона" class="w-full qe-input" />
       </div>
       <div class="md:col-span-2">
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Примечания</label>
-        <textarea v-model="template.notes" rows="2" placeholder="Примечания к шаблону"
-          class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Примечания</label>
+        <textarea v-model="template.notes" rows="2" placeholder="Примечания к шаблону" class="w-full qe-textarea" />
       </div>
     </div>
 
@@ -26,12 +24,11 @@
     </div>
 
     <!-- 3. Кнопки -->
-    <div class="flex justify-end space-x-4">
-      <button type="button" @click="cancel"
-        class="px-6 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
+    <div class="flex justify-end space-x-2">
+      <button type="button" @click="cancel" class="qe-btn-danger">
         Отмена
       </button>
-      <button type="submit" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+      <button type="submit" class="qe-btn">
         Сохранить
       </button>
     </div>
@@ -134,8 +131,12 @@ function validateTemplate() {
       toast.error(`Услуга №${i + 1}: количество должно быть > 0`)
       return false
     }
-    if (!item.unit_price || item.unit_price <= 0) {
-      toast.error(`Услуга №${i + 1}: цена должна быть > 0`)
+    if (!item.internal_price || item.internal_price <= 0) {
+      toast.error(`Услуга ${item.name}: внутренняя цена должна быть > 0`)
+      return false
+    }
+    if (!item.external_price || item.external_price <= 0) {
+      toast.error(`Услуга ${item.name}: внешняя цена должна быть > 0`)
       return false
     }
   }

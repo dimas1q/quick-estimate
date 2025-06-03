@@ -99,7 +99,7 @@
         Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
       </p>
       <p class="text-right font-semibold text-lg">
-        Общая сумма (внешняя): {{ formatCurrency(totalExternal) }}
+        Общая сумма (внешн.): {{ formatCurrency(totalExternal) }}
       </p>
       <p class="text-right font-semibold text-lg">
         Разница: {{ formatCurrency(totalDiff) }}
