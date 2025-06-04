@@ -241,12 +241,14 @@ async function toggleFavorite(estimate) {
           </div>
 
           <div>
+            <label class="text-sm text-gray-600 dark:text-gray-300">Дата с</label>
             <QeDatePicker v-model="filters.date_from" label="Дата с" placeholder="Выберите дату с" :format="format"
-              input-class="qe-input" />
+              class="mt-2" />
           </div>
           <div>
+            <label class="text-sm text-gray-600 dark:text-gray-300">Дата по</label>
             <QeDatePicker v-model="filters.date_to" label="Дата по" placeholder="Выберите дату по" :format="format"
-              input-class="qe-input" />
+              class="mt-2" />
           </div>
 
           <div class="flex gap-2 pt-2">

@@ -70,7 +70,7 @@
     </transition-group>
 
     <!-- Использовать шаблон -->
-    <div class="flex flex-wrap items-center gap-4">
+    <div class="flex flex-wrap items-center gap-4 min-h-[40px]">
       <button type="button" @click="addCategory" class="qe-btn-secondary">
         Добавить категорию
       </button>
@@ -80,8 +80,8 @@
       </button>
 
       <transition name="fade">
-        <select v-if="showTemplateSelect" v-model="selectedTemplateId" @change="applyTemplate"
-          class="qe-input " style="margin-left: 0">
+        <select v-if="showTemplateSelect" v-model="selectedTemplateId" @change="applyTemplate" class="qe-input "
+          style="margin-left: 0">
           <option :value="null" disabled selected>Выберите шаблон</option>
           <option v-for="t in templatesStore.templates" :key="t.id" :value="t.id">
             {{ t.name }}

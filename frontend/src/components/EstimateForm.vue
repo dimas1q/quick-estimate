@@ -40,8 +40,8 @@
       <!-- Дата и место проведения -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Дата и время мероприятия</label>
-        <input v-model="eventDateTimeInput" type="datetime-local" class="w-full qe-input"
-          placeholder="Выберите дату и время" />
+        <QeDatePicker v-model="estimate.event_datetime" label="Дата и время мероприятия"
+          placeholder="Дата и время мероприятия" :format="format" enableTimePicker=true />
       </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Место проведения
@@ -115,6 +115,7 @@ import { useEstimatesStore } from '@/store/estimates'
 import { useClientsStore } from '@/store/clients'
 import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
+import QeDatePicker from '@/components/QeDatePicker.vue'
 
 const props = defineProps({
   initial: Object,

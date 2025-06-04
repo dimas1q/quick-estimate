@@ -63,7 +63,7 @@ onClickOutside(menuRef, () => {
         <div class="relative" ref="menuRef">
           <!-- Кнопка вызова меню -->
           <button @click="showMenu = !showMenu"
-            class="flex items-center gap-3 px-3 py-1 text-sm rounded-xl bg-gray-100 dark:bg-qe-black2 border border-gray-200 dark:border-qe-black2 shadow-sm hover:bg-blue-50 dark:hover:bg-blue-900 transition-all min-w-[140px]">
+            class="flex items-center gap-3 px-3 py-1 text-sm rounded-xl bg-gray-100 dark:bg-qe-black2 border border-gray-200 dark:border-qe-black2 hover:bg-blue-50 dark:hover:bg-blue-900 transition-all min-w-[140px]">
             <div
               class="w-6 h-6 rounded-full flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold text-base uppercase select-none">
               {{ (auth.user.name || auth.user.login || auth.user.email).slice(0, 2) }}

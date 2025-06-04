@@ -48,5 +48,5 @@ async def login(
     if not db_user:
         raise HTTPException(status_code=401, detail="Неверный логин/email или пароль")
 
-    token = create_access_token(data={"sub": db_user.email})
+    token = create_access_token(data={"sub": str(db_user.id)})
     return {"access_token": token, "token_type": "bearer"}

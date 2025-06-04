@@ -46,6 +46,7 @@ async def authenticate_user(
 
 # 🔐 Токен
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Generate a JWT access token."""
     to_encode = data.copy()
     expire = datetime.utcnow() + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -65,13 +66,17 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if not email:
+        sub = payload.get("sub")
+        if not sub:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    result = await db.execute(select(User).where(User.email == email))
+    if str(sub).isdigit():
+        result = await db.execute(select(User).where(User.id == int(sub)))
+    else:
+        # Backward compatibility for tokens containing email
+        result = await db.execute(select(User).where(User.email == str(sub)))
     user = result.scalar_one_or_none()
     if user is None:
         raise credentials_exception

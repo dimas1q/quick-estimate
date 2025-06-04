@@ -32,9 +32,7 @@ const innerValue = computed({
 
 <template>
     <div>
-        <label v-if="label" class="text-sm text-gray-600 dark:text-gray-300">{{ label }}</label>
         <Datepicker v-model="innerValue" :locale="locale" :format="format" :dark="isDark" cancelText="Отмена"
-            selectText="Выбрать" :placeholder="placeholder" :enable-time-picker="enableTimePicker"
-            :input-class-name="inputClass" class="mt-2" style="width:100%;" />
+            selectText="Выбрать" :placeholder="placeholder" :enable-time-picker="enableTimePicker" style="width:100%;" />
     </div>
 </template>
