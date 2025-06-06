@@ -1,7 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -17,7 +16,8 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.core.database import Base
-from app.models import estimate, template, user, item, changelog
+from app.models import (changelog, client_changelog, estimate, item, template,
+                        user)
 
 target_metadata = Base.metadata
 # target_metadata = mymodel.Base.metadata

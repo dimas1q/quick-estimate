@@ -5,11 +5,11 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
-class EstimateChangeLog(Base):
-    __tablename__ = "estimate_change_logs"
+class ClientChangeLog(Base):
+    __tablename__ = "client_change_logs"
 
     id = Column(Integer, primary_key=True)
-    estimate_id = Column(Integer, ForeignKey("estimates.id", ondelete="CASCADE"))
+    client_id = Column(Integer, ForeignKey("clients.id", ondelete="CASCADE"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     action = Column(String)
     description = Column(Text)

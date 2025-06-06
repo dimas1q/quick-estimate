@@ -1,15 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import func
-from typing import List, Optional
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.client import Client
+from app.models.client_changelog import ClientChangeLog
 from app.models.estimate import Estimate
-from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
-from app.utils.auth import get_current_user
 from app.models.user import User
+from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
+from app.schemas.client_changelog import ClientChangeLogOut
+from app.utils.auth import get_current_user
 
 router = APIRouter(tags=["clients"], dependencies=[Depends(get_current_user)])
 
@@ -22,6 +26,15 @@ async def create_client(
 ):
     new = Client(**client_in.dict(), user_id=user.id)
     db.add(new)
+    await db.flush()
+    db.add(
+        ClientChangeLog(
+            client_id=new.id,
+            user_id=user.id,
+            action="Создание",
+            description="Клиент создан",
+        )
+    )
     await db.commit()
     await db.refresh(new)
     return new
@@ -59,6 +72,37 @@ async def get_client(
     return client
 
 
+@router.get("/{client_id}/logs", response_model=List[ClientChangeLogOut])
+async def get_client_logs(
+    client_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+    )
+    client = result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+    q = await db.execute(
+        select(ClientChangeLog)
+        .options(selectinload(ClientChangeLog.user))
+        .where(ClientChangeLog.client_id == client_id)
+        .order_by(ClientChangeLog.timestamp.asc())
+    )
+    return [
+        ClientChangeLogOut(
+            id=log.id,
+            action=log.action,
+            description=log.description,
+            timestamp=log.timestamp,
+            user_id=log.user_id,
+            user_name=log.user.name if log.user else None,
+        )
+        for log in q.scalars().all()
+    ]
+
+
 @router.put("/{client_id}", response_model=ClientOut)
 async def update_client(
     client_id: int,
@@ -72,8 +116,20 @@ async def update_client(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
+    changed = []
     for field, val in client_in.dict(exclude_unset=True).items():
+        if getattr(client, field) != val:
+            changed.append(field)
         setattr(client, field, val)
+    if changed:
+        db.add(
+            ClientChangeLog(
+                client_id=client_id,
+                user_id=user.id,
+                action="Обновление",
+                description="Изменены: " + ", ".join(changed),
+            )
+        )
     await db.commit()
     await db.refresh(client)
     return client
@@ -91,17 +147,27 @@ async def delete_client(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
-    
+
     estimates_count = await db.scalar(
-        select(func.count()).select_from(Estimate).where(Estimate.client_id == client_id)
+        select(func.count())
+        .select_from(Estimate)
+        .where(Estimate.client_id == client_id)
     )
 
     if estimates_count > 0:
         raise HTTPException(
             status_code=400,
-            detail="Сначала удалите все сметы, связанные с этим клиентом"
+            detail="Сначала удалите все сметы, связанные с этим клиентом",
         )
-    
+
     await db.delete(client)
+    db.add(
+        ClientChangeLog(
+            client_id=client_id,
+            user_id=user.id,
+            action="Удаление",
+            description="Клиент удален",
+        )
+    )
     await db.commit()
     return

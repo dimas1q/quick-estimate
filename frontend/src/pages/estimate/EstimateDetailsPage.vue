@@ -1,571 +1,713 @@
 <template>
-    <div class="py-8 max-w-6xl mx-auto">
-
-        <!-- Ошибка -->
-        <div v-if="error" class="text-center text-red-500 text-lg font-medium mt-10">
-            {{ error }}
-        </div>
-
-        <div v-if="estimate" class="space-y-7">
-
-            <!-- Заголовок и статус -->
-            <div class="flex flex-wrap justify-between items-center pb-1 mb-7 gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <LucideFileText class="w-7 h-7 text-blue-600" />
-                        <span>Смета: {{ estimate.name }}</span>
-                        <span :class="[
-                            'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1',
-                            {
-                                'bg-gray-200 text-gray-800': estimate.status === 'draft',
-                                'bg-yellow-200 text-yellow-800': estimate.status === 'sent',
-                                'bg-green-200 text-green-800': estimate.status === 'approved',
-                                'bg-blue-200 text-blue-800': estimate.status === 'paid',
-                                'bg-red-200 text-red-800': estimate.status === 'cancelled'
-                            }
-                        ]">
-                            {{
-                            {
-                            draft: 'Черновик',
-                            sent: 'Отправлена',
-                            approved: 'Согласована',
-                            paid: 'Оплачена',
-                            cancelled: 'Отменена'
-                            }[estimate.status]
-                            }}
-                        </span>
-                    </h1>
-                    <p v-if="isVersionView" class="mt-1 text-sm text-gray-500">Просмотр версии №{{ currentVersion }}</p>
-                </div>
-
-                <!-- Кнопки управления -->
-                <div class="flex space-x-2 items-center relative">
-                    <!-- если мы в режиме версии, показываем другие кнопки -->
-                    <template v-if="isVersionView">
-
-                        <button @click="restoreVersion(currentVersion)"
-                            class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">
-                            Восстановить
-                        </button>
-                        <button @click="copyVersion(currentVersion)"
-                            class="inline-flex items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium shadow">
-                            Копировать
-                        </button>
-                        <button @click="deleteVersion(currentVersion)"
-                            class="inline-flex items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium shadow">
-                            Удалить версию
-                        </button>
-                        <button @click="() => router.push({ path: `/estimates/${estimate.id}` })"
-                            class="btn-secondary inline-flex items-center px-4 py-2 rounded-md bg-gray-300 text-gray-800 hover:bg-gray-400 transition-all text-sm font-medium shadow">
-                            Вернуться
-                        </button>
-                    </template>
-                    <template v-else>
-
-                        <!-- Выпадающее меню -->
-                        <div class="relative" ref="menuRef">
-                            <button @click="showExport = !showExport" class="qe-btn-success inline-flex items-center">
-                                Экспортировать
-                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            <div v-if="showExport"
-                                class="absolute right-0 mt-2 w-38 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
-                                <button @click="downloadJson(estimate.id)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-center text-sm text-gray-700 rounded-xl">
-                                    JSON
-                                </button>
-                                <button @click="downloadExcel(estimate)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-xl">
-                                    Excel
-                                </button>
-                                <button @click="downloadPdf(estimate)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-xl">
-                                    PDF
-                                </button>
-                            </div>
-
-                        </div>
-
-                        <!-- Основные кнопки -->
-                        <RouterLink :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning">
-                            Редактировать
-                        </RouterLink>
-                        <button @click="copyEstimate" class="qe-btn">
-                            Копировать
-                        </button>
-                        <button @click="confirmDelete" class="qe-btn-danger">
-                            Удалить
-                        </button>
-                    </template>
-                </div>
-            </div>
-
-            <!-- Табы -->
-            <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 mb-6 w-fit">
-                <button
-                    :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', activeTab === 'details' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
-                    @click="activeTab = 'details'">
-                    Сведения
-                </button>
-                <button
-                    :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', activeTab === 'history' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
-                    @click="activeTab = 'history'">
-                    История
-                </button>
-            </div>
-
-            <!-- Основной контент -->
-            <div v-if="activeTab === 'details'">
-                <!-- Краткая информация -->
-                <div class="grid gap-4 text-sm text-gray-800 dark:text-gray-200 grid-cols-1  md:grid-cols-2 ">
-                    <div
-                        class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2">
-                        <div class="flex items-center gap-2 ">
-                            <LucideUser class="w-5 h-5 text-blue-500" />
-                            <span><span class="font-semibold">Клиент: </span>
-                                <RouterLink :to="`/clients/${estimate.client.id}`"
-                                    class="text-blue-700 hover:underline ">
-                                    {{ estimate.client.name }}
-                                </RouterLink>
-                            </span>
-
-                        </div>
-                        <div v-if="estimate.event_datetime" class="flex items-center gap-2">
-                            <LucideCalendar class="w-5 h-5 text-yellow-500" />
-                            <span><span class="font-semibold">Дата и время: </span><span>{{ new
-                                    Date(estimate.event_datetime).toLocaleString() }}</span></span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <LucideUserCircle class="w-5 h-5 text-green-500" />
-                            <span><span class="font-semibold">Ответственный: </span><span>{{ estimate.responsible
-                                    }}</span></span>
-                        </div>
-                        <div v-if="estimate.event_place" class="flex items-center gap-2">
-                            <LucideMapPin class="w-5 h-5 text-pink-500" />
-                            <span><span class="font-semibold">Место: </span><span>{{ estimate.event_place
-                                    }}</span></span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
-                            <span>
-                                <span class="font-semibold">НДС:</span>
-                                <span v-if="estimate.vat_enabled"> Включён ({{ estimate.vat_rate }}%)</span>
-                                <span v-else> Не включён</span>
-                            </span>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <LucideClock3 class="w-5 h-5 text-gray-400" />
-                            <span><span class="font-semibold">Создана:</span> {{ new
-                                Date(estimate.date).toLocaleString() }}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <LucideRefreshCw class="w-5 h-5 text-gray-400" />
-                            <span><span class="font-semibold">Обновлена:</span> {{ new
-                                Date(estimate.updated_at).toLocaleString() }}</span>
-                        </div>
-                        <div class="flex items-center gap-2 ">
-                            <NotebookPen class="w-5 h-5 text-gray-400" />
-                            <span><span class="font-semibold">Примечания:</span> {{ estimate.notes || '—' }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Общие суммы -->
-                    <div
-                        class="bg-white dark:bg-qe-black3 0 rounded-2xl shadow-sm p-6 border dark:border-qe-black2 flex flex-col gap-4 justify-center h-full">
-                        <div class="flex items-center gap-3">
-                            <LucideWallet class="w-7 h-7 text-blue-600" />
-                            <span class="text-lg font-bold">Суммы по смете</span>
-                        </div>
-                        <div class="space-y-2 mt-2">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-2 text-gray-500">
-                                    <LucidePiggyBank class="w-5 h-5 text-green-600" />
-                                    <span>Внутренняя:</span>
-                                </div>
-                                <span class="text-lg font-semibold text-green-700 dark:text-green-400">{{
-                                    formatCurrency(totalInternal) }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-2 text-gray-500">
-                                    <LucideReceipt class="w-5 h-5 text-blue-600" />
-                                    <span>Внешняя:</span>
-                                </div>
-                                <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{
-                                    formatCurrency(totalExternal) }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-2 text-gray-500">
-                                    <LucideArrowUpRight class="w-5 h-5 text-pink-600" />
-                                    <span>Разница:</span>
-                                </div>
-                                <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">{{
-                                    formatCurrency(totalDiff) }}</span>
-                            </div>
-                            <div v-if="estimate.vat_enabled" class="flex justify-between items-center">
-                                <div class="flex items-center gap-2 text-gray-500">
-                                    <LucidePercentCircle class="w-5 h-5 text-indigo-600" />
-                                    <span>НДС ({{ estimate.vat_rate }}%):</span>
-                                </div>
-                                <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{
-                                    formatCurrency(vat) }}</span>
-                            </div>
-                            <div v-if="estimate.vat_enabled"
-                                class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
-                                <div class="flex items-center gap-2 text-gray-700 dark:text-white font-semibold">
-                                    <LucideCalculator class="w-5 h-5" />
-                                    <span>Итого с НДС:</span>
-                                </div>
-                                <span class="text-xl font-bold text-gray-800 dark:text-white">{{
-                                    formatCurrency(totalWithVat) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Категории и услуги -->
-                <div class="mt-8 ">
-                    <div v-for="(groupItems, category) in groupedItems" :key="category"
-                        class="mb-6 border  p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow">
-                        <div class="flex items-center justify-center gap-2 mb-3">
-                            <LucideFolder class="w-6 h-6 text-blue-500" />
-                            <h3 class="text-xl font-semibold text-gray-800 dark:text-white pb-1">{{ category }}</h3>
-                        </div>
-
-                        <div class="space-y-4">
-                            <div v-for="item in groupItems" :key="item.id"
-                                class="bg-white dark:bg-qe-black3 border border-gray-100 dark:border-qe-black2 rounded-xl shadow p-4 transition flex flex-col">
-                                <div class="flex flex-wrap justify-between items-center gap-2">
-                                    <div>
-                                        <div
-                                            class="text-base font-semibold text-gray-900 dark:text-white flex items-center">
-                                            {{ item.name }}
-                                        </div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-300">
-                                            {{ item.description }}
-                                        </div>
-                                    </div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-300 whitespace-nowrap">
-                                        {{item.quantity }} {{ item.unit }}
-                                    </div>
-                                </div>
-                                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
-                                    <span>Внутр. цена за единицу:</span>
-                                    <span>{{ formatCurrency(item.internal_price) }}</span>
-                                </div>
-                                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
-                                    <span>Внешн. цена за единицу:</span>
-                                    <span>{{ formatCurrency(item.external_price) }}</span>
-                                </div>
-                                <div class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
-                                    <span>Итог (внутр.):</span>
-                                    <span>{{ formatCurrency(getItemInternal(item)) }}</span>
-                                </div>
-                                <div class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
-                                    <span>Итог (внешн.):</span>
-                                    <span>{{ formatCurrency(getItemExternal(item)) }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Итоги по категории -->
-                        <div class="flex gap-3 justify-center mt-5">
-                            <div
-                                class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2">
-                                <LucidePiggyBank class="w-4 h-4 text-green-500" />
-                                <span class="text-xs text-gray-600 dark:text-gray-300">Итог по категории
-                                    (внутр.):</span>
-                                <span class="font-semibold text-sm text-green-800 dark:text-green-300">{{
-                                    formatCurrency(getGroupInternal(groupItems)) }}</span>
-                            </div>
-                            <div
-                                class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2">
-                                <LucideReceipt class="w-4 h-4 text-blue-500" />
-                                <span class="text-xs text-gray-600 dark:text-gray-300">Итог по категории
-                                    (внешн.):</span>
-                                <span class="font-semibold text-sm text-blue-800 dark:text-blue-300">{{
-                                    formatCurrency(getGroupExternal(groupItems)) }}</span>
-                            </div>
-                        </div>
-
-
-                    </div>
-                </div>
-            </div>
-
-            <!-- Вкладка история — оставляем как есть, но под стиль -->
-            <div v-else>
-                <div v-if="logs.length" class="text-sm w-full mt-6">
-                    <h3 class="font-semibold mb-4 ">
-                        История изменений
-                    </h3>
-                    <div
-                        class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="bg-gray-50 dark:bg-qe-black">
-                                    <th class="qe-table-th text-left">Дата и время</th>
-                                    <th class="qe-table-th text-left">Действие</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="log in logs" :key="log.id"
-                                    class="hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                    <td class="qe-table-td">{{ new Date(log.timestamp).toLocaleString() }}</td>
-                                    <td class="qe-table-td">{{ log.description }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div v-if="versions.length" class="mt-2 pt-6 text-sm">
-                    <h3 class="font-semibold mb-4">История версий</h3>
-                    <div
-                        class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
-                        <table class="w-full text-sm qe-table">
-                            <thead>
-                                <tr class="bg-gray-50 dark:bg-qe-black">
-                                    <th class="qe-table-th text-left">Версия</th>
-                                    <th class="qe-table-th text-left">Дата создания</th>
-                                    <th class="qe-table-th text-right">Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="v in versions" :key="v.version"
-                                    class="hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 transition">
-                                    <td class="qe-table-td">№{{ v.version }}</td>
-                                    <td class="qe-table-td">{{ new Date(v.created_at).toLocaleString() }}</td>
-                                    <td class="qe-table-td text-right space-x-2">
-                                        <button @click="viewVersion(v.version)"
-                                            class="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
-                                            Просмотр
-                                        </button>
-                                        <button @click="deleteVersion(v.version)"
-                                            class="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition">
-                                            Удалить
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-
-        </div>
-        <!-- Модалка -->
-        <QeModal v-model="showConfirm" @confirm="deleteEstimate">
-            Вы уверены, что хотите удалить данную смету?
-            <template #confirm>Да, удалить</template>
-            <template #cancel>Отмена</template>
-        </QeModal>
+  <div class="py-8 max-w-6xl mx-auto">
+    <!-- Ошибка -->
+    <div
+      v-if="error"
+      class="text-center text-red-500 text-lg font-medium mt-10"
+    >
+      {{ error }}
     </div>
+
+    <div v-if="estimate" class="space-y-7">
+      <!-- Заголовок и статус -->
+      <div class="flex flex-wrap justify-between items-center pb-1 mb-7 gap-4">
+        <div>
+          <h1
+            class="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2"
+          >
+            <LucideFileText class="w-7 h-7 text-blue-600" />
+            <span>Смета: {{ estimate.name }}</span>
+            <span
+              :class="[
+                'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1',
+                {
+                  'bg-gray-200 text-gray-800': estimate.status === 'draft',
+                  'bg-yellow-200 text-yellow-800': estimate.status === 'sent',
+                  'bg-green-200 text-green-800': estimate.status === 'approved',
+                  'bg-blue-200 text-blue-800': estimate.status === 'paid',
+                  'bg-red-200 text-red-800': estimate.status === 'cancelled',
+                },
+              ]"
+            >
+              {{
+                {
+                  draft: "Черновик",
+                  sent: "Отправлена",
+                  approved: "Согласована",
+                  paid: "Оплачена",
+                  cancelled: "Отменена",
+                }[estimate.status]
+              }}
+            </span>
+          </h1>
+          <p v-if="isVersionView" class="mt-1 text-sm text-gray-500">
+            Просмотр версии №{{ currentVersion }}
+          </p>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="flex space-x-2 items-center relative">
+          <!-- если мы в режиме версии, показываем другие кнопки -->
+          <template v-if="isVersionView">
+            <button
+              @click="restoreVersion(currentVersion)"
+              class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow"
+            >
+              Восстановить
+            </button>
+            <button
+              @click="copyVersion(currentVersion)"
+              class="inline-flex items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium shadow"
+            >
+              Копировать
+            </button>
+            <button
+              @click="deleteVersion(currentVersion)"
+              class="inline-flex items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium shadow"
+            >
+              Удалить версию
+            </button>
+            <button
+              @click="() => router.push({ path: `/estimates/${estimate.id}` })"
+              class="btn-secondary inline-flex items-center px-4 py-2 rounded-md bg-gray-300 text-gray-800 hover:bg-gray-400 transition-all text-sm font-medium shadow"
+            >
+              Вернуться
+            </button>
+          </template>
+          <template v-else>
+            <!-- Выпадающее меню -->
+            <div class="relative" ref="menuRef">
+              <button
+                @click="showExport = !showExport"
+                class="qe-btn-success inline-flex items-center"
+              >
+                Экспортировать
+                <svg
+                  class="w-4 h-4 ml-2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+              <div
+                v-if="showExport"
+                class="absolute right-0 mt-2 w-38 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50"
+              >
+                <button
+                  @click="downloadJson(estimate.id)"
+                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-center text-sm text-gray-700 rounded-xl"
+                >
+                  JSON
+                </button>
+                <button
+                  @click="downloadExcel(estimate)"
+                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-xl"
+                >
+                  Excel
+                </button>
+                <button
+                  @click="downloadPdf(estimate)"
+                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-xl"
+                >
+                  PDF
+                </button>
+              </div>
+            </div>
+
+            <!-- Основные кнопки -->
+            <RouterLink
+              :to="`/estimates/${estimate.id}/edit`"
+              class="qe-btn-warning"
+            >
+              Редактировать
+            </RouterLink>
+            <button @click="copyEstimate" class="qe-btn">Копировать</button>
+            <button @click="confirmDelete" class="qe-btn-danger">
+              Удалить
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Табы -->
+      <div
+        class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 mb-6 w-fit"
+      >
+        <button
+          :class="[
+            'px-5 py-2 rounded-lg text-sm font-semibold transition',
+            activeTab === 'details'
+              ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
+              : 'text-gray-500 hover:text-blue-600',
+          ]"
+          @click="activeTab = 'details'"
+        >
+          Сведения
+        </button>
+        <button
+          :class="[
+            'px-5 py-2 rounded-lg text-sm font-semibold transition',
+            activeTab === 'history'
+              ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
+              : 'text-gray-500 hover:text-blue-600',
+          ]"
+          @click="activeTab = 'history'"
+        >
+          История
+        </button>
+      </div>
+
+      <!-- Основной контент -->
+      <div v-if="activeTab === 'details'">
+        <!-- Краткая информация -->
+        <div
+          class="grid gap-4 text-sm text-gray-800 dark:text-gray-200 grid-cols-1 md:grid-cols-2"
+        >
+          <div
+            class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2"
+          >
+            <div class="flex items-center gap-2">
+              <LucideUser class="w-5 h-5 text-blue-500" />
+              <span
+                ><span class="font-semibold">Клиент: </span>
+                <RouterLink
+                  :to="`/clients/${estimate.client.id}`"
+                  class="text-blue-700 hover:underline"
+                >
+                  {{ estimate.client.name }}
+                </RouterLink>
+              </span>
+            </div>
+            <div v-if="estimate.event_datetime" class="flex items-center gap-2">
+              <LucideCalendar class="w-5 h-5 text-yellow-500" />
+              <span
+                ><span class="font-semibold">Дата и время: </span
+                ><span>{{
+                  new Date(estimate.event_datetime).toLocaleString()
+                }}</span></span
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <LucideUserCircle class="w-5 h-5 text-green-500" />
+              <span
+                ><span class="font-semibold">Ответственный: </span
+                ><span>{{ estimate.responsible }}</span></span
+              >
+            </div>
+            <div v-if="estimate.event_place" class="flex items-center gap-2">
+              <LucideMapPin class="w-5 h-5 text-pink-500" />
+              <span
+                ><span class="font-semibold">Место: </span
+                ><span>{{ estimate.event_place }}</span></span
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
+              <span>
+                <span class="font-semibold">НДС:</span>
+                <span v-if="estimate.vat_enabled">
+                  Включён ({{ estimate.vat_rate }}%)</span
+                >
+                <span v-else> Не включён</span>
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <LucideClock3 class="w-5 h-5 text-gray-400" />
+              <span
+                ><span class="font-semibold">Создана:</span>
+                {{ new Date(estimate.date).toLocaleString() }}</span
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <LucideRefreshCw class="w-5 h-5 text-gray-400" />
+              <span
+                ><span class="font-semibold">Обновлена:</span>
+                {{ new Date(estimate.updated_at).toLocaleString() }}</span
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <NotebookPen class="w-5 h-5 text-gray-400" />
+              <span
+                ><span class="font-semibold">Примечания:</span>
+                {{ estimate.notes || "—" }}</span
+              >
+            </div>
+          </div>
+
+          <!-- Общие суммы -->
+          <div
+            class="bg-white dark:bg-qe-black3 0 rounded-2xl shadow-sm p-6 border dark:border-qe-black2 flex flex-col gap-4 justify-center h-full"
+          >
+            <div class="flex items-center gap-3">
+              <LucideWallet class="w-7 h-7 text-blue-600" />
+              <span class="text-lg font-bold">Суммы по смете</span>
+            </div>
+            <div class="space-y-2 mt-2">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2 text-gray-500">
+                  <LucidePiggyBank class="w-5 h-5 text-green-600" />
+                  <span>Внутренняя:</span>
+                </div>
+                <span
+                  class="text-lg font-semibold text-green-700 dark:text-green-400"
+                  >{{ formatCurrency(totalInternal) }}</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2 text-gray-500">
+                  <LucideReceipt class="w-5 h-5 text-blue-600" />
+                  <span>Внешняя:</span>
+                </div>
+                <span
+                  class="text-lg font-semibold text-blue-700 dark:text-blue-400"
+                  >{{ formatCurrency(totalExternal) }}</span
+                >
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2 text-gray-500">
+                  <LucideArrowUpRight class="w-5 h-5 text-pink-600" />
+                  <span>Разница:</span>
+                </div>
+                <span
+                  class="text-lg font-semibold text-pink-600 dark:text-pink-400"
+                  >{{ formatCurrency(totalDiff) }}</span
+                >
+              </div>
+              <div
+                v-if="estimate.vat_enabled"
+                class="flex justify-between items-center"
+              >
+                <div class="flex items-center gap-2 text-gray-500">
+                  <LucidePercentCircle class="w-5 h-5 text-indigo-600" />
+                  <span>НДС ({{ estimate.vat_rate }}%):</span>
+                </div>
+                <span
+                  class="text-lg font-semibold text-indigo-600 dark:text-indigo-400"
+                  >{{ formatCurrency(vat) }}</span
+                >
+              </div>
+              <div
+                v-if="estimate.vat_enabled"
+                class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2"
+              >
+                <div
+                  class="flex items-center gap-2 text-gray-700 dark:text-white font-semibold"
+                >
+                  <LucideCalculator class="w-5 h-5" />
+                  <span>Итого с НДС:</span>
+                </div>
+                <span class="text-xl font-bold text-gray-800 dark:text-white">{{
+                  formatCurrency(totalWithVat)
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Категории и услуги -->
+        <div class="mt-8">
+          <div
+            v-for="(groupItems, category) in groupedItems"
+            :key="category"
+            class="mb-6 border p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow"
+          >
+            <div class="flex items-center justify-center gap-2 mb-3">
+              <LucideFolder class="w-6 h-6 text-blue-500" />
+              <h3
+                class="text-xl font-semibold text-gray-800 dark:text-white pb-1"
+              >
+                {{ category }}
+              </h3>
+            </div>
+
+            <div class="space-y-4">
+              <div
+                v-for="item in groupItems"
+                :key="item.id"
+                class="bg-white dark:bg-qe-black3 border border-gray-100 dark:border-qe-black2 rounded-xl shadow p-4 transition flex flex-col"
+              >
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                  <div>
+                    <div
+                      class="text-base font-semibold text-gray-900 dark:text-white flex items-center"
+                    >
+                      {{ item.name }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-300">
+                      {{ item.description }}
+                    </div>
+                  </div>
+                  <div
+                    class="text-sm text-gray-500 dark:text-gray-300 whitespace-nowrap"
+                  >
+                    {{ item.quantity }} {{ item.unit }}
+                  </div>
+                </div>
+                <div
+                  class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2"
+                >
+                  <span>Внутр. цена за единицу:</span>
+                  <span>{{ formatCurrency(item.internal_price) }}</span>
+                </div>
+                <div
+                  class="flex justify-between text-sm text-gray-600 dark:text-gray-300"
+                >
+                  <span>Внешн. цена за единицу:</span>
+                  <span>{{ formatCurrency(item.external_price) }}</span>
+                </div>
+                <div
+                  class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white"
+                >
+                  <span>Итог (внутр.):</span>
+                  <span>{{ formatCurrency(getItemInternal(item)) }}</span>
+                </div>
+                <div
+                  class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white"
+                >
+                  <span>Итог (внешн.):</span>
+                  <span>{{ formatCurrency(getItemExternal(item)) }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- Итоги по категории -->
+            <div class="flex gap-3 justify-center mt-5">
+              <div
+                class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2"
+              >
+                <LucidePiggyBank class="w-4 h-4 text-green-500" />
+                <span class="text-xs text-gray-600 dark:text-gray-300"
+                  >Итог по категории (внутр.):</span
+                >
+                <span
+                  class="font-semibold text-sm text-green-800 dark:text-green-300"
+                  >{{ formatCurrency(getGroupInternal(groupItems)) }}</span
+                >
+              </div>
+              <div
+                class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2"
+              >
+                <LucideReceipt class="w-4 h-4 text-blue-500" />
+                <span class="text-xs text-gray-600 dark:text-gray-300"
+                  >Итог по категории (внешн.):</span
+                >
+                <span
+                  class="font-semibold text-sm text-blue-800 dark:text-blue-300"
+                  >{{ formatCurrency(getGroupExternal(groupItems)) }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Вкладка история — оставляем как есть, но под стиль -->
+      <div v-else>
+        <div v-if="logs.length" class="text-sm w-full mt-6">
+          <h3 class="font-semibold mb-4">История изменений</h3>
+          <div
+            class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black"
+          >
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-qe-black">
+                  <th class="qe-table-th text-left">Дата и время</th>
+                  <th class="qe-table-th text-left">Событие</th>
+                  <th class="qe-table-th text-left">Автор</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="log in logs"
+                  :key="log.id"
+                  class="hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                >
+                  <td class="qe-table-td">
+                    {{ new Date(log.timestamp).toLocaleString() }}
+                  </td>
+                  <td class="qe-table-td">{{ log.description }}</td>
+                  <td class="qe-table-td">{{ log.user_name || "-" }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="versions.length" class="mt-2 pt-6 text-sm">
+          <h3 class="font-semibold mb-4">История версий</h3>
+          <div
+            class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black"
+          >
+            <table class="w-full text-sm qe-table">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-qe-black">
+                  <th class="qe-table-th text-left">Версия</th>
+                  <th class="qe-table-th text-left">Дата создания</th>
+                  <th class="qe-table-th text-right">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="v in versions"
+                  :key="v.version"
+                  class="hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 transition"
+                >
+                  <td class="qe-table-td">№{{ v.version }}</td>
+                  <td class="qe-table-td">
+                    {{ new Date(v.created_at).toLocaleString() }}
+                  </td>
+                  <td class="qe-table-td text-right space-x-2">
+                    <button
+                      @click="viewVersion(v.version)"
+                      class="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+                    >
+                      Просмотр
+                    </button>
+                    <button
+                      @click="deleteVersion(v.version)"
+                      class="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                    >
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Модалка -->
+    <QeModal v-model="showConfirm" @confirm="deleteEstimate">
+      Вы уверены, что хотите удалить данную смету?
+      <template #confirm>Да, удалить</template>
+      <template #cancel>Отмена</template>
+    </QeModal>
+  </div>
 </template>
-  
 
 <script setup>
-import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useEstimatesStore } from '@/store/estimates'
-import { onClickOutside } from '@vueuse/core'
-import { useToast } from 'vue-toastification'
-import QeModal from '@/components/QeModal.vue'
-import fileDownload from 'js-file-download'
+import { onMounted, onUnmounted, ref, computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useEstimatesStore } from "@/store/estimates";
+import { onClickOutside } from "@vueuse/core";
+import { useToast } from "vue-toastification";
+import QeModal from "@/components/QeModal.vue";
+import fileDownload from "js-file-download";
 
 import {
-    LucideFileText,
-    LucideUser,
-    LucideCalendar,
-    LucideUserCircle,
-    LucideMapPin,
-    LucidePercentCircle,
-    LucideClock3,
-    LucideRefreshCw,
-    LucideWallet,
-    LucidePiggyBank,
-    LucideReceipt,
-    LucideArrowUpRight,
-    LucideCalculator,
-    LucideFolder,
-    NotebookPen
-} from 'lucide-vue-next'
+  LucideFileText,
+  LucideUser,
+  LucideCalendar,
+  LucideUserCircle,
+  LucideMapPin,
+  LucidePercentCircle,
+  LucideClock3,
+  LucideRefreshCw,
+  LucideWallet,
+  LucidePiggyBank,
+  LucideReceipt,
+  LucideArrowUpRight,
+  LucideCalculator,
+  LucideFolder,
+  NotebookPen,
+} from "lucide-vue-next";
 
+const route = useRoute();
+const router = useRouter();
+const store = useEstimatesStore();
+const toast = useToast();
 
-const route = useRoute()
-const router = useRouter()
-const store = useEstimatesStore()
-const toast = useToast()
+const versionParam = computed(() =>
+  route.query.version ? Number(route.query.version) : null,
+);
+const isVersionView = computed(() => versionParam.value !== null);
+const currentVersion = ref(null);
 
-const versionParam = computed(() => route.query.version ? Number(route.query.version) : null)
-const isVersionView = computed(() => versionParam.value !== null)
-const currentVersion = ref(null)
+const showExport = ref(false);
+const menuRef = ref(null);
+const showConfirm = ref(false);
 
-const showExport = ref(false)
-const menuRef = ref(null)
-const showConfirm = ref(false)
+const estimate = ref(null);
+const logs = ref([]);
+const versions = ref([]);
+const error = ref(null);
 
-const estimate = ref(null)
-const logs = ref([])
-const versions = ref([])
-const error = ref(null)
-
-const activeTab = ref('details')
+const activeTab = ref("details");
 
 async function loadAll() {
-    const id = route.params.id
-    try {
-        if (versionParam.value) {
-            const ver = await store.getEstimateVersion(versionParam.value, id)
-            currentVersion.value = versionParam.value
-            estimate.value = ver.payload
-            activeTab.value = 'details'
-        } else {
-            estimate.value = await store.getEstimateById(id)
-        }
-
-        logs.value = await store.getEstimateLogs(id)
-        versions.value = await store.getEstimateVersions(id)
-        error.value = null
-    } catch (e) {
-        if (e.response?.status === 404) error.value = '❌ Смета не найдена.'
-        else if (e.response?.status === 403) error.value = '🚫 Нет доступа.'
-        else error.value = '⚠️ Ошибка загрузки.'
+  const id = route.params.id;
+  try {
+    if (versionParam.value) {
+      const ver = await store.getEstimateVersion(versionParam.value, id);
+      currentVersion.value = versionParam.value;
+      estimate.value = ver.payload;
+      activeTab.value = "details";
+    } else {
+      estimate.value = await store.getEstimateById(id);
     }
+
+    logs.value = await store.getEstimateLogs(id);
+    versions.value = await store.getEstimateVersions(id);
+    error.value = null;
+  } catch (e) {
+    if (e.response?.status === 404) error.value = "❌ Смета не найдена.";
+    else if (e.response?.status === 403) error.value = "🚫 Нет доступа.";
+    else error.value = "⚠️ Ошибка загрузки.";
+  }
 }
 
-onMounted(loadAll)
-watch(() => route.query.version, loadAll)
+onMounted(loadAll);
+watch(() => route.query.version, loadAll);
 
 onUnmounted(() => {
-    store.currentEstimate = null
-})
+  store.currentEstimate = null;
+});
 
-onClickOutside(menuRef, () => { showExport.value = false })
+onClickOutside(menuRef, () => {
+  showExport.value = false;
+});
 
-
-function confirmDelete() { showConfirm.value = true }
-
+function confirmDelete() {
+  showConfirm.value = true;
+}
 
 async function copyEstimate() {
-    const original = await store.getEstimateById(estimate.value.id)
-    store.setCopiedEstimate(original)
-    router.push('/estimates/create')
+  const original = await store.getEstimateById(estimate.value.id);
+  store.setCopiedEstimate(original);
+  router.push("/estimates/create");
 }
 
 async function deleteEstimate() {
-    await store.deleteEstimate(route.params.id)
-    toast.success('Смета удалена')
-    router.push('/estimates')
+  await store.deleteEstimate(route.params.id);
+  toast.success("Смета удалена");
+  router.push("/estimates");
 }
-
-
 
 const groupedItems = computed(() => {
-    const groups = {}
-    for (const item of estimate.value?.items || []) {
-        const category = item.category?.trim() || 'Без категории'
-        if (!groups[category]) groups[category] = []
-        groups[category].push(item)
-    }
-    return groups
-})
+  const groups = {};
+  for (const item of estimate.value?.items || []) {
+    const category = item.category?.trim() || "Без категории";
+    if (!groups[category]) groups[category] = [];
+    groups[category].push(item);
+  }
+  return groups;
+});
 
 function getGroupInternal(group) {
-    return group.reduce((sum, item) => sum + getItemInternal(item), 0)
+  return group.reduce((sum, item) => sum + getItemInternal(item), 0);
 }
 function getGroupExternal(group) {
-    return group.reduce((sum, item) => sum + getItemExternal(item), 0)
+  return group.reduce((sum, item) => sum + getItemExternal(item), 0);
 }
 
 function getItemInternal(item) {
-    return item.quantity * item.internal_price;
+  return item.quantity * item.internal_price;
 }
 
 function getItemExternal(item) {
-    return item.quantity * item.external_price;
+  return item.quantity * item.external_price;
 }
 
-const totalInternal = computed(() => estimate.value?.items?.reduce((sum, item) => sum + getItemInternal(item), 0) || 0)
-const totalExternal = computed(() => estimate.value?.items?.reduce((sum, item) => sum + getItemExternal(item), 0) || 0)
+const totalInternal = computed(
+  () =>
+    estimate.value?.items?.reduce(
+      (sum, item) => sum + getItemInternal(item),
+      0,
+    ) || 0,
+);
+const totalExternal = computed(
+  () =>
+    estimate.value?.items?.reduce(
+      (sum, item) => sum + getItemExternal(item),
+      0,
+    ) || 0,
+);
 
-const totalDiff = computed(() => totalExternal.value - totalInternal.value)
+const totalDiff = computed(() => totalExternal.value - totalInternal.value);
 
-const vat = computed(() => estimate.value?.vat_enabled ? totalExternal.value * (estimate.value.vat_rate / 100) : 0)
-const totalWithVat = computed(() => totalExternal.value + vat.value)
+const vat = computed(() =>
+  estimate.value?.vat_enabled
+    ? totalExternal.value * (estimate.value.vat_rate / 100)
+    : 0,
+);
+const totalWithVat = computed(() => totalExternal.value + vat.value);
 
 function formatCurrency(val) {
-    return `${val.toFixed(2)} ₽`
+  return `${val.toFixed(2)} ₽`;
 }
 
 async function downloadJson(id) {
-    await store.exportEstimate(id)
+  await store.exportEstimate(id);
 }
 
 async function downloadExcel(estimate) {
-    try {
-        const blob = await store.downloadEstimateExcel(estimate.id)
-        fileDownload(blob, `${estimate.name}.xlsx`)
-        toast.success('Excel успешно загружен')
-    } catch (e) {
-        console.error(e)
-        toast.error('Ошибка при загрузке Excel')
-    }
+  try {
+    const blob = await store.downloadEstimateExcel(estimate.id);
+    fileDownload(blob, `${estimate.name}.xlsx`);
+    toast.success("Excel успешно загружен");
+  } catch (e) {
+    console.error(e);
+    toast.error("Ошибка при загрузке Excel");
+  }
 }
 
-
 async function downloadPdf(estimate) {
-    try {
-        const blob = await store.downloadEstimatePdf(estimate.id)
-        fileDownload(blob, `${estimate.name}.pdf`)
-        toast.success('PDF успешно загружен')
-    } catch (e) {
-        console.error(e)
-        toast.error('Ошибка при загрузке PDF')
-    }
+  try {
+    const blob = await store.downloadEstimatePdf(estimate.id);
+    fileDownload(blob, `${estimate.name}.pdf`);
+    toast.success("PDF успешно загружен");
+  } catch (e) {
+    console.error(e);
+    toast.error("Ошибка при загрузке PDF");
+  }
 }
 
 async function viewVersion(ver) {
-    const id = route.params.id
-    // 1. Навигация
-    await router.push({ path: `/estimates/${id}`, query: { version: ver } })
-    // 2. Перезагрузить данные (чтобы loadAll учёл новый query.version)
-    await loadAll()
-    setTimeout(() => {
-        const layoutMain = document.querySelector('main.overflow-y-auto')
-        if (layoutMain) {
-            layoutMain.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-    }, 50)
+  const id = route.params.id;
+  // 1. Навигация
+  await router.push({ path: `/estimates/${id}`, query: { version: ver } });
+  // 2. Перезагрузить данные (чтобы loadAll учёл новый query.version)
+  await loadAll();
+  setTimeout(() => {
+    const layoutMain = document.querySelector("main.overflow-y-auto");
+    if (layoutMain) {
+      layoutMain.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, 50);
 }
 
 async function restoreVersion(version) {
-    const id = route.params.id
-    try {
-        await store.restoreVersion(version, estimate.value.id)
-        toast.success(`Версия №${version} восстановлена`)
-        await router.push({ path: `/estimates/${id}` })
-        await loadAll()
-    } catch (err) {
-        console.error(err)
-        toast.error('Не удалось восстановить версию')
-    }
+  const id = route.params.id;
+  try {
+    await store.restoreVersion(version, estimate.value.id);
+    toast.success(`Версия №${version} восстановлена`);
+    await router.push({ path: `/estimates/${id}` });
+    await loadAll();
+  } catch (err) {
+    console.error(err);
+    toast.error("Не удалось восстановить версию");
+  }
 }
 
 async function deleteVersion(version) {
-    if (!confirm(`Вы точно хотите удалить версию №${version}?`)) return
+  if (!confirm(`Вы точно хотите удалить версию №${version}?`)) return;
 
-    try {
-        await store.deleteVersion(version, estimate.value.id)
-        toast.success(`Версия №${version} удалена`)
-        await router.push({ path: `/estimates/${estimate.value.id}` })
-        await loadAll()
-    } catch (err) {
-        console.error(err)
-        toast.error('Не удалось удалить версию')
-    }
+  try {
+    await store.deleteVersion(version, estimate.value.id);
+    toast.success(`Версия №${version} удалена`);
+    await router.push({ path: `/estimates/${estimate.value.id}` });
+    await loadAll();
+  } catch (err) {
+    console.error(err);
+    toast.error("Не удалось удалить версию");
+  }
 }
 </script>

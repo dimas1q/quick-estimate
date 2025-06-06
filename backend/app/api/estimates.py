@@ -1,30 +1,30 @@
 # backend/app/api/estimates.py
 # Implementation of the estimates API endpoints
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
+import re
+from typing import List, Optional
+from urllib.parse import quote
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
+from sqlalchemy import delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import delete, func
-from fastapi.encoders import jsonable_encoder
 
-from app.models.estimate import Estimate
-from app.models.item import EstimateItem
-from app.schemas.estimate import EstimateCreate, EstimateOut
-from app.schemas.changelog import ChangeLogOut
 from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
-from app.models.version import EstimateVersion
+from app.models.client_changelog import ClientChangeLog
+from app.models.estimate import Estimate
 from app.models.estimate_favorite import EstimateFavorite
-from app.utils.auth import get_current_user
-from app.utils.pdf import render_pdf
-from app.utils.excel import generate_excel
+from app.models.item import EstimateItem
 from app.models.user import User
-
-from typing import Optional
-from typing import List
-from urllib.parse import quote
-import re
+from app.models.version import EstimateVersion
+from app.schemas.changelog import ChangeLogOut
+from app.schemas.estimate import EstimateCreate, EstimateOut
+from app.utils.auth import get_current_user
+from app.utils.excel import generate_excel
+from app.utils.pdf import render_pdf
 
 router = APIRouter(tags=["estimates"], dependencies=[Depends(get_current_user)])
 
@@ -46,8 +46,17 @@ async def create_estimate(
     db.add(
         EstimateChangeLog(
             estimate_id=new_estimate.id,
+            user_id=user.id,
             action="Создание",
             description="Смета создана",
+        )
+    )
+    db.add(
+        ClientChangeLog(
+            client_id=new_estimate.client_id,
+            user_id=user.id,
+            action="Создание сметы",
+            description=f"Создана смета {new_estimate.name}",
         )
     )
 
@@ -83,9 +92,7 @@ async def list_estimates(
     if name:
         query = query.where(Estimate.name.ilike(f"%{name}%"))
     if client:
-        query = query.where(
-            Estimate.client_id == client
-        )  
+        query = query.where(Estimate.client_id == client)
     if date_from:
         try:
             dt_from = datetime.fromisoformat(date_from)
@@ -103,7 +110,7 @@ async def list_estimates(
         query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
 
     result = await db.execute(query.order_by(Estimate.id.desc()))
-    
+
     estimates = result.scalars().all()
 
     # Получаем id всех избранных смет для текущего пользователя
@@ -116,7 +123,6 @@ async def list_estimates(
         estimate.is_favorite = estimate.id in favorite_ids
 
     return estimates
-
 
 
 @router.get("/{estimate_id}", response_model=EstimateOut)
@@ -138,8 +144,7 @@ async def get_estimate(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     fav = await db.execute(
-        select(EstimateFavorite)
-        .where(
+        select(EstimateFavorite).where(
             EstimateFavorite.user_id == user.id,
             EstimateFavorite.estimate_id == estimate_id,
         )
@@ -166,11 +171,22 @@ async def get_logs(
     # Fetch and return logs
     result = await db.execute(
         select(EstimateChangeLog)
+        .options(selectinload(EstimateChangeLog.user))
         .where(EstimateChangeLog.estimate_id == estimate_id)
         .order_by(EstimateChangeLog.timestamp.asc())
     )
 
-    return result.scalars().all()
+    return [
+        ChangeLogOut(
+            id=log.id,
+            action=log.action,
+            description=log.description,
+            timestamp=log.timestamp,
+            user_id=log.user_id,
+            user_name=log.user.name if log.user else None,
+        )
+        for log in result.scalars().all()
+    ]
 
 
 @router.get("/{estimate_id}/export/pdf")
@@ -189,8 +205,12 @@ async def export_estimate_pdf(
         raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
 
     # --- Новые суммы ---
-    total_internal = sum((item.internal_price or 0) * (item.quantity or 0) for item in estimate.items)
-    total_external = sum((item.external_price or 0) * (item.quantity or 0) for item in estimate.items)
+    total_internal = sum(
+        (item.internal_price or 0) * (item.quantity or 0) for item in estimate.items
+    )
+    total_external = sum(
+        (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
+    )
     total_diff = total_external - total_internal
     vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
     total_with_vat = total_external + vat
@@ -204,7 +224,7 @@ async def export_estimate_pdf(
             "total_diff": total_diff,
             "vat": vat,
             "total_with_vat": total_with_vat,
-        }
+        },
     )
     return StreamingResponse(
         iter([pdf_bytes]),
@@ -213,7 +233,6 @@ async def export_estimate_pdf(
             "Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"
         },
     )
-
 
 
 @router.get("/{estimate_id}/export/excel")
@@ -292,22 +311,51 @@ async def update_estimate(
         )
     )
 
+    changed_fields = []
+
     # обновим основные поля
     for field, value in updated_data.dict(exclude={"items"}).items():
+        if getattr(estimate, field) != value:
+            changed_fields.append(field)
         setattr(estimate, field, value)
 
-    # удалим старые строки и добавим новые
+    old_items = {
+        (i.name, i.quantity, i.unit, i.internal_price, i.external_price)
+        for i in old_estimate.items
+    }
+    new_items = {
+        (i.name, i.quantity, i.unit, i.internal_price, i.external_price)
+        for i in updated_data.items
+    }
+    if old_items != new_items:
+        changed_fields.append("items")
+
     await db.execute(
         delete(EstimateItem).where(EstimateItem.estimate_id == estimate_id)
     )
     for item in updated_data.items:
         db.add(EstimateItem(**item.dict(), estimate_id=estimate_id))
 
+    description = (
+        "Изменены: " + ", ".join(changed_fields)
+        if changed_fields
+        else "Смета обновлена"
+    )
+
     db.add(
         EstimateChangeLog(
             estimate_id=estimate_id,
+            user_id=user.id,
             action="Обновление",
-            description="Смета обновлена",
+            description=description,
+        )
+    )
+    db.add(
+        ClientChangeLog(
+            client_id=estimate.client_id,
+            user_id=user.id,
+            action="Изменение сметы",
+            description=f"Обновлена смета {estimate.name}",
         )
     )
 
@@ -341,6 +389,7 @@ async def delete_estimate(
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+
 @router.post("/{estimate_id}/favorite/", status_code=204)
 async def add_favorite(
     estimate_id: int,
@@ -355,8 +404,7 @@ async def add_favorite(
 
     # Проверяем, есть ли уже избранное
     res = await db.execute(
-        select(EstimateFavorite)
-        .where(
+        select(EstimateFavorite).where(
             EstimateFavorite.user_id == user.id,
             EstimateFavorite.estimate_id == estimate_id,
         )
@@ -367,6 +415,7 @@ async def add_favorite(
         await db.commit()
     return Response(status_code=204)
 
+
 @router.delete("/{estimate_id}/favorite/", status_code=204)
 async def remove_favorite(
     estimate_id: int,
@@ -374,8 +423,7 @@ async def remove_favorite(
     user: User = Depends(get_current_user),
 ):
     res = await db.execute(
-        select(EstimateFavorite)
-        .where(
+        select(EstimateFavorite).where(
             EstimateFavorite.user_id == user.id,
             EstimateFavorite.estimate_id == estimate_id,
         )
