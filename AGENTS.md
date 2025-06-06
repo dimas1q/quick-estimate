@@ -71,8 +71,8 @@ QuickEstimate is a modern web application for fast, convenient estimate manageme
 
 ### 4. **Code Quality & Linting**
 
-* Frontend: Use ESLint, Prettier (format before commit), and respect Tailwind class sorting.
-* Backend: Use black, isort, flake8. Format code before commit. Keep imports sorted and code clean.
+* Frontend: Respect Tailwind class sorting.
+* Backend: Keep imports sorted and code clean.
 * All code (Python, JS, Vue) must be **self-explanatory, DRY, and modular**.
 
 ## How to Work with This Repo (for Codex Agents)
