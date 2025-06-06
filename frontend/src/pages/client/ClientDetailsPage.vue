@@ -10,13 +10,12 @@
                         Клиент: {{ client.name }}
                     </h1>
                 </div>
-                <div class="flex space-x-3 items-center">
-                    <RouterLink :to="`/clients/${client.id}/edit`"
-                        class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">
+                <div class="flex space-x-2 items-center">
+                    <RouterLink :to="`/clients/${client.id}/edit`" class="qe-btn-warning">
                         Редактировать
                     </RouterLink>
                     <button @click="confirmDelete"
-                        class="inline-flex items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium shadow">
+                        class="qe-btn-danger">
                         Удалить
                     </button>
                 </div>
@@ -25,7 +24,7 @@
             <!-- Блок данных — такой же стиль как у сметы -->
             <div class="grid gap-3 text-sm text-gray-800 dark:text-gray-200">
                 <div
-                    class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black rounded-2xl p-6">
+                    class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black3 rounded-2xl p-6">
                     <p><strong>Компания:</strong> {{ client.company || '—' }}</p>
 
                     <p><strong>Расчетный счет:</strong> {{ client.account || '—' }}</p>
@@ -48,11 +47,11 @@
             </div>
 
             <!-- Сметы клиента -->
-            <div class="border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl shadow-sm p-6 mt-6">
+            <div class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-sm p-6 mt-6">
                 <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Сметы клиента</h2>
                 <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div v-for="e in estimates" :key="e.id"
-                        class="border bg-white dark:bg-qe-black dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
+                        class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
                         <div class="flex justify-between items-center">
                             <RouterLink :to="`/estimates/${e.id}`" class="font-semibold ">
                                 {{ e.name }}
@@ -62,7 +61,7 @@
                     </div>
                 </div>
                 <div v-else
-                    class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-xl py-8 mt-2 bg-white dark:bg-qe-black">
+                    class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-xl py-8 mt-2 bg-white dark:bg-qe-black3">
                     Сметы отсутствуют.
                 </div>
             </div>

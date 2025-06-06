@@ -1,7 +1,7 @@
 <template>
   <form @submit.prevent="save" class="space-y-6 max-w-2xl">
     <div v-for="(value, key) in form" :key="key" class="space-y-1">
-      <label class="block text-sm font-medium text-gray-700">
+      <label class="block text-sm font-medium text-gray-700 dark:text-white">
         {{ fieldLabels[key] }}
       </label>
       <input v-model="form[key]" :placeholder="fieldLabels[key]" class="qe-input w-full" type="text" />

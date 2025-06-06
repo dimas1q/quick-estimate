@@ -6,18 +6,20 @@
     </div>
 
     <div v-if="template" class="space-y-6">
-      <div class="flex justify-between pb-4 items-center">
-        <h1 class="text-3xl font-bold">Шаблон: {{ template.name }}</h1>
+      <div class="flex justify-between items-center pb-2 mb-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+            Шаблон: {{ template.name }}
+          </h1>
+        </div>
 
-        <div class="space-x-2">
-          <button @click="downloadJson"
-            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-all text-sm font-medium">
+        <div class="flex space-x-2 items-center">
+          <button @click="downloadJson" class="qe-btn-success">
             Экспортировать
           </button>
-          <router-link :to="`/templates/${template.id}/edit`"
-            class="inline-flex justify-center items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium">
+          <RouterLink :to="`/templates/${template.id}/edit`" class="qe-btn-warning">
             Редактировать
-          </router-link>
+          </RouterLink>
           <button @click="confirmDelete" class="qe-btn-danger">
             Удалить
           </button>
@@ -30,74 +32,74 @@
         <!-- Блок данных — такой же стиль как у сметы -->
         <div class="grid gap-3 text-sm text-gray-800 dark:text-gray-200">
           <div
-            class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black rounded-2xl p-6">
+            class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black3 rounded-2xl p-6">
             <p><strong>Описание:</strong> {{ template.description || '—' }}</p>
             <p><strong>Примечания:</strong> {{ template.notes || '—' }}</p>
           </div>
         </div>
 
-        <div class="border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl p-6 mt-6 shadow-sm">
-          <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 text-center pb-1 ">{{
-              category }}
-            </h3>
+        <div class="mt-4">
+          <div v-for="(groupItems, category) in groupedItems" :key="category"
+            class="mb-6 border  p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow">
+            <div class="flex items-center justify-center gap-2 mb-3">
+              <LucideFolder class="w-6 h-6 text-blue-500" />
+              <h3 class="text-xl font-semibold text-gray-800 dark:text-white pb-1">{{ category }}</h3>
+            </div>
 
-            <div class="space-y-4 ">
-              <div v-for="(row, rowIndex) in chunkArray(groupItems, 3)" :key="rowIndex" class="flex gap-4">
-                <div v-for="item in row" :key="item.id"
-                  :class="`flex-1 ${row.length === 1 ? 'max-w-full' : row.length === 2 ? 'max-w-1/2' : 'max-w-1/3'}`"
-                  class="bg-white border border-gray-200 dark:bg-qe-black dark:border-qe-black2 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
-                  <div class="flex justify-between items-start mb-2">
-                    <div>
-                      <p class="text-base font-semibold text-gray-900 dark:text-white">{{
-                        item.name }}</p>
-                      <p class="text-sm text-gray-600 dark:text-white">{{ item.description }}
-                      </p>
+            <div class="space-y-4">
+              <div v-for="item in groupItems" :key="item.id"
+                class="bg-white dark:bg-qe-black3 border border-gray-100 dark:border-qe-black2 rounded-xl shadow p-4 transition flex flex-col">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                  <div>
+                    <div class="text-base font-semibold text-gray-900 dark:text-white flex items-center">
+                      {{ item.name }}
                     </div>
-                    <div class="text-sm text-gray-500 dark:text-white text-right whitespace-nowrap">
-                      {{ item.quantity }} {{ item.unit }}
+                    <div class="text-sm text-gray-500 dark:text-gray-300">
+                      {{ item.description }}
                     </div>
                   </div>
-                  <div class="flex justify-between text-sm text-gray-700 dark:text-white pt-2">
-                    <span>Внутр. цена за единицу:</span>
-                    <span>{{ formatCurrency(item.internal_price) }}</span>
+                  <div class="text-sm text-gray-500 dark:text-gray-300 whitespace-nowrap">
+                    {{ item.quantity }} {{ item.unit }}
                   </div>
-                  <div class="flex justify-between text-sm text-gray-700 dark:text-white">
-                    <span>Внешн. цена за единицу:</span>
-                    <span>{{ formatCurrency(item.external_price) }}</span>
-                  </div>
-                  <div class="flex justify-between font-semibold text-sm dark:text-white text-gray-900">
-                    <span>Итог (внутр.):</span>
-                    <span>{{ formatCurrency(getItemInternal(item)) }}</span>
-                  </div>
-                  <div class="flex justify-between font-semibold text-sm  dark:text-white text-gray-900">
-                    <span>Итог (внешн.):</span>
-                    <span>{{ formatCurrency(getItemExternal(item)) }}</span>
-                  </div>
-
+                </div>
+                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
+                  <span>Внутр. цена за единицу:</span>
+                  <span>{{ formatCurrency(item.internal_price) }}</span>
+                </div>
+                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                  <span>Внешн. цена за единицу:</span>
+                  <span>{{ formatCurrency(item.external_price) }}</span>
+                </div>
+                <div class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
+                  <span>Итог (внутр.):</span>
+                  <span>{{ formatCurrency(getItemInternal(item)) }}</span>
+                </div>
+                <div class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
+                  <span>Итог (внешн.):</span>
+                  <span>{{ formatCurrency(getItemExternal(item)) }}</span>
                 </div>
               </div>
             </div>
-
-            <div class="text-right font-semibold text-base text-gray-900 dark:text-white mt-4">
-              <div>Итог по категории (внутр.): {{ formatCurrency(getGroupInternal(groupItems)) }}
+            <!-- Итоги по категории -->
+            <div class="flex gap-3 justify-center mt-5">
+              <div
+                class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2">
+                <LucidePiggyBank class="w-4 h-4 text-green-500" />
+                <span class="text-xs text-gray-600 dark:text-gray-300">Итог по категории
+                  (внутр.):</span>
+                <span class="font-semibold text-sm text-green-800 dark:text-green-300">{{
+                  formatCurrency(getGroupInternal(groupItems)) }}</span>
               </div>
-              <div>Итог по категории (внешн.): {{ formatCurrency(getGroupExternal(groupItems)) }}
+              <div
+                class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2">
+                <LucideReceipt class="w-4 h-4 text-blue-500" />
+                <span class="text-xs text-gray-600 dark:text-gray-300">Итог по категории
+                  (внешн.):</span>
+                <span class="font-semibold text-sm text-blue-800 dark:text-blue-300">{{
+                  formatCurrency(getGroupExternal(groupItems)) }}</span>
               </div>
             </div>
-          </div>
 
-
-          <div v-if="template?.items?.length" class="pt-6">
-            <p class="text-right font-semibold text-lg pt-4 border-t dark:border-qe-black2">
-              Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
-            </p>
-            <p class="text-right font-semibold text-lg">
-              Общая сумма (внешн.): {{ formatCurrency(totalExternal) }}
-            </p>
-            <p class="text-right font-semibold text-lg">
-              Разница: {{ formatCurrency(totalDiff) }}
-            </p>
           </div>
 
         </div>
@@ -119,6 +121,13 @@ import { useTemplatesStore } from '@/store/templates'
 import { useToast } from 'vue-toastification'
 
 import QeModal from '@/components/QeModal.vue'
+
+import {
+  LucidePiggyBank,
+  LucideReceipt,
+  LucideFolder
+
+} from 'lucide-vue-next'
 
 
 const route = useRoute()
@@ -143,22 +152,6 @@ onMounted(async () => {
   }
 })
 
-function chunkArray(array) {
-  const len = array.length
-  let chunkSize = 3
-
-  if (len === 1) {
-    chunkSize = 1
-  } else if (len % 2 === 0) {
-    chunkSize = 2
-  }
-
-  const chunks = []
-  for (let i = 0; i < len; i += chunkSize) {
-    chunks.push(array.slice(i, i + chunkSize))
-  }
-  return chunks
-}
 
 
 const groupedItems = computed(() => {

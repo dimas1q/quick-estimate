@@ -5,7 +5,7 @@
     <!-- Категории -->
     <transition-group name="fade" tag="div" class="space-y-8">
       <div v-for="(cat, idx) in categories" :key="cat.id"
-        class="rounded-2xl border bg-white dark:bg-qe-black dark:border-qe-black2 shadow-md p-4 space-y-4">
+        class="rounded-2xl border bg-white dark:bg-qe-black3 dark:border-qe-black2 shadow-md p-4 space-y-4">
         <!-- Категория: название и действия -->
         <div class="flex items-center gap-3 mb-2">
           <input v-model="cat.name" placeholder="Название категории"
@@ -16,7 +16,7 @@
 
         <!-- Таблица услуг -->
         <div>
-          <div class="grid grid-cols-9 gap-4 text-gray-600 text-xs dark:text-white font-semibold mb-2 text-center">
+          <div class="grid grid-cols-9 gap-5 text-gray-600 text-xs dark:text-white font-semibold mb-2 text-center">
             <div>Название</div>
             <div>Описание</div>
             <div>Кол-во</div>
@@ -94,7 +94,7 @@
 
 
     <!-- Итоги по всем категориям -->
-    <div v-if="categories.some(cat => (cat.items && cat.items.length > 0))" class="pt-6 border-t dark:border-qe-black2">
+    <div v-if="categories.some(cat => (cat.items && cat.items.length > 0)) && props.showSummary"  class="pt-6 border-t dark:border-qe-black2">
       <p class="text-right font-semibold text-lg">
         Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
       </p>
@@ -125,6 +125,10 @@ const props = defineProps({
   modelValue: Array,
   vatEnabled: Boolean,
   vatRate: Number,
+  showSummary: {
+    type: Boolean,
+    default: true
+  },
 })
 const emit = defineEmits(['update:modelValue'])
 

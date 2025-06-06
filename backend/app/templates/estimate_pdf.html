@@ -93,8 +93,10 @@
             <th>Описание</th>
             <th>Кол-во</th>
             <th>Ед.</th>
-            <th>Цена</th>
-            <th>Итог</th>
+            <th>Внутр. цена</th>
+            <th>Итог (вн.)</th>
+            <th>Внеш. цена</th>
+            <th>Итог (внеш.)</th>
           </tr>
         </thead>
         <tbody>
@@ -104,34 +106,36 @@
             <td>{{ item.description or '' }}</td>
             <td>{{ item.quantity }}</td>
             <td>{{ item.unit }}</td>
-            <td>{{ "%.2f"|format(item.unit_price) }}</td>
-            <td>{{ "%.2f"|format(item.quantity * item.unit_price) }}</td>
+            <td>{{ "%.2f"|format(item.internal_price or 0) }}</td>
+            <td>{{ "%.2f"|format((item.quantity or 0) * (item.internal_price or 0)) }}</td>
+            <td>{{ "%.2f"|format(item.external_price or 0) }}</td>
+            <td>{{ "%.2f"|format((item.quantity or 0) * (item.external_price or 0)) }}</td>
           </tr>
           {% endfor %}
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="5" style="text-align: right;">Итог по категории:</td>
+            <td colspan="5" style="text-align: right;">Итог по категории (вн.):</td>
             <td>
-              {{
-                "%.2f"|format(
-                  items|map(attribute="unit_price")|sum * items|map(attribute="quantity")|sum
-                )
-              }} ₽
+              {{ "%.2f"|format(items | sum(attribute="internal_price", start=0) ) }}
+            </td>
+            <td style="text-align: right;">Итог по категории (внеш.):</td>
+            <td>
+              {{ "%.2f"|format(items | sum(attribute="external_price", start=0) ) }}
             </td>
           </tr>
         </tfoot>
       </table>
+      
     {% endfor %}
 
     <div class="details" style="margin-top: 30px; text-align: right">
-      <p><strong>Общая сумма:</strong> {{ "%.2f" | format(total) }} ₽</p>
+      <p><strong>Общая сумма (внутр.):</strong> {{ "%.2f"|format(total_internal) }} ₽</p>
+      <p><strong>Общая сумма (внешняя):</strong> {{ "%.2f"|format(total_external) }} ₽</p>
+      <p><strong>Разница:</strong> {{ "%.2f"|format(total_diff) }} ₽</p>
       {% if estimate.vat_enabled %}
-        {% set rate = estimate.vat_rate / 100 %}
-        <p><strong>НДС ({{ estimate.vat_rate }}%):</strong>
-           {{ "%.2f"|format(total * rate) }} ₽</p>
-        <p><strong>Итого с НДС:</strong>
-           {{ "%.2f"|format(total * (1 + rate)) }} ₽</p>
+      <p><strong>НДС ({{ estimate.vat_rate }}%):</strong> {{ "%.2f"|format(vat) }} ₽</p>
+      <p><strong>Итого с НДС:</strong> {{ "%.2f"|format(total_with_vat) }} ₽</p>
       {% endif %}
     </div>
     

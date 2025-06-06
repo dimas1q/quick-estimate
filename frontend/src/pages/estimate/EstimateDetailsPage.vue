@@ -1,15 +1,19 @@
-## frontend/src/pages/EstimateDetailsPage.vue
 <template>
     <div class="py-8 max-w-6xl mx-auto">
 
+        <!-- Ошибка -->
         <div v-if="error" class="text-center text-red-500 text-lg font-medium mt-10">
             {{ error }}
         </div>
-        <div v-if="estimate" class="space-y-6">
-            <div class="flex justify-between items-center pb-2 mb-6">
-                <div class="items-center">
-                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
-                        Смета: {{ estimate.name }}
+
+        <div v-if="estimate" class="space-y-7">
+
+            <!-- Заголовок и статус -->
+            <div class="flex flex-wrap justify-between items-center pb-1 mb-7 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <LucideFileText class="w-7 h-7 text-blue-600" />
+                        <span>Смета: {{ estimate.name }}</span>
                         <span :class="[
                             'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1',
                             {
@@ -30,16 +34,12 @@
                             }[estimate.status]
                             }}
                         </span>
-
                     </h1>
-
-                    <!-- здесь индикатор режима -->
-                    <p v-if="isVersionView" class="mt-1 text-sm text-gray-500">
-                        Просмотр версии №{{ currentVersion }}
-                    </p>
+                    <p v-if="isVersionView" class="mt-1 text-sm text-gray-500">Просмотр версии №{{ currentVersion }}</p>
                 </div>
 
-                <div class="flex space-x-3 items-center relative">
+                <!-- Кнопки управления -->
+                <div class="flex space-x-2 items-center relative">
                     <!-- если мы в режиме версии, показываем другие кнопки -->
                     <template v-if="isVersionView">
 
@@ -64,8 +64,7 @@
 
                         <!-- Выпадающее меню -->
                         <div class="relative" ref="menuRef">
-                            <button @click="showExport = !showExport"
-                                class="inline-flex items-center px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-all text-sm font-medium shadow">
+                            <button @click="showExport = !showExport" class="qe-btn-success inline-flex items-center">
                                 Экспортировать
                                 <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2"
                                     viewBox="0 0 24 24">
@@ -75,15 +74,15 @@
                             <div v-if="showExport"
                                 class="absolute right-0 mt-2 w-38 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
                                 <button @click="downloadJson(estimate.id)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-center text-sm text-gray-700">
+                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-center text-sm text-gray-700 rounded-xl">
                                     JSON
                                 </button>
                                 <button @click="downloadExcel(estimate)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-b-xl">
+                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-xl">
                                     Excel
                                 </button>
                                 <button @click="downloadPdf(estimate)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-t-xl">
+                                    class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-xl">
                                     PDF
                                 </button>
                             </div>
@@ -91,23 +90,20 @@
                         </div>
 
                         <!-- Основные кнопки -->
-                        <RouterLink :to="`/estimates/${estimate.id}/edit`"
-                            class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">
+                        <RouterLink :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning">
                             Редактировать
                         </RouterLink>
-                        <button @click="copyEstimate"
-                            class="inline-flex items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium shadow">
+                        <button @click="copyEstimate" class="qe-btn">
                             Копировать
                         </button>
-                        <button @click="confirmDelete"
-                            class="inline-flex items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium shadow">
+                        <button @click="confirmDelete" class="qe-btn-danger">
                             Удалить
                         </button>
                     </template>
                 </div>
             </div>
 
-            <!-- СОВРЕМЕННЫЙ ТАБ-ПЕРЕКЛЮЧАТЕЛЬ -->
+            <!-- Табы -->
             <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 mb-6 w-fit">
                 <button
                     :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', activeTab === 'details' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
@@ -121,118 +117,185 @@
                 </button>
             </div>
 
-
+            <!-- Основной контент -->
             <div v-if="activeTab === 'details'">
-                <div class="grid gap-3 text-sm text-gray-800 dark:text-gray-200">
+                <!-- Краткая информация -->
+                <div class="grid gap-4 text-sm text-gray-800 dark:text-gray-200 grid-cols-1  md:grid-cols-2 ">
                     <div
-                        class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black rounded-2xl p-6">
-                        <p>
-                            <strong>Клиент:</strong>
-                            <RouterLink :to="`/clients/${estimate.client.id}`"
-                                class="ml-1 transition-colors text-gray-900 hover:text-blue-700">
-                                {{ estimate.client.name }}
-                            </RouterLink>
-                        </p>
-                        <p v-if="estimate.event_datetime"><strong>Дата и время мероприятия:</strong> {{ new
-                            Date(estimate.event_datetime).toLocaleString() }}</p>
-
-                        <p><strong>Ответственный:</strong> {{ estimate.responsible || '—' }}</p>
-                        <p v-if="estimate.event_place"><strong>Место проведения мероприятия:</strong> {{
-                            estimate.event_place }}</p>
-                        <p>
-                            <strong>НДС:</strong>
-                            <span v-if="estimate.vat_enabled">
-                                Включён ({{ estimate.vat_rate }}%)
+                        class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2">
+                        <div class="flex items-center gap-2 ">
+                            <LucideUser class="w-5 h-5 text-blue-500" />
+                            <span><span class="font-semibold">Клиент: </span>
+                                <RouterLink :to="`/clients/${estimate.client.id}`"
+                                    class="text-blue-700 hover:underline ">
+                                    {{ estimate.client.name }}
+                                </RouterLink>
                             </span>
-                            <span v-else> Не включён</span>
-                        </p>
 
-                        <p>
-                            <strong>Дата создания: </strong> {{ new Date(estimate.date).toLocaleString() }}
-                        </p>
-                        <p><strong>Примечания:</strong> {{ estimate.notes || '—' }}</p>
+                        </div>
+                        <div v-if="estimate.event_datetime" class="flex items-center gap-2">
+                            <LucideCalendar class="w-5 h-5 text-yellow-500" />
+                            <span><span class="font-semibold">Дата и время: </span><span>{{ new
+                                    Date(estimate.event_datetime).toLocaleString() }}</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <LucideUserCircle class="w-5 h-5 text-green-500" />
+                            <span><span class="font-semibold">Ответственный: </span><span>{{ estimate.responsible
+                                    }}</span></span>
+                        </div>
+                        <div v-if="estimate.event_place" class="flex items-center gap-2">
+                            <LucideMapPin class="w-5 h-5 text-pink-500" />
+                            <span><span class="font-semibold">Место: </span><span>{{ estimate.event_place
+                                    }}</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
+                            <span>
+                                <span class="font-semibold">НДС:</span>
+                                <span v-if="estimate.vat_enabled"> Включён ({{ estimate.vat_rate }}%)</span>
+                                <span v-else> Не включён</span>
+                            </span>
+                        </div>
 
-                        <p>
-                            <strong>Последнее обновление:</strong> {{ new Date(estimate.updated_at).toLocaleString() }}
-                        </p>
+                        <div class="flex items-center gap-2">
+                            <LucideClock3 class="w-5 h-5 text-gray-400" />
+                            <span><span class="font-semibold">Создана:</span> {{ new
+                                Date(estimate.date).toLocaleString() }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <LucideRefreshCw class="w-5 h-5 text-gray-400" />
+                            <span><span class="font-semibold">Обновлена:</span> {{ new
+                                Date(estimate.updated_at).toLocaleString() }}</span>
+                        </div>
+                        <div class="flex items-center gap-2 ">
+                            <NotebookPen class="w-5 h-5 text-gray-400" />
+                            <span><span class="font-semibold">Примечания:</span> {{ estimate.notes || '—' }}</span>
+                        </div>
                     </div>
 
-                    <div class="border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl p-6 mt-6 shadow-sm">
-                        <div v-for="(groupItems, category) in groupedItems" :key="category" class="mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 text-center pb-1 ">{{
-                                category }}
-                            </h3>
+                    <!-- Общие суммы -->
+                    <div
+                        class="bg-white dark:bg-qe-black3 0 rounded-2xl shadow-sm p-6 border dark:border-qe-black2 flex flex-col gap-4 justify-center h-full">
+                        <div class="flex items-center gap-3">
+                            <LucideWallet class="w-7 h-7 text-blue-600" />
+                            <span class="text-lg font-bold">Суммы по смете</span>
+                        </div>
+                        <div class="space-y-2 mt-2">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-2 text-gray-500">
+                                    <LucidePiggyBank class="w-5 h-5 text-green-600" />
+                                    <span>Внутренняя:</span>
+                                </div>
+                                <span class="text-lg font-semibold text-green-700 dark:text-green-400">{{
+                                    formatCurrency(totalInternal) }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-2 text-gray-500">
+                                    <LucideReceipt class="w-5 h-5 text-blue-600" />
+                                    <span>Внешняя:</span>
+                                </div>
+                                <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{
+                                    formatCurrency(totalExternal) }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-2 text-gray-500">
+                                    <LucideArrowUpRight class="w-5 h-5 text-pink-600" />
+                                    <span>Разница:</span>
+                                </div>
+                                <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">{{
+                                    formatCurrency(totalDiff) }}</span>
+                            </div>
+                            <div v-if="estimate.vat_enabled" class="flex justify-between items-center">
+                                <div class="flex items-center gap-2 text-gray-500">
+                                    <LucidePercentCircle class="w-5 h-5 text-indigo-600" />
+                                    <span>НДС ({{ estimate.vat_rate }}%):</span>
+                                </div>
+                                <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{
+                                    formatCurrency(vat) }}</span>
+                            </div>
+                            <div v-if="estimate.vat_enabled"
+                                class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
+                                <div class="flex items-center gap-2 text-gray-700 dark:text-white font-semibold">
+                                    <LucideCalculator class="w-5 h-5" />
+                                    <span>Итого с НДС:</span>
+                                </div>
+                                <span class="text-xl font-bold text-gray-800 dark:text-white">{{
+                                    formatCurrency(totalWithVat) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="space-y-4 ">
-                                <div v-for="(row, rowIndex) in chunkArray(groupItems, 3)" :key="rowIndex"
-                                    class="flex gap-4">
-                                    <div v-for="item in row" :key="item.id"
-                                        :class="`flex-1 ${row.length === 1 ? 'max-w-full' : row.length === 2 ? 'max-w-1/2' : 'max-w-1/3'}`"
-                                        class="bg-white border border-gray-200 dark:bg-qe-black dark:border-qe-black2 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <div>
-                                                <p class="text-base font-semibold text-gray-900 dark:text-white">{{
-                                                    item.name }}</p>
-                                                <p class="text-sm text-gray-600 dark:text-white">{{ item.description }}
-                                                </p>
-                                            </div>
-                                            <div
-                                                class="text-sm text-gray-500 dark:text-white text-right whitespace-nowrap">
-                                                {{ item.quantity }} {{ item.unit }}
-                                            </div>
-                                        </div>
-                                        <div class="flex justify-between text-sm text-gray-700 dark:text-white pt-2">
-                                            <span>Внутр. цена за единицу:</span>
-                                            <span>{{ formatCurrency(item.internal_price) }}</span>
-                                        </div>
-                                        <div class="flex justify-between text-sm text-gray-700 dark:text-white">
-                                            <span>Внешн. цена за единицу:</span>
-                                            <span>{{ formatCurrency(item.external_price) }}</span>
-                                        </div>
-                                        <div
-                                            class="flex justify-between font-semibold text-sm dark:text-white text-gray-900">
-                                            <span>Итог (внутр.):</span>
-                                            <span>{{ formatCurrency(getItemInternal(item)) }}</span>
-                                        </div>
-                                        <div
-                                            class="flex justify-between font-semibold text-sm  dark:text-white text-gray-900">
-                                            <span>Итог (внешн.):</span>
-                                            <span>{{ formatCurrency(getItemExternal(item)) }}</span>
-                                        </div>
+                <!-- Категории и услуги -->
+                <div class="mt-8 ">
+                    <div v-for="(groupItems, category) in groupedItems" :key="category"
+                        class="mb-6 border  p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow">
+                        <div class="flex items-center justify-center gap-2 mb-3">
+                            <LucideFolder class="w-6 h-6 text-blue-500" />
+                            <h3 class="text-xl font-semibold text-gray-800 dark:text-white pb-1">{{ category }}</h3>
+                        </div>
 
+                        <div class="space-y-4">
+                            <div v-for="item in groupItems" :key="item.id"
+                                class="bg-white dark:bg-qe-black3 border border-gray-100 dark:border-qe-black2 rounded-xl shadow p-4 transition flex flex-col">
+                                <div class="flex flex-wrap justify-between items-center gap-2">
+                                    <div>
+                                        <div
+                                            class="text-base font-semibold text-gray-900 dark:text-white flex items-center">
+                                            {{ item.name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-300">
+                                            {{ item.description }}
+                                        </div>
+                                    </div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-300 whitespace-nowrap">
+                                        {{item.quantity }} {{ item.unit }}
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="text-right font-semibold text-base text-gray-900 dark:text-white mt-4">
-                                <div>Итог по категории (внутр.): {{ formatCurrency(getGroupInternal(groupItems)) }}
+                                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
+                                    <span>Внутр. цена за единицу:</span>
+                                    <span>{{ formatCurrency(item.internal_price) }}</span>
                                 </div>
-                                <div>Итог по категории (внешн.): {{ formatCurrency(getGroupExternal(groupItems)) }}
+                                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                    <span>Внешн. цена за единицу:</span>
+                                    <span>{{ formatCurrency(item.external_price) }}</span>
+                                </div>
+                                <div class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
+                                    <span>Итог (внутр.):</span>
+                                    <span>{{ formatCurrency(getItemInternal(item)) }}</span>
+                                </div>
+                                <div class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
+                                    <span>Итог (внешн.):</span>
+                                    <span>{{ formatCurrency(getItemExternal(item)) }}</span>
                                 </div>
                             </div>
                         </div>
-
-
-                        <div v-if="estimate?.items?.length" class="pt-6">
-                            <p class="text-right font-semibold text-lg pt-4 border-t dark:border-qe-black2">
-                                Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
-                            </p>
-                            <p class="text-right font-semibold text-lg">
-                                Общая сумма (внешн.): {{ formatCurrency(totalExternal) }}
-                            </p>
-                            <p class="text-right font-semibold text-lg">
-                                Разница: {{ formatCurrency(totalDiff) }}
-                            </p>
-                            <p class="text-right text-gray-700 dark:text-white" v-if="estimate.vat_enabled">
-                                НДС ({{ estimate.vat_rate }}%): {{ formatCurrency(vat) }}<br />
-                                Итого с НДС: {{ formatCurrency(totalWithVat) }}
-                            </p>
+                        <!-- Итоги по категории -->
+                        <div class="flex gap-3 justify-center mt-5">
+                            <div
+                                class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2">
+                                <LucidePiggyBank class="w-4 h-4 text-green-500" />
+                                <span class="text-xs text-gray-600 dark:text-gray-300">Итог по категории
+                                    (внутр.):</span>
+                                <span class="font-semibold text-sm text-green-800 dark:text-green-300">{{
+                                    formatCurrency(getGroupInternal(groupItems)) }}</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2">
+                                <LucideReceipt class="w-4 h-4 text-blue-500" />
+                                <span class="text-xs text-gray-600 dark:text-gray-300">Итог по категории
+                                    (внешн.):</span>
+                                <span class="font-semibold text-sm text-blue-800 dark:text-blue-300">{{
+                                    formatCurrency(getGroupExternal(groupItems)) }}</span>
+                            </div>
                         </div>
+
 
                     </div>
                 </div>
             </div>
 
+            <!-- Вкладка история — оставляем как есть, но под стиль -->
             <div v-else>
                 <div v-if="logs.length" class="text-sm w-full mt-6">
                     <h3 class="font-semibold mb-4 ">
@@ -291,25 +354,46 @@
                     </div>
                 </div>
             </div>
+
+
         </div>
         <!-- Модалка -->
-        <QeModal v-model="showConfirm" @confirm="doDelete">
+        <QeModal v-model="showConfirm" @confirm="deleteEstimate">
             Вы уверены, что хотите удалить данную смету?
             <template #confirm>Да, удалить</template>
             <template #cancel>Отмена</template>
         </QeModal>
-
     </div>
 </template>
+  
 
 <script setup>
-import { onMounted, onUnmounted, ref, computed, watch, nextTick } from 'vue'
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import { onClickOutside } from '@vueuse/core'
 import { useToast } from 'vue-toastification'
 import QeModal from '@/components/QeModal.vue'
 import fileDownload from 'js-file-download'
+
+import {
+    LucideFileText,
+    LucideUser,
+    LucideCalendar,
+    LucideUserCircle,
+    LucideMapPin,
+    LucidePercentCircle,
+    LucideClock3,
+    LucideRefreshCw,
+    LucideWallet,
+    LucidePiggyBank,
+    LucideReceipt,
+    LucideArrowUpRight,
+    LucideCalculator,
+    LucideFolder,
+    NotebookPen
+} from 'lucide-vue-next'
+
 
 const route = useRoute()
 const router = useRouter()
@@ -362,11 +446,6 @@ onUnmounted(() => {
 
 onClickOutside(menuRef, () => { showExport.value = false })
 
-function tabClass(tabName) {
-    return activeTab.value === tabName
-        ? 'border-b-2 border-blue-600 text-blue-600'
-        : 'text-gray-600 hover:text-gray-800'
-}
 
 function confirmDelete() { showConfirm.value = true }
 
@@ -383,22 +462,6 @@ async function deleteEstimate() {
     router.push('/estimates')
 }
 
-function chunkArray(array) {
-    const len = array.length
-    let chunkSize = 3
-
-    if (len === 1) {
-        chunkSize = 1
-    } else if (len % 2 === 0) {
-        chunkSize = 2
-    }
-
-    const chunks = []
-    for (let i = 0; i < len; i += chunkSize) {
-        chunks.push(array.slice(i, i + chunkSize))
-    }
-    return chunks
-}
 
 
 const groupedItems = computed(() => {

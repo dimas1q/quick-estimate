@@ -188,9 +188,24 @@ async def export_estimate_pdf(
     if not estimate or estimate.user_id != user.id:
         raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
 
-    total = sum(item.unit_price * item.quantity for item in estimate.items)
+    # --- Новые суммы ---
+    total_internal = sum((item.internal_price or 0) * (item.quantity or 0) for item in estimate.items)
+    total_external = sum((item.external_price or 0) * (item.quantity or 0) for item in estimate.items)
+    total_diff = total_external - total_internal
+    vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
+    total_with_vat = total_external + vat
 
-    pdf_bytes = render_pdf("estimate_pdf.html", {"estimate": estimate, "total": total})
+    pdf_bytes = render_pdf(
+        "estimate_pdf.html",
+        {
+            "estimate": estimate,
+            "total_internal": total_internal,
+            "total_external": total_external,
+            "total_diff": total_diff,
+            "vat": vat,
+            "total_with_vat": total_with_vat,
+        }
+    )
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
@@ -198,6 +213,7 @@ async def export_estimate_pdf(
             "Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"
         },
     )
+
 
 
 @router.get("/{estimate_id}/export/excel")

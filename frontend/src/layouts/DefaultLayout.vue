@@ -49,7 +49,7 @@ onClickOutside(menuRef, () => {
   <div class="flex flex-col h-screen bg-gray-50 dark:bg-qe-black text-gray-900 dark:text-gray-100">
     <!-- HEADER -->
     <header
-      class="bg-white/80 dark:bg-qe-black border-b border-gray-200 dark:border-gray-800 shadow-sm px-6 py-3 flex justify-between items-center">
+      class="bg-white/80 dark:bg-qe-black3 border-b border-gray-200 dark:border-qe-black2 shadow-sm px-6 py-3 flex justify-between items-center">
       <div class="flex items-center gap-3">
         <RouterLink to="/" class="flex items-center gap-2 text-xl font-extrabold text-blue-600 dark:text-blue-600">
           <img src="/vite.svg" class="h-7 w-7" alt="QuickEstimate" />
@@ -105,7 +105,7 @@ onClickOutside(menuRef, () => {
       <Sidebar v-if="auth.user && showSidebar" />
 
       <!-- MAIN -->
-      <main class="flex-1 overflow-y-auto dark:bg-qe-black  bg-gray-50 p-4">
+      <main class="flex-1 overflow-y-auto dark:bg-qe-black3 bg-gray-50 p-4">
         <slot />
       </main>
     </div>

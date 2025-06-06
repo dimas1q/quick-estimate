@@ -10,7 +10,8 @@ export default {
     extend: {
       colors: {
         'qe-black': '#1A1D1F',
-        'qe-black2': '#25282D'
+        'qe-black2': '#303343',
+        'qe-black3': '#1E2124',
       }
     },
   },

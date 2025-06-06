@@ -19,6 +19,7 @@ from app.utils.auth import get_current_user
 from app.models.client import Client
 from app.models.estimate import Estimate, EstimateStatus
 from app.models.item import EstimateItem
+from app.models.user import User
 from app.schemas.analytics import (
     ClientAnalytics,
     GlobalAnalytics,
@@ -141,10 +142,12 @@ async def get_client_analytics(
     categories: Optional[List[str]] = Query(
         None, description="Фильтр по названиям категорий услуг"
     ),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     # составляем общий фильтр
-    filters = [Estimate.client_id == client_id]
+    filters = [Estimate.client_id == client_id,
+               Estimate.user_id == user.id]
     if start_date:
         filters.append(Estimate.date >= start_date)
     if end_date:
@@ -286,10 +289,11 @@ async def get_global_analytics(
     categories: Optional[List[str]] = Query(
         None, description="Фильтр по названиям категорий услуг"
     ),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     # общий фильтр
-    filters = []
+    filters = [Estimate.user_id == user.id]
     if start_date:
         filters.append(Estimate.date >= start_date)
     if end_date:

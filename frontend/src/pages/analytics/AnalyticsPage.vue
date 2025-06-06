@@ -3,7 +3,7 @@
         <h1 class="text-2xl font-bold">Аналитика</h1>
 
         <!-- Фильтры (аккордеон) -->
-        <section class="border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black rounded-xl shadow p-6">
+        <section class="border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3 rounded-xl shadow p-6">
             <button type="button"
                 class="flex justify-between items-center w-full text-xl font-semibold focus:outline-none"
                 @click="filtersOpen = !filtersOpen">
@@ -93,17 +93,17 @@
                 <MetricCard v-else title="ARPU" :value="'—'" :icon="Users" suffix="" />
             </div>
             <!-- График area -->
-            <div class="bg-white dark:bg-qe-black border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow">
+            <div class="bg-white dark:bg-qe-black3 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow">
                 <apexchart type="area" height="350" :options="chartOptionsWithTitles" :series="series" />
             </div>
             <!-- По ответственным -->
             <div>
                 <h3 class="text-lg font-semibold mb-2">Статистика по ответственным</h3>
                 <div
-                    class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
+                    class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-gray-50 dark:bg-qe-black">
+                            <tr class="bg-gray-50 dark:bg-qe-black3">
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">
                                     Ответственный</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Количество
@@ -127,9 +127,9 @@
             <div v-if="!filters.clientId">
                 <h3 class="text-lg font-semibold mb-2">Топ клиентов</h3>
                 <div
-                    class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
+                    class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 dark:bg-qe-black">
+                        <thead class="bg-gray-50 dark:bg-qe-black3">
                             <tr>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Клиент</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Выручка
@@ -150,9 +150,9 @@
             <div>
                 <h3 class="text-lg font-semibold mb-2">Топ услуг</h3>
                 <div
-                    class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black">
+                    class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 dark:bg-qe-black">
+                        <thead class="bg-gray-50 dark:bg-qe-black3">
                             <tr>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Услуга</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Выручка

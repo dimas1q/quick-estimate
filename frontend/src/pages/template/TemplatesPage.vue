@@ -115,7 +115,7 @@ function isValidTemplate(template) {
         </div>
         <template v-else>
           <div v-for="template in store.templates" :key="template.id"
-            class="border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black transition hover:shadow-md flex flex-col gap-1">
+            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col gap-1">
             <div class="font-semibold text-lg">{{ template.name }}</div>
             <div class="text-sm text-gray-600 dark:text-gray-400">Описание: {{ template.description || '—' }}</div>
             <router-link :to="`/templates/${template.id}`"
@@ -138,7 +138,7 @@ function isValidTemplate(template) {
           Импорт шаблона
         </button>
         <div
-          class="border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black">
+          class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
           <h2 class="font-semibold text-lg">Фильтр</h2>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Название</label>

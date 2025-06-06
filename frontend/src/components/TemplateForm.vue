@@ -1,7 +1,7 @@
 # frontend/src/components/TemplateForm.vue
 <template>
   <form @submit.prevent="submit"
-    class="space-y-8 border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl shadow-md p-6">
+    class="space-y-8 border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-md p-6">
     <!-- 1. Основные поля: название и описание -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
@@ -20,7 +20,7 @@
 
     <!-- 2. Редактор услуг -->
     <div>
-      <EstimateItemsEditor v-model="template.items" :vat-enabled="false" :show-vat-summary="false" />
+      <EstimateItemsEditor v-model="template.items" :vat-enabled="false" :show-summary="false" />
     </div>
 
     <!-- 3. Кнопки -->
@@ -80,6 +80,13 @@ onMounted(() => {
   }
 })
 
+function flattenItems(categories) {
+  // Возвращает плоский массив с подставленной категорией
+  return categories.flatMap(cat =>
+    cat.items.map(item => ({ ...item, category: cat.name }))
+  )
+}
+
 watch(() => props.initial, (value) => {
   if (value) {
     Object.assign(template, {
@@ -95,6 +102,10 @@ watch(() => props.initial, (value) => {
 }, { immediate: true })
 
 async function submit() {
+
+  if (template.items.length && template.items[0]?.items) {
+    template.items = flattenItems(template.items)
+  }
   if (!validateTemplate()) return
 
   let result

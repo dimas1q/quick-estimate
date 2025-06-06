@@ -1,7 +1,7 @@
 # frontend/src/components/EstimateForm.vue
 <template>
   <form @submit.prevent="submit"
-    class="space-y-8 border dark:border-qe-black2 bg-white dark:bg-qe-black rounded-2xl shadow-md p-6">
+    class="space-y-8 border dark:border-qe-black2 bg-white dark:bg-qe-black3 rounded-2xl shadow-md p-6">
     <!-- 1. Основные поля в две колонки -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Название -->
@@ -63,8 +63,8 @@
         <div :class="[
           'flex items-center gap-4 rounded-xl p-3 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
           estimate.vat_enabled
-            ? 'bg-white-50  dark:bg-qe-black dark:border-blue-600'
-            : 'bg-white-50  dark:bg-qe-black dark:border-qe-black2'
+            ? 'bg-white-50  dark:bg-qe-black3 dark:border-blue-600'
+            : 'bg-white-50  dark:bg-qe-black3 dark:border-qe-black2'
         ]">
           <label for="vat" class="flex items-center gap-3 cursor-pointer select-none">
             <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
@@ -76,7 +76,7 @@
             <div v-if="estimate.vat_enabled" class="flex items-center gap-2">
               <div class="relative">
                 <input type="number" min="0" max="100" step="1" v-model.number="estimate.vat_rate"
-                  class="w-22 pr-8 pl-3 py-1.5 border rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white dark:bg-qe-black dark:border-qe-black2 dark:text-white dark:border-blue-800"
+                  class="w-22 pr-8 pl-3 py-1.5 border rounded-lg text-base  focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white dark:bg-qe-black3 dark:border-qe-black2 dark:text-white dark:border-blue-800"
                   placeholder="%" @input="checkVatRate" />
                 <span
                   class="absolute right-2 top-1/2 -translate-y-1/2 text-base text-gray-700 dark:text-white pointer-events-none">%</span>

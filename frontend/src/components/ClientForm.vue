@@ -1,6 +1,6 @@
 ## frontend/src/components/ClientForm.vue
 <template>
-    <form @submit.prevent="submit" class="space-y-8 border bg-white dark:bg-qe-black dark:border-qe-black2 rounded-2xl shadow-md p-6">
+    <form @submit.prevent="submit" class="space-y-8 border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-md p-6">
         <!-- 1. Двухколоночные поля -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Имя клиента -->
@@ -65,7 +65,7 @@
         </div>
 
         <!-- 2. Кнопки -->
-        <div class="flex justify-end space-x-4">
+        <div class="flex justify-end space-x-2">
             <button type="button" @click="cancel"
                 class="qe-btn-secondary">
                 Отмена

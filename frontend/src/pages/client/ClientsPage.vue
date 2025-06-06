@@ -52,7 +52,7 @@ async function resetFilters() {
         </div>
         <template v-else>
           <div v-for="c in store.clients" :key="c.id"
-            class="border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black transition hover:shadow-md flex flex-col gap-1">
+            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col gap-1">
             <div class="font-semibold text-lg">{{ c.name }}</div>
             <div class="text-sm text-gray-600 dark:text-gray-400">Компания: {{ c.company || '—' }}</div>
             <div class="text-sm text-gray-600 dark:text-gray-400">Контакт: {{ c.email || c.phone || '—' }}</div>
@@ -74,7 +74,7 @@ async function resetFilters() {
           Добавить клиента
         </router-link>
         <div
-          class="border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black">
+          class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
           <h2 class="font-semibold text-lg">Фильтры</h2>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300">Имя</label>

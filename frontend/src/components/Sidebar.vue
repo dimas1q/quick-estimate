@@ -18,7 +18,7 @@ function isActive(path) {
 
 <template>
   <aside :class="[
-    'bg-white dark:bg-qe-black border-r dark:border-gray-800 transition-all duration-300 ease-in-out flex flex-col relative',
+    'bg-white dark:bg-qe-black3 border-r dark:border-qe-black2 transition-all duration-300 ease-in-out flex flex-col relative',
     collapsed ? 'w-16' : 'w-48'
   ]">
     <nav class="flex-1 space-y-2 px-3 py-4 text-sm">
@@ -64,7 +64,7 @@ function isActive(path) {
     </nav>
 
     <button @click="toggleSidebar"
-      class="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-full shadow p-1 hover:bg-blue-100 dark:hover:bg-gray-800 transition z-50">
+      class="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-white dark:bg-qe-black3 border dark:border-gray-700 rounded-full shadow p-1 hover:bg-blue-100 dark:hover:bg-gray-800 transition z-50">
       <ChevronLeft class="h-4 w-4 text-gray-600 dark:text-gray-300 transition-transform duration-200"
         :class="{ 'rotate-180': collapsed }" />
     </button>
