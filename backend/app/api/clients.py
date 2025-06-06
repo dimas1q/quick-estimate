@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy import func
 from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.client import Client
+from app.models.client_log import ClientChangeLog
 from app.models.estimate import Estimate
-from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
-from app.utils.auth import get_current_user
 from app.models.user import User
+from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
+from app.schemas.client_log import ClientLogCreate, ClientLogOut
+from app.utils.auth import get_current_user
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 router = APIRouter(tags=["clients"], dependencies=[Depends(get_current_user)])
 
@@ -22,6 +24,16 @@ async def create_client(
 ):
     new = Client(**client_in.dict(), user_id=user.id)
     db.add(new)
+    await db.commit()
+    await db.refresh(new)
+    db.add(
+        ClientChangeLog(
+            client_id=new.id,
+            user_id=user.id,
+            action="Создание",
+            description="Клиент создан",
+        )
+    )
     await db.commit()
     await db.refresh(new)
     return new
@@ -76,6 +88,16 @@ async def update_client(
         setattr(client, field, val)
     await db.commit()
     await db.refresh(client)
+    db.add(
+        ClientChangeLog(
+            client_id=client.id,
+            user_id=user.id,
+            action="Обновление",
+            description="Данные клиента обновлены",
+        )
+    )
+    await db.commit()
+    await db.refresh(client)
     return client
 
 
@@ -91,17 +113,66 @@ async def delete_client(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
-    
+
     estimates_count = await db.scalar(
-        select(func.count()).select_from(Estimate).where(Estimate.client_id == client_id)
+        select(func.count())
+        .select_from(Estimate)
+        .where(Estimate.client_id == client_id)
     )
 
     if estimates_count > 0:
         raise HTTPException(
             status_code=400,
-            detail="Сначала удалите все сметы, связанные с этим клиентом"
+            detail="Сначала удалите все сметы, связанные с этим клиентом",
         )
-    
+
     await db.delete(client)
     await db.commit()
     return
+
+
+@router.get("/{client_id}/logs", response_model=List[ClientLogOut])
+async def get_client_logs(
+    client_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+    )
+    client = result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    res = await db.execute(
+        select(ClientChangeLog)
+        .where(ClientChangeLog.client_id == client_id)
+        .order_by(ClientChangeLog.timestamp.asc())
+    )
+    return res.scalars().all()
+
+
+@router.post("/{client_id}/logs", response_model=ClientLogOut)
+async def add_client_log(
+    client_id: int,
+    log: ClientLogCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    res = await db.execute(
+        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+    )
+    client = res.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    new_log = ClientChangeLog(
+        client_id=client_id,
+        user_id=user.id,
+        action=log.action,
+        description=log.description,
+    )
+    db.add(new_log)
+    await db.commit()
+    await db.refresh(new_log)
+    return new_log

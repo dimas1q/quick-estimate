@@ -1,30 +1,29 @@
 # backend/app/api/estimates.py
 # Implementation of the estimates API endpoints
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
+import re
+from typing import List, Optional
+from urllib.parse import quote
+
+from app.core.database import get_db
+from app.models.changelog import EstimateChangeLog
+from app.models.client_log import ClientChangeLog
+from app.models.estimate import Estimate
+from app.models.estimate_favorite import EstimateFavorite
+from app.models.item import EstimateItem
+from app.models.user import User
+from app.models.version import EstimateVersion
+from app.schemas.changelog import ChangeLogOut
+from app.schemas.estimate import EstimateCreate, EstimateOut
+from app.utils.auth import get_current_user
+from app.utils.excel import generate_excel
+from app.utils.pdf import render_pdf
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
+from sqlalchemy import delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import delete, func
-from fastapi.encoders import jsonable_encoder
-
-from app.models.estimate import Estimate
-from app.models.item import EstimateItem
-from app.schemas.estimate import EstimateCreate, EstimateOut
-from app.schemas.changelog import ChangeLogOut
-from app.core.database import get_db
-from app.models.changelog import EstimateChangeLog
-from app.models.version import EstimateVersion
-from app.models.estimate_favorite import EstimateFavorite
-from app.utils.auth import get_current_user
-from app.utils.pdf import render_pdf
-from app.utils.excel import generate_excel
-from app.models.user import User
-
-from typing import Optional
-from typing import List
-from urllib.parse import quote
-import re
 
 router = APIRouter(tags=["estimates"], dependencies=[Depends(get_current_user)])
 
@@ -48,6 +47,14 @@ async def create_estimate(
             estimate_id=new_estimate.id,
             action="Создание",
             description="Смета создана",
+        )
+    )
+    db.add(
+        ClientChangeLog(
+            client_id=new_estimate.client_id,
+            user_id=user.id,
+            action="Создание сметы",
+            description=f"Создана смета {new_estimate.name}",
         )
     )
 
@@ -83,9 +90,7 @@ async def list_estimates(
     if name:
         query = query.where(Estimate.name.ilike(f"%{name}%"))
     if client:
-        query = query.where(
-            Estimate.client_id == client
-        )  
+        query = query.where(Estimate.client_id == client)
     if date_from:
         try:
             dt_from = datetime.fromisoformat(date_from)
@@ -103,7 +108,7 @@ async def list_estimates(
         query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
 
     result = await db.execute(query.order_by(Estimate.id.desc()))
-    
+
     estimates = result.scalars().all()
 
     # Получаем id всех избранных смет для текущего пользователя
@@ -116,7 +121,6 @@ async def list_estimates(
         estimate.is_favorite = estimate.id in favorite_ids
 
     return estimates
-
 
 
 @router.get("/{estimate_id}", response_model=EstimateOut)
@@ -138,8 +142,7 @@ async def get_estimate(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     fav = await db.execute(
-        select(EstimateFavorite)
-        .where(
+        select(EstimateFavorite).where(
             EstimateFavorite.user_id == user.id,
             EstimateFavorite.estimate_id == estimate_id,
         )
@@ -189,8 +192,12 @@ async def export_estimate_pdf(
         raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
 
     # --- Новые суммы ---
-    total_internal = sum((item.internal_price or 0) * (item.quantity or 0) for item in estimate.items)
-    total_external = sum((item.external_price or 0) * (item.quantity or 0) for item in estimate.items)
+    total_internal = sum(
+        (item.internal_price or 0) * (item.quantity or 0) for item in estimate.items
+    )
+    total_external = sum(
+        (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
+    )
     total_diff = total_external - total_internal
     vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
     total_with_vat = total_external + vat
@@ -204,7 +211,7 @@ async def export_estimate_pdf(
             "total_diff": total_diff,
             "vat": vat,
             "total_with_vat": total_with_vat,
-        }
+        },
     )
     return StreamingResponse(
         iter([pdf_bytes]),
@@ -213,7 +220,6 @@ async def export_estimate_pdf(
             "Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"
         },
     )
-
 
 
 @router.get("/{estimate_id}/export/excel")
@@ -310,6 +316,14 @@ async def update_estimate(
             description="Смета обновлена",
         )
     )
+    db.add(
+        ClientChangeLog(
+            client_id=estimate.client_id,
+            user_id=user.id,
+            action="Обновление сметы",
+            description=f"Смета {estimate.name} обновлена",
+        )
+    )
 
     await db.commit()
 
@@ -341,6 +355,7 @@ async def delete_estimate(
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+
 @router.post("/{estimate_id}/favorite/", status_code=204)
 async def add_favorite(
     estimate_id: int,
@@ -355,8 +370,7 @@ async def add_favorite(
 
     # Проверяем, есть ли уже избранное
     res = await db.execute(
-        select(EstimateFavorite)
-        .where(
+        select(EstimateFavorite).where(
             EstimateFavorite.user_id == user.id,
             EstimateFavorite.estimate_id == estimate_id,
         )
@@ -367,6 +381,7 @@ async def add_favorite(
         await db.commit()
     return Response(status_code=204)
 
+
 @router.delete("/{estimate_id}/favorite/", status_code=204)
 async def remove_favorite(
     estimate_id: int,
@@ -374,8 +389,7 @@ async def remove_favorite(
     user: User = Depends(get_current_user),
 ):
     res = await db.execute(
-        select(EstimateFavorite)
-        .where(
+        select(EstimateFavorite).where(
             EstimateFavorite.user_id == user.id,
             EstimateFavorite.estimate_id == estimate_id,
         )
