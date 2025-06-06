@@ -8,6 +8,8 @@ from app.core.database import get_db
 from app.models.client import Client
 from app.models.estimate import Estimate
 from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
+from app.schemas.client_log import ClientLogCreate, ClientLogOut
+from app.models.client_log import ClientLog
 from app.utils.auth import get_current_user
 from app.models.user import User
 
@@ -22,6 +24,15 @@ async def create_client(
 ):
     new = Client(**client_in.dict(), user_id=user.id)
     db.add(new)
+    await db.flush()
+    db.add(
+        ClientLog(
+            client_id=new.id,
+            user_id=user.id,
+            action="Создание",
+            description="Клиент создан",
+        )
+    )
     await db.commit()
     await db.refresh(new)
     return new
@@ -59,6 +70,52 @@ async def get_client(
     return client
 
 
+@router.get("/{client_id}/logs", response_model=List[ClientLogOut])
+async def get_client_logs(
+    client_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+    )
+    client = result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+    res = await db.execute(
+        select(ClientLog)
+        .where(ClientLog.client_id == client_id)
+        .order_by(ClientLog.timestamp.desc())
+    )
+    return res.scalars().all()
+
+
+@router.post("/{client_id}/logs", response_model=ClientLogOut, status_code=status.HTTP_201_CREATED)
+async def add_client_log(
+    client_id: int,
+    log: ClientLogCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+    )
+    client = result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+    new_log = ClientLog(
+        client_id=client_id,
+        user_id=user.id,
+        estimate_id=log.estimate_id,
+        action=log.action,
+        description=log.description,
+    )
+    db.add(new_log)
+    await db.commit()
+    await db.refresh(new_log)
+    return new_log
+
+
 @router.put("/{client_id}", response_model=ClientOut)
 async def update_client(
     client_id: int,
@@ -72,8 +129,22 @@ async def update_client(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
+    changed_fields = []
     for field, val in client_in.dict(exclude_unset=True).items():
-        setattr(client, field, val)
+        if getattr(client, field) != val:
+            changed_fields.append(field)
+            setattr(client, field, val)
+
+    if changed_fields:
+        db.add(
+            ClientLog(
+                client_id=client_id,
+                user_id=user.id,
+                action="Изменение",
+                description="Изменены поля: " + ", ".join(changed_fields),
+            )
+        )
+
     await db.commit()
     await db.refresh(client)
     return client

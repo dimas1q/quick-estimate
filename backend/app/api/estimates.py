@@ -14,6 +14,7 @@ from app.schemas.estimate import EstimateCreate, EstimateOut
 from app.schemas.changelog import ChangeLogOut
 from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
+from app.models.client_log import ClientLog
 from app.models.version import EstimateVersion
 from app.models.estimate_favorite import EstimateFavorite
 from app.utils.auth import get_current_user
@@ -48,6 +49,15 @@ async def create_estimate(
             estimate_id=new_estimate.id,
             action="Создание",
             description="Смета создана",
+        )
+    )
+    db.add(
+        ClientLog(
+            client_id=new_estimate.client_id,
+            user_id=user.id,
+            estimate_id=new_estimate.id,
+            action="Создание сметы",
+            description=f"Создана смета '{new_estimate.name}'",
         )
     )
 
@@ -270,6 +280,8 @@ async def update_estimate(
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
+    old_status = estimate.status
+
     old_out = EstimateOut.from_orm(old_estimate)
     old_payload = jsonable_encoder(old_out)
 
@@ -310,6 +322,26 @@ async def update_estimate(
             description="Смета обновлена",
         )
     )
+    db.add(
+        ClientLog(
+            client_id=estimate.client_id,
+            user_id=user.id,
+            estimate_id=estimate_id,
+            action="Обновление сметы",
+            description=f"Смета '{estimate.name}' обновлена",
+        )
+    )
+
+    if updated_data.status and updated_data.status != old_status:
+        db.add(
+            ClientLog(
+                client_id=estimate.client_id,
+                user_id=user.id,
+                estimate_id=estimate_id,
+                action="Смена статуса",
+                description=f"Статус сметы '{estimate.name}' изменён на {updated_data.status.value}",
+            )
+        )
 
     await db.commit()
 

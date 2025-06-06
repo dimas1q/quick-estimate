@@ -38,6 +38,14 @@ export const useClientsStore = defineStore('clients', {
         async deleteClient(id) {
             await axios.delete(`/clients/${id}`)
             await this.fetchClients()
+        },
+        async getClientLogs(id) {
+            const res = await axios.get(`/clients/${id}/logs`)
+            return res.data
+        },
+        async addClientLog(id, data) {
+            const res = await axios.post(`/clients/${id}/logs`, data)
+            return res.data
         }
     }
 })
