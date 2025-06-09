@@ -23,13 +23,13 @@
               },
             ]">
               {{
-                {
-                  draft: "Черновик",
-                  sent: "Отправлена",
-                  approved: "Согласована",
-                  paid: "Оплачена",
-                  cancelled: "Отменена",
-                }[estimate.status]
+              {
+              draft: "Черновик",
+              sent: "Отправлена",
+              approved: "Согласована",
+              paid: "Оплачена",
+              cancelled: "Отменена",
+              }[estimate.status]
               }}
             </span>
           </h1>
@@ -42,31 +42,33 @@
         <div class="flex space-x-2 items-center relative">
           <!-- если мы в режиме версии, показываем другие кнопки -->
           <template v-if="isVersionView">
-            <button @click="restoreVersion(currentVersion)"
-              class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm font-medium shadow">
-              Восстановить
+            <button @click="restoreVersion(currentVersion)" class="qe-btn-warning flex items-center">
+              <RotateCcw class="w-4 h-4 mr-1" />
+              <span>Восстановить</span>
             </button>
-            <button @click="copyVersion(currentVersion)"
-              class="inline-flex items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all text-sm font-medium shadow">
-              Копировать
+            <button @click="copyVersion(currentVersion)" class="qe-btn flex items-center">
+              <ClipboardPaste class="w-4 h-4 mr-1" />
+              <span>Копировать</span>
             </button>
-            <button @click="deleteVersion(currentVersion)"
-              class="inline-flex items-center px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-all text-sm font-medium shadow">
-              Удалить версию
+            <button @click="deleteVersion(currentVersion)" class="qe-btn-danger flex items-center">
+              <LucideTrash2 class="w-4 h-4 mr-1" />
+              <span>Удалить версию</span>
             </button>
             <button @click="() => router.push({ path: `/estimates/${estimate.id}` })"
-              class="btn-secondary inline-flex items-center px-4 py-2 rounded-md bg-gray-300 text-gray-800 hover:bg-gray-400 transition-all text-sm font-medium shadow">
-              Вернуться
+              class="qe-btn-secondary flex items-center">
+              <Undo2 class="w-4 h-4 mr-1" />
+              <span>Вернуться</span>
             </button>
           </template>
           <template v-else>
             <!-- Выпадающее меню -->
             <div class="relative" ref="menuRef">
               <button @click="showExport = !showExport" class="qe-btn-success inline-flex items-center">
-                Экспортировать
-                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <Download class="w-4 h-4 mr-1" />
+                <span>Экспортировать</span>
+                <!-- <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
+                </svg> -->
               </button>
               <div v-if="showExport"
                 class="absolute right-0 mt-2 w-38 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
@@ -86,12 +88,17 @@
             </div>
 
             <!-- Основные кнопки -->
-            <RouterLink :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning">
-              Редактировать
+            <RouterLink :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning flex items-center">
+              <LucidePencilLine class="w-4 h-4 mr-1" />
+              <span>Редактировать</span>
             </RouterLink>
-            <button @click="copyEstimate" class="qe-btn">Копировать</button>
-            <button @click="confirmDelete" class="qe-btn-danger">
-              Удалить
+            <button @click="copyEstimate" class="qe-btn flex items-center">
+              <ClipboardPaste class="w-4 h-4 mr-1" />
+              <span>Копировать</span>
+            </button>
+            <button @click="confirmDelete" class="qe-btn-danger flex items-center">
+              <LucideTrash2 class="w-4 h-4 mr-1" />
+              <span>Удалить</span>
             </button>
           </template>
         </div>
@@ -122,7 +129,7 @@
         <!-- Краткая информация -->
         <div class="grid gap-4 text-sm text-gray-800 dark:text-gray-200 grid-cols-1 md:grid-cols-2">
           <div class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 mt-2">
               <LucideUser class="w-5 h-5 text-blue-500" />
               <span><span class="font-semibold">Клиент: </span>
                 <RouterLink :to="`/clients/${estimate.client.id}`" class="text-blue-700 hover:underline">
@@ -133,7 +140,7 @@
             <div v-if="estimate.event_datetime" class="flex items-center gap-2">
               <LucideCalendar class="w-5 h-5 text-yellow-500" />
               <span><span class="font-semibold">Дата и время: </span><span>{{
-                new Date(estimate.event_datetime).toLocaleString()
+                  new Date(estimate.event_datetime).toLocaleString()
                   }}</span></span>
             </div>
             <div class="flex items-center gap-2">
@@ -296,7 +303,14 @@
 
         <!-- История изменений -->
         <div v-if="logs.length" class="text-sm w-full mt-6">
-          <h3 class="font-semibold mb-4">История изменений</h3>
+          <h3 class="font-semibold mb-4">
+
+            <span class="flex items-center gap-1">
+              <LucideHistory class="w-5 h-5 text-blue-600" />
+              <span>История изменений</span>
+            </span>
+
+          </h3>
           <div
             class="rounded-xl border border-gray-200 dark:border-qe-black2 dark:bg-qe-black3 bg-white dark:bg-gray-900 divide-y dark:divide-qe-black2 shadow-sm">
 
@@ -322,7 +336,7 @@
                 <!-- Важно: фиксированная ширина, text-right и truncate -->
                 <div class="w-[140px] shrink-0 text-right pr-4">
                   <button v-if="log.details && log.details.length" @click="toggleDetails(log.id)"
-                    class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-blue-600 hover:bg-blue-50 transition">
+                    class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-blue-600 hover:bg-blue-50 transition -mr-6">
                     <span>{{ showDetails[log.id] ? 'Скрыть детали' : 'Детали' }}</span>
                     <svg :class="['w-4 h-4 transition-transform', showDetails[log.id] ? 'rotate-180' : '']" fill="none"
                       stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -333,7 +347,7 @@
               </div>
               <transition name="fade">
                 <ul v-if="log.details && log.details.length && showDetails[log.id]"
-                  class="mt-2 pl-2 border-l dark:border-qe-black2 border-blue-200 text-sm space-y-1">
+                  class="mt-2 mb-2 pl-2 border-l dark:border-qe-black2 border-blue-200 text-sm space-y-1">
                   <li v-for="(d, i) in log.details" :key="i" class="text-blue-700 dark:text-blue-500">
                   <li v-if="typeof d === 'string'">
                     {{ d }}
@@ -342,17 +356,17 @@
                     <span class="font-semibold">{{ d.label }}:</span>
                     <span class="mx-1 text-gray-500 line-through">
                       {{
-                        isDate(d.old) && isDate(d.new)
-                          ? formatDate(d.old)
-                          : d.old
+                      isDate(d.old) && isDate(d.new)
+                      ? formatDate(d.old)
+                      : d.old
                       }}
                     </span>
                     <span class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold">
                       →
                       {{
-                        isDate(d.old) && isDate(d.new)
-                          ? formatDate(d.new)
-                          : d.new
+                      isDate(d.old) && isDate(d.new)
+                      ? formatDate(d.new)
+                      : d.new
                       }}
                     </span>
                   </li>
@@ -364,7 +378,13 @@
         </div>
 
         <div v-if="versions.length" class="mt-2 pt-6 text-sm">
-          <h3 class="font-semibold mb-4">История версий</h3>
+          <h3 class="font-semibold mb-4">
+            <span class="flex items-center gap-1">
+              <GitGraph class="w-5 h-5 text-blue-600" />
+              <span>История версий</span>
+            </span>
+
+          </h3>
           <div
             class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
             <table class="w-full text-sm qe-table">
@@ -420,15 +440,23 @@ import fileDownload from "js-file-download";
 import {
   LucideFileText,
   LucideUser,
+  Undo2,
+  RotateCcw,
   LucideCalendar,
   LucideUserCircle,
   LucideMapPin,
   LucidePercentCircle,
+  LucidePencilLine,
+  ClipboardPaste,
+  LucideTrash2,
+  Download,
   LucideClock3,
   LucideRefreshCw,
   LucideWallet,
+  LucideHistory,
   LucidePiggyBank,
   LucideReceipt,
+  GitGraph,
   LucideArrowUpRight,
   LucideCalculator,
   LucideFolder,

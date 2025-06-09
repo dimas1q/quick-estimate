@@ -22,7 +22,7 @@ function isActive(path) {
     collapsed ? 'w-16' : 'w-48'
   ]">
     <nav class="flex-1 space-y-2 px-3 py-4 text-sm">
-      <RouterLink to="/estimates" class="flex items-center rounded transition-all" :class="[
+      <RouterLink to="/estimates" class="flex items-center rounded transition-all rounded-lg" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
         isActive('/estimates')
           ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
@@ -32,7 +32,7 @@ function isActive(path) {
         <span v-if="!collapsed">Сметы</span>
       </RouterLink>
 
-      <RouterLink to="/clients" class="flex items-center rounded transition-all" :class="[
+      <RouterLink to="/clients" class="flex items-center rounded transition-all rounded-lg" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
         isActive('/clients')
           ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
@@ -42,7 +42,7 @@ function isActive(path) {
         <span v-if="!collapsed">Клиенты</span>
       </RouterLink>
 
-      <RouterLink to="/templates" class="flex items-center rounded transition-all" :class="[
+      <RouterLink to="/templates" class="flex items-center rounded transition-all rounded-lg" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
         isActive('/templates')
           ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
@@ -52,7 +52,7 @@ function isActive(path) {
         <span v-if="!collapsed">Шаблоны</span>
       </RouterLink>
 
-      <RouterLink to="/analytics" class="flex items-center rounded transition-all" :class="[
+      <RouterLink to="/analytics" class="flex items-center rounded transition-all rounded-lg" :class="[
         collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-3 py-2',
         isActive('/analytics')
           ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'

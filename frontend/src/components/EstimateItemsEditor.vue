@@ -9,7 +9,7 @@
         <div class="flex items-center gap-3 mb-2">
           <input v-model="cat.name" placeholder="Название категории"
             class="flex-1 border-0 border-b dark:border-qe-black2 text-lg font-semibold bg-transparent focus:ring-0 focus:border-blue-400" />
-          <button @click="removeCategory(idx)" type="button" class="text-red-500 hover:text-red-700 text-sm">Удалить
+          <button @click="removeCategory(idx)" type="button" class="qe-btn-danger">Удалить
             категорию</button>
         </div>
 
@@ -24,7 +24,7 @@
             <div>Внеш. цена</div>
             <div>Итог (внутр.)</div>
             <div>Итог (внеш.)</div>
-            <div>Действие</div>
+            <div></div>
           </div>
 
           <transition-group name="fade" tag="div">

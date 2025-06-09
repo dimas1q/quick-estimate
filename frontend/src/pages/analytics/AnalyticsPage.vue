@@ -61,7 +61,7 @@
                                 class="inline-flex items-center space-x-1">
                                 <input type="checkbox" :value="opt.value" v-model="filters.status"
                                     class="accent-blue-500 dark:accent-blue-400" />
-                                <span>{{ opt.label }}</span>
+                                <span class="">{{ opt.label }}</span>
                             </label>
                         </div>
                     </div>

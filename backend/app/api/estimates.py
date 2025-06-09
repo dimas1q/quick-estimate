@@ -212,7 +212,7 @@ async def get_logs(
             details=log.details,
             timestamp=log.timestamp,
             user_id=log.user_id,
-            user_name=log.user.name if log.user else None,
+            user_name=log.user.name or log.user.login if log.user else None,
         )
         for log in result.scalars().all()
     ]

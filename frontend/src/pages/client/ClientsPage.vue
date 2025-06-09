@@ -62,7 +62,7 @@ async function resetFilters() {
             </router-link>
           </div>
           <div v-if="store.clients.length === 0"
-            class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded py-8">
+            class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             Клиенты отсутствуют.
           </div>
         </template>

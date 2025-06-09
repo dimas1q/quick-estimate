@@ -138,9 +138,14 @@ async def update_client(
 
     details = []
     for field, val in client_in.dict(exclude_unset=True).items():
-        if getattr(client, field) != val:
+        old_val = getattr(client, field)
+        if old_val != val:
             ru = FIELD_NAMES_RU.get(field, field)
-            details.append(ru)
+            details.append({
+                "label": ru,
+                "old": str(old_val) if old_val is not None else "—",
+                "new": str(val) if val is not None else "—"
+            })
         setattr(client, field, val)
 
     if details:
