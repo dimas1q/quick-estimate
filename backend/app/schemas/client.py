@@ -1,3 +1,5 @@
+## backend/app/schemas/client.py
+
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime

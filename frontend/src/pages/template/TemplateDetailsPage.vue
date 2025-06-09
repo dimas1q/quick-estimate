@@ -108,7 +108,7 @@
 
     <QeModal v-model="showConfirm" @confirm="deleteTemplate">
       Вы уверены, что хотите удалить данный шаблон?
-      <template #confirm>Да, удалить</template>
+      <template #confirm>Удалить</template>
       <template #cancel>Отмена</template>
     </QeModal>
   </div>

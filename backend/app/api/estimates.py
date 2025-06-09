@@ -21,12 +21,41 @@ from app.models.item import EstimateItem
 from app.models.user import User
 from app.models.version import EstimateVersion
 from app.schemas.changelog import ChangeLogOut
-from app.schemas.estimate import EstimateCreate, EstimateOut
+from app.schemas.estimate import EstimateCreate, EstimateOut, EstimateUpdate
 from app.utils.auth import get_current_user
 from app.utils.excel import generate_excel
 from app.utils.pdf import render_pdf
 
+from datetime import datetime
+from datetime import timezone
+
 router = APIRouter(tags=["estimates"], dependencies=[Depends(get_current_user)])
+
+FIELD_NAMES_RU = {
+    "name": "Изменено название",
+    "client_id": "Изменен клиент",
+    "responsible": "Изменен ответственный",
+    "status": "Изменен статус",
+    "event_datetime": "Изменено дата и время проведения мероприятия",
+    "event_place": "Изменено место проведения мероприятия",
+    "notes": "Изменены заметки",
+}
+ITEM_FIELD_NAMES_RU = {
+    "name": "Изменено название услуги",
+    "description": "Изменено описание услуги",
+    "quantity": "Изменено количество услуги",
+    "unit": "Изменена единица измерения услуги",
+    "internal_price": "Изменена внутренняя цена услуги",
+    "external_price": "Изменена внешняя цена услуги",
+}
+
+STATUS_LABELS_RU = {
+    "draft": "Черновик",
+    "sent": "Отправлена",
+    "approved": "Согласована",
+    "paid": "Оплачена",
+    "cancelled": "Отменена",
+}
 
 
 @router.post("/", response_model=EstimateOut)
@@ -56,7 +85,7 @@ async def create_estimate(
             client_id=new_estimate.client_id,
             user_id=user.id,
             action="Создание сметы",
-            description=f"Создана смета {new_estimate.name}",
+            description=f"Создана смета: {new_estimate.name}",
         )
     )
 
@@ -81,7 +110,6 @@ async def list_estimates(
     user: User = Depends(get_current_user),
     favorite: Optional[bool] = Query(None),
 ):
-    from datetime import datetime
 
     query = (
         select(Estimate)
@@ -181,6 +209,7 @@ async def get_logs(
             id=log.id,
             action=log.action,
             description=log.description,
+            details=log.details,
             timestamp=log.timestamp,
             user_id=log.user_id,
             user_name=log.user.name if log.user else None,
@@ -268,7 +297,7 @@ async def export_estimate_excel(
 @router.put("/{estimate_id}", response_model=EstimateOut)
 async def update_estimate(
     estimate_id: int,
-    updated_data: EstimateCreate,
+    updated_data: EstimateUpdate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -311,51 +340,113 @@ async def update_estimate(
         )
     )
 
-    changed_fields = []
+    # ==== Новый блок сравнения ====
+    details = []
 
-    # обновим основные поля
-    for field, value in updated_data.dict(exclude={"items"}).items():
-        if getattr(estimate, field) != value:
-            changed_fields.append(field)
-        setattr(estimate, field, value)
+    # Логика для НДС
+    if estimate.vat_enabled != updated_data.vat_enabled:
+        details.append("Включен НДС" if updated_data.vat_enabled else "Выключен НДС")
+    estimate.vat_enabled = updated_data.vat_enabled
 
-    old_items = {
-        (i.name, i.quantity, i.unit, i.internal_price, i.external_price)
-        for i in old_estimate.items
-    }
+    if estimate.vat_rate != updated_data.vat_rate:
+        details.append(
+            {
+                "label": "Изменена ставка НДС",
+                "old": f"{estimate.vat_rate}%",
+                "new": f"{updated_data.vat_rate}%",
+            }
+        )
+    estimate.vat_rate = updated_data.vat_rate
+
+    # Простые поля (кроме items, vat_enabled, vat_rate)
+    for field, value in updated_data.dict(
+        exclude={"items", "vat_enabled", "vat_rate"}
+    ).items():
+        old_val = getattr(estimate, field)
+        if field == "status":
+            old_val = old_val.value if hasattr(old_val, "value") else str(old_val)
+            new_val = value.value if hasattr(value, "value") else str(value)
+            if old_val != new_val:
+                details.append(
+                    {
+                        "label": FIELD_NAMES_RU.get(field, field),
+                        "old": STATUS_LABELS_RU.get(old_val, old_val),
+                        "new": STATUS_LABELS_RU.get(new_val, new_val),
+                    }
+                )
+        else:
+            ru = FIELD_NAMES_RU.get(field)
+            if getattr(estimate, field) != value and ru:
+                ru = FIELD_NAMES_RU.get(field)
+                if ru:
+                    details.append(
+                        {
+                            "label": ru,
+                            "old": str(getattr(estimate, field)),
+                            "new": str(value),
+                        }
+                    )
+
+            setattr(estimate, field, value)
+
+    old_items = {item.id: item for item in old_estimate.items if item.id is not None}
     new_items = {
-        (i.name, i.quantity, i.unit, i.internal_price, i.external_price)
-        for i in updated_data.items
+        item.id: item
+        for item in updated_data.items
+        if getattr(item, "id", None) is not None
     }
-    if old_items != new_items:
-        changed_fields.append("items")
 
+    # Добавленные услуги (новые, которых не было раньше)
+    for item in updated_data.items:
+        if item.id is None or item.id not in old_items:
+            details.append(f"Добавлена услуга ({item.name})")
+
+    # Удалённые услуги (были раньше, но пропали)
+    for item_id, item in old_items.items():
+        if item_id not in [i.id for i in updated_data.items if i.id is not None]:
+            details.append(f"Удалена услуга ({item.name})")
+
+    # Изменения в услугах
+    for item_id, old_item in old_items.items():
+        new_item = new_items.get(item_id)
+        if new_item:
+            for f in ITEM_FIELD_NAMES_RU:
+                if getattr(old_item, f, None) != getattr(new_item, f, None):
+                    ru = ITEM_FIELD_NAMES_RU[f]
+                    details.append(
+                        {
+                            "label": f"{ru} ({new_item.name})",
+                            "old": str(getattr(old_item, f, "")),
+                            "new": str(getattr(new_item, f, "")),
+                        }
+                    )
+
+    # Обновление услуг в БД
     await db.execute(
         delete(EstimateItem).where(EstimateItem.estimate_id == estimate_id)
     )
     for item in updated_data.items:
         db.add(EstimateItem(**item.dict(), estimate_id=estimate_id))
 
-    description = (
-        "Изменены: " + ", ".join(changed_fields)
-        if changed_fields
-        else "Смета обновлена"
-    )
+    now = datetime.now(timezone.utc)
 
     db.add(
         EstimateChangeLog(
             estimate_id=estimate_id,
             user_id=user.id,
             action="Обновление",
-            description=description,
+            description="Смета обновлена",
+            details=details if details else None,
+            timestamp=now,
         )
     )
+
     db.add(
         ClientChangeLog(
             client_id=estimate.client_id,
             user_id=user.id,
             action="Изменение сметы",
-            description=f"Обновлена смета {estimate.name}",
+            description=f"Обновлена смета: {estimate.name}",
         )
     )
 

@@ -1,9 +1,6 @@
 <template>
   <div class="py-8 max-w-6xl mx-auto">
-    <div
-      v-if="!client"
-      class="text-center py-10 text-lg text-gray-500 dark:text-gray-400"
-    >
+    <div v-if="!client" class="text-center py-10 text-lg text-gray-500 dark:text-gray-400">
       Загрузка…
     </div>
     <div v-else class="space-y-6">
@@ -22,41 +19,29 @@
         </div>
       </div>
 
-      <div
-        class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 mb-6 w-fit"
-      >
-        <button
-          :class="[
-            'px-5 py-2 rounded-lg text-sm font-semibold transition',
-            activeTab === 'details'
-              ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
-              : 'text-gray-500 hover:text-blue-600',
-          ]"
-          @click="activeTab = 'details'"
-        >
+      <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 mb-6 w-fit">
+        <button :class="[
+          'px-5 py-2 rounded-lg text-sm font-semibold transition',
+          activeTab === 'details'
+            ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
+            : 'text-gray-500 hover:text-blue-600',
+        ]" @click="activeTab = 'details'">
           Сведения
         </button>
-        <button
-          :class="[
-            'px-5 py-2 rounded-lg text-sm font-semibold transition',
-            activeTab === 'history'
-              ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
-              : 'text-gray-500 hover:text-blue-600',
-          ]"
-          @click="activeTab = 'history'"
-        >
+        <button :class="[
+          'px-5 py-2 rounded-lg text-sm font-semibold transition',
+          activeTab === 'history'
+            ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
+            : 'text-gray-500 hover:text-blue-600',
+        ]" @click="activeTab = 'history'">
           История
         </button>
       </div>
 
       <!-- Блок данных — такой же стиль как у сметы -->
-      <div
-        class="grid gap-3 text-sm text-gray-800 dark:text-gray-200"
-        v-if="activeTab === 'details'"
-      >
+      <div class="grid gap-3 text-sm text-gray-800 dark:text-gray-200" v-if="activeTab === 'details'">
         <div
-          class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black3 rounded-2xl p-6"
-        >
+          class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black3 rounded-2xl p-6">
           <p><strong>Компания:</strong> {{ client.company || "—" }}</p>
 
           <p><strong>Расчетный счет:</strong> {{ client.account || "—" }}</p>
@@ -82,22 +67,14 @@
       </div>
 
       <!-- Сметы клиента -->
-      <div
-        v-if="activeTab === 'details'"
-        class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-sm p-6 mt-6"
-      >
+      <div v-if="activeTab === 'details'"
+        class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-sm p-6 mt-6">
         <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
           Сметы клиента
         </h2>
-        <div
-          v-if="estimates.length > 0"
-          class="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          <div
-            v-for="e in estimates"
-            :key="e.id"
-            class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition"
-          >
+        <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-for="e in estimates" :key="e.id"
+            class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
             <div class="flex justify-between items-center">
               <RouterLink :to="`/estimates/${e.id}`" class="font-semibold">
                 {{ e.name }}
@@ -108,10 +85,8 @@
             </div>
           </div>
         </div>
-        <div
-          v-else
-          class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-xl py-8 mt-2 bg-white dark:bg-qe-black3"
-        >
+        <div v-else
+          class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
           Сметы отсутствуют.
         </div>
       </div>
@@ -120,41 +95,57 @@
         <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
           История клиента
         </h2>
-        <div
-          v-if="logs.length"
-          class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black"
-        >
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="bg-gray-50 dark:bg-qe-black">
-                <th class="qe-table-th text-left">Дата и время</th>
-                <th class="qe-table-th text-left">Событие</th>
-                <th class="qe-table-th text-left">Автор</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="l in logs"
-                :key="l.id"
-                class="hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-              >
-                <td class="qe-table-td">
-                  {{ new Date(l.timestamp).toLocaleString() }}
-                </td>
-                <td class="qe-table-td">{{ l.description }}</td>
-                <td class="qe-table-td">{{ l.user_name || "-" }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-if="logs.length"
+          class="rounded-xl border border-gray-200 dark:border-qe-black2 dark:bg-qe-black3 bg-white dark:bg-gray-900 divide-y dark:divide-qe-black2 shadow-sm">
+          <!-- Заголовок -->
+          <div
+            class="flex items-center px-5 py-2 bg-gray-50 dark:bg-qe-black2 rounded-t-xl font-medium text-gray-700 dark:text-gray-200">
+            <div class="w-40 shrink-0">Дата</div>
+            <div class="flex-1">Событие</div>
+            <div class="w-[140px] shrink-0 text-right pr-4">Детали</div>
+          </div>
+          <!-- Логи -->
+          <div v-for="log in logs" :key="log.id" class="px-5 py-2 group">
+            <div class="flex items-center">
+              <div class="w-40 text-sm text-gray-400 shrink-0">
+                {{ new Date(log.timestamp).toLocaleString() }}
+              </div>
+              <div class="flex-1 flex items-center gap-2 min-w-0">
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                  {{ log.description }}
+                </span>
+                <span class="text-sm text-gray-500 truncate">— {{ log.user_name || '-' }}</span>
+              </div>
+              <div class="w-[140px] shrink-0 text-right pr-4 flex justify-end">
+                <button v-if="log.details && log.details.length" @click="toggleDetails(log.id)"
+                  class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-blue-600 hover:bg-blue-50 transition truncate">
+                  <span>{{ showDetails[log.id] ? 'Скрыть детали' : 'Детали' }}</span>
+                  <svg :class="['w-4 h-4 transition-transform', showDetails[log.id] ? 'rotate-180' : '']" fill="none"
+                    stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <transition name="fade">
+              <ul v-if="log.details && log.details.length && showDetails[log.id]"
+                class="mt-2 pl-2 border-l dark:border-qe-black2 border-blue-200 text-sm space-y-1">
+                <li v-for="(d, i) in log.details" :key="i" class="text-blue-700 dark:text-blue-500">
+                  {{ d }}
+                </li>
+              </ul>
+            </transition>
+          </div>
         </div>
         <div v-else class="text-gray-500">Записей нет.</div>
       </div>
+
     </div>
 
     <!-- Модалка подтверждения удаления -->
     <QeModal v-model="showConfirm" @confirm="deleteClient">
       Вы уверены, что хотите удалить данного клиента?
-      <template #confirm>Да, удалить</template>
+      <template #confirm>Удалить</template>
       <template #cancel>Отмена</template>
     </QeModal>
   </div>
@@ -176,6 +167,7 @@ const activeTab = ref("details");
 const showConfirm = ref(false);
 const store = useClientsStore();
 const toast = useToast();
+const showDetails = ref({})
 
 onMounted(async () => {
   const { client: c, estimates: e } = await store.getClientWithEstimates(
@@ -188,6 +180,10 @@ onMounted(async () => {
 
 function confirmDelete() {
   showConfirm.value = true;
+}
+
+function toggleDetails(id) {
+  showDetails.value[id] = !showDetails.value[id]
 }
 
 async function deleteClient() {

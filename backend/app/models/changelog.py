@@ -1,5 +1,5 @@
 from sqlalchemy import (Column, DateTime, ForeignKey, Integer, String, Text,
-                        func)
+                        func, JSON)
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -13,6 +13,7 @@ class EstimateChangeLog(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     action = Column(String)
     description = Column(Text)
+    details = Column(JSON, nullable=True)
     timestamp = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
     user = relationship("User")

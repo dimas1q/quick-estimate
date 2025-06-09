@@ -1,3 +1,5 @@
+## backend/app/api/clients.py
+
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -16,6 +18,22 @@ from app.schemas.client_changelog import ClientChangeLogOut
 from app.utils.auth import get_current_user
 
 router = APIRouter(tags=["clients"], dependencies=[Depends(get_current_user)])
+
+FIELD_NAMES_RU = {
+    "name": "Изменено имя",
+    "company": "Изменена компания",
+    "email": "Изменен email",
+    "phone": "Изменен телефон",
+    "account": "Изменён расчетный счет",
+    "corr_account": "Изменён корр. счет",
+    "actual_address": "Изменён факт. адрес",
+    "legal_address": "Изменён юр. адрес",
+    "inn": "Изменён ИНН",
+    "kpp": "Изменён КПП",
+    "bik": "Изменён БИК",
+    "bank": "Изменён банк",
+    "notes": "Изменены примечания",
+}
 
 
 @router.post("/", response_model=ClientOut, status_code=status.HTTP_201_CREATED)
@@ -95,6 +113,7 @@ async def get_client_logs(
             id=log.id,
             action=log.action,
             description=log.description,
+            details=log.details,
             timestamp=log.timestamp,
             user_id=log.user_id,
             user_name=log.user.name if log.user else None,
@@ -116,20 +135,25 @@ async def update_client(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
-    changed = []
+
+    details = []
     for field, val in client_in.dict(exclude_unset=True).items():
         if getattr(client, field) != val:
-            changed.append(field)
+            ru = FIELD_NAMES_RU.get(field, field)
+            details.append(ru)
         setattr(client, field, val)
-    if changed:
+
+    if details:
         db.add(
             ClientChangeLog(
                 client_id=client_id,
                 user_id=user.id,
                 action="Обновление",
-                description="Изменены: " + ", ".join(changed),
+                description="Клиент обновлен",
+                details=details,
             )
         )
+
     await db.commit()
     await db.refresh(client)
     return client

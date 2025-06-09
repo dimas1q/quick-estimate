@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
-from app.schemas.item import EstimateItemOut, EstimateItemCreate
+from app.schemas.item import EstimateItemOut, EstimateItemCreate, EstimateItemUpdate
 from app.models.estimate import EstimateStatus
 from app.schemas.client import ClientOut
 
@@ -28,8 +28,24 @@ class EstimateCreate(EstimateBase):
         if not v:
             raise ValueError("Смета должна содержать хотя бы одну услугу")
         return v
-    
-    @validator('vat_rate')
+
+    @validator("vat_rate")
+    def check_vat_rate(cls, v):
+        if not isinstance(v, int) or v < 0 or v > 100:
+            raise ValueError("Ставка НДС должна быть целым числом от 0 до 100")
+        return v
+
+
+class EstimateUpdate(EstimateBase):
+    items: Optional[List[EstimateItemUpdate]] = []
+
+    @validator("items")
+    def must_have_at_least_one_item(cls, v):
+        if not v:
+            raise ValueError("Смета должна содержать хотя бы одну услугу")
+        return v
+
+    @validator("vat_rate")
     def check_vat_rate(cls, v):
         if not isinstance(v, int) or v < 0 or v > 100:
             raise ValueError("Ставка НДС должна быть целым числом от 0 до 100")
