@@ -23,13 +23,13 @@
               },
             ]">
               {{
-              {
-              draft: "Черновик",
-              sent: "Отправлена",
-              approved: "Согласована",
-              paid: "Оплачена",
-              cancelled: "Отменена",
-              }[estimate.status]
+                {
+                  draft: "Черновик",
+                  sent: "Отправлена",
+                  approved: "Согласована",
+                  paid: "Оплачена",
+                  cancelled: "Отменена",
+                }[estimate.status]
               }}
             </span>
           </h1>
@@ -128,8 +128,9 @@
       <div v-if="activeTab === 'details'">
         <!-- Краткая информация -->
         <div class="grid gap-4 text-sm text-gray-800 dark:text-gray-200 grid-cols-1 md:grid-cols-2">
-          <div class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2">
-            <div class="flex items-center gap-2 mt-2">
+          <div
+            class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col justify-center">
+            <div class="flex items-center gap-2">
               <LucideUser class="w-5 h-5 text-blue-500" />
               <span><span class="font-semibold">Клиент: </span>
                 <RouterLink :to="`/clients/${estimate.client.id}`" class="text-blue-700 hover:underline">
@@ -137,19 +138,20 @@
                 </RouterLink>
               </span>
             </div>
-            <div v-if="estimate.event_datetime" class="flex items-center gap-2">
-              <LucideCalendar class="w-5 h-5 text-yellow-500" />
-              <span><span class="font-semibold">Дата и время: </span><span>{{
-                  new Date(estimate.event_datetime).toLocaleString()
-                  }}</span></span>
-            </div>
+
             <div class="flex items-center gap-2">
               <LucideUserCircle class="w-5 h-5 text-green-500" />
               <span><span class="font-semibold">Ответственный: </span><span>{{ estimate.responsible }}</span></span>
             </div>
+            <div v-if="estimate.event_datetime" class="flex items-center gap-2">
+              <LucideCalendar class="w-5 h-5 text-yellow-500" />
+              <span><span class="font-semibold">Дата и время: </span><span>{{
+                new Date(estimate.event_datetime).toLocaleString()
+                  }}</span></span>
+            </div>
             <div v-if="estimate.event_place" class="flex items-center gap-2">
               <LucideMapPin class="w-5 h-5 text-pink-500" />
-              <span><span class="font-semibold">Место: </span><span>{{ estimate.event_place }}</span></span>
+              <span><span class="font-semibold">Место проведения: </span><span>{{ estimate.event_place }}</span></span>
             </div>
             <div class="flex items-center gap-2">
               <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
@@ -356,17 +358,17 @@
                     <span class="font-semibold">{{ d.label }}:</span>
                     <span class="mx-1 text-gray-500 line-through">
                       {{
-                      isDate(d.old) && isDate(d.new)
-                      ? formatDate(d.old)
-                      : d.old
+                        isDate(d.old) && isDate(d.new)
+                          ? formatDate(d.old)
+                          : d.old
                       }}
                     </span>
                     <span class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold">
                       →
                       {{
-                      isDate(d.old) && isDate(d.new)
-                      ? formatDate(d.new)
-                      : d.new
+                        isDate(d.old) && isDate(d.new)
+                          ? formatDate(d.new)
+                          : d.new
                       }}
                     </span>
                   </li>

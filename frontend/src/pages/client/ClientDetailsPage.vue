@@ -52,8 +52,8 @@
         <div class="grid gap-4 text-sm text-gray-800 dark:text-gray-200 grid-cols-1 md:grid-cols-2">
           <!-- Левый блок -->
           <div
-            class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full ">
-            <div class="flex items-center mt-2">
+            class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col justify-center">
+            <div class="flex items-center">
               <LucideUserCircle class="w-5 h-5 text-blue-500 mr-2" />
               <span class="font-semibold mr-1">Контактное лицо:</span>
               <span>{{ client.name }}</span>
@@ -248,7 +248,7 @@ import {
   LucideMap,
   LucideWallet,
   LucideBookUser,
-  LucideScanBarcode,  
+  LucideScanBarcode,
   LucideBanknote,
   LucideFileText,
   LucideCalendar,
