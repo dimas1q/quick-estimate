@@ -61,7 +61,7 @@
                                 class="inline-flex items-center space-x-1">
                                 <input type="checkbox" :value="opt.value" v-model="filters.status"
                                     class="accent-blue-500 dark:accent-blue-400" />
-                                <span>{{ opt.label }}</span>
+                                <span class="">{{ opt.label }}</span>
                             </label>
                         </div>
                     </div>
@@ -103,7 +103,7 @@
                     class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-gray-50 dark:bg-qe-black3">
+                            <tr class="bg-gray-50 dark:bg-qe-black2">
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">
                                     Ответственный</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Количество
@@ -129,7 +129,7 @@
                 <div
                     class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 dark:bg-qe-black3">
+                        <thead class="bg-gray-50 dark:bg-qe-black2">
                             <tr>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Клиент</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Выручка
@@ -152,7 +152,7 @@
                 <div
                     class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 dark:bg-qe-black3">
+                        <thead class="bg-gray-50 dark:bg-qe-black2">
                             <tr>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Услуга</th>
                                 <th class="px-4 py-2 font-medium text-left text-gray-700 dark:text-gray-200">Выручка
@@ -172,7 +172,7 @@
         </section>
     </div>
 </template>
-  
+
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
@@ -214,7 +214,7 @@ const filters = reactive({
     clientId: null,
     status: [],
     vat_enabled: null,
-    categories_arr: [], 
+    categories_arr: [],
     start_date: '',
     end_date: '',
     granularity: 'month',

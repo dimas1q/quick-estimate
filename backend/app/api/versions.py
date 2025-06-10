@@ -1,19 +1,20 @@
 # backend/app/api/versions.py
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import func, delete
-from typing import List
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.utils.auth import get_current_user
+from app.models.client_changelog import ClientChangeLog
 from app.models.estimate import Estimate
-from app.models.version import EstimateVersion
-from app.schemas.version import VersionOut
-from app.schemas.estimate import EstimateOut
 from app.models.item import EstimateItem
+from app.models.version import EstimateVersion
+from app.schemas.estimate import EstimateOut
+from app.schemas.version import VersionOut
+from app.utils.auth import get_current_user
 
 router = APIRouter(
     tags=["versions"],
@@ -112,8 +113,17 @@ async def restore_version(
     db.add(
         EstimateChangeLog(
             estimate_id=estimate_id,
+            user_id=user.id,
             action="Восстановление",
             description=f"Восстановлена версия #{version}",
+        )
+    )
+    db.add(
+        ClientChangeLog(
+            client_id=est.client_id,
+            user_id=user.id,
+            action="Восстановление сметы",
+            description=f"Восстановлена версия #{version} для сметы {est.name}",
         )
     )
 

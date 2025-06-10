@@ -14,14 +14,17 @@
         </div>
 
         <div class="flex space-x-2 items-center">
-          <button @click="downloadJson" class="qe-btn-success">
-            Экспортировать
+          <button @click="downloadJson" class="qe-btn-success flex items-center">
+            <Download class="w-4 h-4 mr-1" />
+            <span>Экспортировать</span>
           </button>
-          <RouterLink :to="`/templates/${template.id}/edit`" class="qe-btn-warning">
-            Редактировать
+          <RouterLink :to="`/templates/${template.id}/edit`" class="qe-btn-warning flex items-center">
+            <LucidePencilLine class="w-4 h-4 mr-1" />
+            <span>Редактировать</span>
           </RouterLink>
-          <button @click="confirmDelete" class="qe-btn-danger">
-            Удалить
+          <button @click="confirmDelete" class="qe-btn-danger flex items-center">
+            <LucideTrash2 class="w-4 h-4 mr-1" />
+            <span>Удалить</span>
           </button>
         </div>
       </div>
@@ -108,7 +111,7 @@
 
     <QeModal v-model="showConfirm" @confirm="deleteTemplate">
       Вы уверены, что хотите удалить данный шаблон?
-      <template #confirm>Да, удалить</template>
+      <template #confirm>Удалить</template>
       <template #cancel>Отмена</template>
     </QeModal>
   </div>
@@ -125,6 +128,9 @@ import QeModal from '@/components/QeModal.vue'
 import {
   LucidePiggyBank,
   LucideReceipt,
+  LucideTrash2,
+  Download,
+  LucidePencilLine,
   LucideFolder
 
 } from 'lucide-vue-next'

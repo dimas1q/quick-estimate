@@ -1,16 +1,17 @@
+## backend/app/schemas/client_changelog.py
+
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import Optional, List, Union
 
 from pydantic import BaseModel
 
 
 class ChangeDetail(BaseModel):
     label: str
-    old: Optional[str] = None
-    new: Optional[str] = None
+    old: str
+    new: str
 
-
-class ChangeLogOut(BaseModel):
+class ClientChangeLogOut(BaseModel):
     id: int
     action: str
     description: str

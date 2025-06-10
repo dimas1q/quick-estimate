@@ -1,7 +1,6 @@
+# frontend/src/components/EstimateItemsEditor.vue
 <template>
   <div class="space-y-8">
-
-
     <!-- Категории -->
     <transition-group name="fade" tag="div" class="space-y-8">
       <div v-for="(cat, idx) in categories" :key="cat.id"
@@ -10,7 +9,7 @@
         <div class="flex items-center gap-3 mb-2">
           <input v-model="cat.name" placeholder="Название категории"
             class="flex-1 border-0 border-b dark:border-qe-black2 text-lg font-semibold bg-transparent focus:ring-0 focus:border-blue-400" />
-          <button @click="removeCategory(idx)" type="button" class="text-red-500 hover:text-red-700 text-sm">Удалить
+          <button @click="removeCategory(idx)" type="button" class="qe-btn-danger">Удалить
             категорию</button>
         </div>
 
@@ -25,11 +24,11 @@
             <div>Внеш. цена</div>
             <div>Итог (внутр.)</div>
             <div>Итог (внеш.)</div>
-            <div>Действие</div>
+            <div></div>
           </div>
 
           <transition-group name="fade" tag="div">
-            <div v-for="(item, itemIdx) in cat.items" :key="item.id" class="grid grid-cols-9 items-center py-1 gap-4">
+            <div v-for="(item, itemIdx) in cat.items" :key="itemIdx" class="grid grid-cols-9 items-center py-1 gap-4">
               <input v-model="item.name" class="qe-input-sm" placeholder="Название" />
               <input v-model="item.description" class="qe-input-sm" placeholder="Описание" />
               <input type="number" min="0" step="any" v-model.number="item.quantity" class="qe-input-sm"
@@ -94,7 +93,8 @@
 
 
     <!-- Итоги по всем категориям -->
-    <div v-if="categories.some(cat => (cat.items && cat.items.length > 0)) && props.showSummary"  class="pt-6 border-t dark:border-qe-black2">
+    <div v-if="categories.some(cat => (cat.items && cat.items.length > 0)) && props.showSummary"
+      class="pt-6 border-t dark:border-qe-black2">
       <p class="text-right font-semibold text-lg">
         Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
       </p>
@@ -148,7 +148,7 @@ onMounted(() => {
       for (const item of props.modelValue) {
         const cat = (item.category || 'Без категории').trim()
         if (!groups[cat]) groups[cat] = []
-        groups[cat].push({ ...item, id: Date.now() + Math.random() })
+        groups[cat].push({ ...item })
       }
       categories.value = Object.entries(groups).map(([name, items]) => ({
         id: Date.now() + Math.random(),
@@ -167,7 +167,7 @@ watch(categories, () => {
 // Категории/услуги
 function addCategory() {
   categories.value.push({
-    id: Date.now() + Math.random(),
+    id: 'cat_' + Date.now() + Math.random(),
     name: '',
     items: [],
   })
@@ -177,7 +177,6 @@ function removeCategory(idx) {
 }
 function addItem(catIdx) {
   categories.value[catIdx].items.push({
-    id: Date.now() + Math.random(),
     name: '',
     description: '',
     quantity: 1,
@@ -234,10 +233,10 @@ function applyTemplate() {
         }
         categories.value.push(cat)
       }
-      cat.items.push(...tplCat.items.map(item => ({
-        ...item,
-        id: Date.now() + Math.random()
-      })))
+      cat.items.push(...tplCat.items.map(item => {
+        const { id, ...rest } = item
+        return rest // Копируем без id
+      }))
     }
 
     // Сброс селектора
@@ -253,7 +252,7 @@ function getTemplateCategories(template) {
   for (const item of template.items) {
     const cat = (item.category || 'Без категории').trim()
     if (!groups[cat]) groups[cat] = []
-    groups[cat].push({ ...item, id: Date.now() + Math.random() })
+    groups[cat].push({ ...item })
   }
   return Object.entries(groups).map(([name, items]) => ({
     name,
@@ -263,4 +262,3 @@ function getTemplateCategories(template) {
 
 
 </script>
-

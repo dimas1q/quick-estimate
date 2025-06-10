@@ -211,7 +211,7 @@ async function toggleFavorite(estimate) {
             </router-link>
           </div>
           <div v-if="filteredEstimates.length === 0"
-            class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded py-8">
+            class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             <p>Сметы отсутствуют.</p>
           </div>
         </template>
