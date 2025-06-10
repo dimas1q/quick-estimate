@@ -15,7 +15,7 @@ const store = useTemplatesStore()
 const filters = ref({
   name: ''
 })
-const limit = ref(10)
+const limit = ref(5)
 const offset = ref(0)
 
 onMounted(async () => {

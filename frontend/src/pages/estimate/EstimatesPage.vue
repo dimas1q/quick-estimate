@@ -29,7 +29,7 @@ const filters = ref({
   date_from: '',
   date_to: ''
 })
-const limit = ref(10)
+const limit = ref(5)
 const offset = ref(0)
 
 const estimatesStore = useEstimatesStore()

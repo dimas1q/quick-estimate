@@ -28,7 +28,7 @@ async def list_versions(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
-    limit: int = Query(15, ge=1),
+    limit: int = Query(10, ge=1),
     offset: int = Query(0, ge=0),
 ):
     # проверяем, что смета принадлежит пользователю

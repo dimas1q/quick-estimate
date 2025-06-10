@@ -55,7 +55,7 @@ async def list_templates(
     name: str = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
-    limit: int = Query(10, ge=1),
+    limit: int = Query(5, ge=1),
     offset: int = Query(0, ge=0),
 ):
     query = (

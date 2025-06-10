@@ -110,7 +110,7 @@ async def list_estimates(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     favorite: Optional[bool] = Query(None),
-    limit: int = Query(10, ge=1),
+    limit: int = Query(5, ge=1),
     offset: int = Query(0, ge=0),
 ):
 
@@ -219,7 +219,7 @@ async def get_logs(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
-    limit: int = Query(15, ge=1),
+    limit: int = Query(10, ge=1),
     offset: int = Query(0, ge=0),
 ):
     # Load the estimate and check access

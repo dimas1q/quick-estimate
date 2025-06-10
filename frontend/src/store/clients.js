@@ -5,7 +5,7 @@ export const useClientsStore = defineStore("clients", {
   state: () => ({
     clients: [],
     total: 0,
-    limit: 10,
+    limit: 5,
     offset: 0,
   }),
   actions: {

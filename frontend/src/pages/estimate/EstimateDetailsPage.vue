@@ -495,10 +495,10 @@ const estimate = ref(null);
 const logs = ref([]);
 const versions = ref([]);
 const logsTotal = ref(0);
-const logLimit = ref(15);
+const logLimit = ref(10);
 const logOffset = ref(0);
 const versionsTotal = ref(0);
-const versionLimit = ref(15);
+const versionLimit = ref(10);
 const versionOffset = ref(0);
 const error = ref(null);
 

@@ -5,7 +5,7 @@ export const useEstimatesStore = defineStore('estimates', {
   state: () => ({
     estimates: [],
     total: 0,
-    limit: 10,
+    limit: 5,
     offset: 0,
     copiedEstimate: null,
     importedEstimate: null

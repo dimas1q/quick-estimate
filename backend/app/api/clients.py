@@ -65,7 +65,7 @@ async def list_clients(
     company: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
-    limit: int = Query(10, ge=1),
+    limit: int = Query(5, ge=1),
     offset: int = Query(0, ge=0),
 ):
     base = select(Client).where(Client.user_id == user.id)
@@ -102,7 +102,7 @@ async def get_client_logs(
     client_id: int,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
-    limit: int = Query(15, ge=1),
+    limit: int = Query(10, ge=1),
     offset: int = Query(0, ge=0),
 ):
     result = await db.execute(

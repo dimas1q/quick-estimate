@@ -9,7 +9,7 @@ const filters = ref({
   name: '',
   company: ''
 })
-const limit = ref(10)
+const limit = ref(5)
 const offset = ref(0)
 
 onMounted(async () => {

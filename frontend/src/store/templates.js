@@ -6,7 +6,7 @@ export const useTemplatesStore = defineStore('templates', {
   state: () => ({
     templates: [],
     total: 0,
-    limit: 10,
+    limit: 5,
     offset: 0,
     importedTemplate: null
   }),
