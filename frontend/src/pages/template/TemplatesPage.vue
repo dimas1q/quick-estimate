@@ -3,11 +3,14 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useTemplatesStore } from '@/store/templates'
+import QePagination from '@/components/QePagination.vue'
 
 const fileInput = ref(null)
 const router = useRouter()
 const toast = useToast()
 const isLoading = ref(true)
+const page = ref(1)
+const limit = ref(20)
 
 const store = useTemplatesStore()
 
@@ -15,24 +18,40 @@ const filters = ref({
   name: ''
 })
 
-onMounted(async () => {
+async function loadData() {
   isLoading.value = true
-  await store.fetchTemplates()
+  const params = {
+    limit: limit.value,
+    offset: (page.value - 1) * limit.value,
+    name: filters.value.name || undefined
+  }
+  await store.fetchTemplates(params)
   isLoading.value = false
-})
+}
+
+onMounted(loadData)
 
 async function applyFilters() {
-  isLoading.value = true
-  const query = { name: filters.value.name }
-  await store.fetchTemplates(query)
-  isLoading.value = false
+  page.value = 1
+  await loadData()
 }
 
 async function resetFilters() {
   isLoading.value = true
   filters.value.name = ''
-  await store.fetchTemplates()
-  isLoading.value = false
+  page.value = 1
+  await loadData()
+}
+
+async function changePage(p) {
+  page.value = p
+  await loadData()
+}
+
+async function changeLimit(l) {
+  limit.value = l
+  page.value = 1
+  await loadData()
 }
 
 function triggerFileInput() {
@@ -127,6 +146,13 @@ function isValidTemplate(template) {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             <p>Шаблоны смет отсутствуют.</p>
           </div>
+          <QePagination
+            :total="store.pagination.total"
+            :limit="limit"
+            :offset="store.pagination.offset"
+            @update:page="changePage"
+            @update:limit="changeLimit"
+          />
         </template>
       </div>
       <!-- Правая панель: кнопки и фильтры -->

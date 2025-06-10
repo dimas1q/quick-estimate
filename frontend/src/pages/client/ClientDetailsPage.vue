@@ -155,6 +155,13 @@
             </div>
           </div>
         </div>
+        <QePagination
+          :total="estimatesPagination.total"
+          :limit="estimatesPagination.limit"
+          :offset="estimatesPagination.offset"
+          @update:page="changeEstPage"
+          @update:limit="changeEstLimit"
+        />
         <div v-else
           class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
           <LucideAlertCircle class="w-5 h-5 text-yellow-400 inline-block mr-1" />
@@ -217,6 +224,14 @@
             </transition>
           </div>
         </div>
+        <QePagination
+          :total="logsPagination.total"
+          :limit="logsPagination.limit"
+          :offset="logsPagination.offset"
+          @update:page="changeLogPage"
+          @update:limit="changeLogLimit"
+          :show-limit="false"
+        />
         <div v-else class="text-gray-500">Записей нет.</div>
       </div>
     </div>
@@ -236,6 +251,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useClientsStore } from "@/store/clients";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
+import QePagination from "@/components/QePagination.vue";
 
 import {
   LucideUserRound,
@@ -265,6 +281,8 @@ const router = useRouter();
 const client = ref(null);
 const estimates = ref([]);
 const logs = ref([]);
+const estimatesPagination = ref({ total: 0, limit: 20, offset: 0 });
+const logsPagination = ref({ total: 0, limit: 10, offset: 0 });
 const activeTab = ref("details");
 const showConfirm = ref(false);
 const store = useClientsStore();
@@ -272,12 +290,23 @@ const toast = useToast();
 const showDetails = ref({})
 
 onMounted(async () => {
-  const { client: c, estimates: e } = await store.getClientWithEstimates(
+  const { client: c, estimates: e, pagination: p } = await store.getClientWithEstimates(
     route.params.id,
+    {
+      limit: estimatesPagination.value.limit,
+      offset: estimatesPagination.value.offset,
+    }
   );
   client.value = c;
   estimates.value = e;
-  logs.value = await store.getClientLogs(route.params.id);
+  estimatesPagination.value = p;
+
+  const logsRes = await store.getClientLogs(route.params.id, {
+    limit: logsPagination.value.limit,
+    offset: logsPagination.value.offset,
+  });
+  logs.value = logsRes.items;
+  logsPagination.value = logsRes.meta;
 });
 
 function confirmDelete() {
@@ -300,5 +329,37 @@ async function deleteClient() {
       toast.error("Ошибка удаления клиента");
     }
   }
+}
+
+async function changeEstPage(p) {
+  estimatesPagination.value.offset = (p - 1) * estimatesPagination.value.limit
+  const { estimates: e, pagination: pinfo } = await store.getClientWithEstimates(route.params.id, {
+    limit: estimatesPagination.value.limit,
+    offset: estimatesPagination.value.offset,
+  })
+  estimates.value = e
+  estimatesPagination.value = pinfo
+}
+
+async function changeEstLimit(l) {
+  estimatesPagination.value.limit = l
+  estimatesPagination.value.offset = 0
+  await changeEstPage(1)
+}
+
+async function changeLogPage(p) {
+  logsPagination.value.offset = (p - 1) * logsPagination.value.limit
+  const res = await store.getClientLogs(route.params.id, {
+    limit: logsPagination.value.limit,
+    offset: logsPagination.value.offset,
+  })
+  logs.value = res.items
+  logsPagination.value = res.meta
+}
+
+async function changeLogLimit(l) {
+  logsPagination.value.limit = l
+  logsPagination.value.offset = 0
+  await changeLogPage(1)
 }
 </script>

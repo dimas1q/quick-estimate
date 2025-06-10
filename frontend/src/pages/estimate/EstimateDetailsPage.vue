@@ -375,6 +375,14 @@
               </transition>
             </div>
           </div>
+          <QePagination
+            :total="logsPagination.total"
+            :limit="logsPagination.limit"
+            :offset="logsPagination.offset"
+            @update:page="p => { logsPagination.offset = (p - 1) * logsPagination.limit; changeLogsPage(p); }"
+            @update:limit="l => { logsPagination.limit = l; logsPagination.offset = 0; changeLogsLimit(l); }"
+            :show-limit="false"
+          />
         </div>
 
         <div v-if="versions.length" class="mt-2 pt-6 text-sm">
@@ -416,6 +424,14 @@
               </tbody>
             </table>
           </div>
+          <QePagination
+            :total="versionsPagination.total"
+            :limit="versionsPagination.limit"
+            :offset="versionsPagination.offset"
+            @update:page="p => { versionsPagination.offset = (p - 1) * versionsPagination.limit; changeVersPage(p); }"
+            @update:limit="l => { versionsPagination.limit = l; versionsPagination.offset = 0; changeVersLimit(l); }"
+            :show-limit="false"
+          />
         </div>
       </div>
     </div>
@@ -435,6 +451,7 @@ import { useEstimatesStore } from "@/store/estimates";
 import { onClickOutside } from "@vueuse/core";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
+import QePagination from "@/components/QePagination.vue";
 import fileDownload from "js-file-download";
 
 import {
@@ -483,6 +500,8 @@ const showConfirm = ref(false);
 const estimate = ref(null);
 const logs = ref([]);
 const versions = ref([]);
+const logsPagination = ref({ total: 0, limit: 10, offset: 0 });
+const versionsPagination = ref({ total: 0, limit: 10, offset: 0 });
 const error = ref(null);
 
 const activeTab = ref("details");
@@ -510,8 +529,19 @@ async function loadAll() {
       estimate.value = await store.getEstimateById(id);
     }
 
-    logs.value = await store.getEstimateLogs(id);
-    versions.value = await store.getEstimateVersions(id);
+    const logsRes = await store.getEstimateLogs(id, {
+      limit: logsPagination.value.limit,
+      offset: logsPagination.value.offset,
+    });
+    logs.value = logsRes.items;
+    logsPagination.value = logsRes.meta;
+
+    const versRes = await store.getEstimateVersions(id, {
+      limit: versionsPagination.value.limit,
+      offset: versionsPagination.value.offset,
+    });
+    versions.value = versRes.items;
+    versionsPagination.value = versRes.meta;
     error.value = null;
   } catch (e) {
     if (e.response?.status === 404) error.value = "❌ Смета не найдена.";
@@ -677,6 +707,28 @@ async function deleteVersion(version) {
     console.error(err);
     toast.error("Не удалось удалить версию");
   }
+}
+
+async function changeLogsPage(p) {
+  logsPagination.value.offset = (p - 1) * logsPagination.value.limit
+  await loadAll()
+}
+
+async function changeLogsLimit(l) {
+  logsPagination.value.limit = l
+  logsPagination.value.offset = 0
+  await loadAll()
+}
+
+async function changeVersPage(p) {
+  versionsPagination.value.offset = (p - 1) * versionsPagination.value.limit
+  await loadAll()
+}
+
+async function changeVersLimit(l) {
+  versionsPagination.value.limit = l
+  versionsPagination.value.offset = 0
+  await loadAll()
 }
 </script>
 

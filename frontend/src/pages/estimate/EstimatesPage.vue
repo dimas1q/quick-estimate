@@ -7,6 +7,7 @@ import { useClientsStore } from '@/store/clients'
 import { Star } from 'lucide-vue-next'
 
 import QeDatePicker from '@/components/QeDatePicker.vue'
+import QePagination from '@/components/QePagination.vue'
 
 function formatDateToYYYYMMDD(date) {
   if (!date) return ''
@@ -22,6 +23,8 @@ const toast = useToast()
 const isLoading = ref(true)
 const viewMode = ref('my')
 const fileInput = ref(null)
+const page = ref(1)
+const limit = ref(20)
 const filters = ref({
   name: '',
   client: '',
@@ -41,12 +44,28 @@ const filteredEstimates = computed(() => {
   return estimatesStore.estimates
 })
 
-onMounted(async () => {
+async function loadData() {
   isLoading.value = true
-  await clientsStore.fetchClients()
-  await estimatesStore.fetchEstimates()
+  if (clientsStore.clients.length === 0) {
+    await clientsStore.fetchClients()
+  }
+  const params = {
+    limit: limit.value,
+    offset: (page.value - 1) * limit.value,
+    name: filters.value.name || undefined,
+    client: filters.value.client ? Number(filters.value.client) : undefined,
+    date_from: filters.value.date_from
+      ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z'
+      : undefined,
+    date_to: filters.value.date_to
+      ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z'
+      : undefined
+  }
+  await estimatesStore.fetchEstimates(params)
   isLoading.value = false
-})
+}
+
+onMounted(loadData)
 
 const format = (date) => {
   if (!date) return ''
@@ -59,14 +78,8 @@ const format = (date) => {
 
 async function applyFilters() {
   isLoading.value = true
-  const query = {
-    name: filters.value.name,
-    client: filters.value.client ? Number(filters.value.client) : undefined,
-    date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : undefined,
-    date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : undefined
-  }
-  await estimatesStore.fetchEstimates(query)
-  isLoading.value = false
+  page.value = 1
+  await loadData()
 }
 
 async function resetFilters() {
@@ -77,8 +90,8 @@ async function resetFilters() {
     date_from: '',
     date_to: ''
   }
-  await estimatesStore.fetchEstimates()
-  isLoading.value = false
+  page.value = 1
+  await loadData()
 }
 
 function triggerFileInput() {
@@ -155,6 +168,17 @@ async function toggleFavorite(estimate) {
     toast.error('Ошибка при изменении избранного')
   }
 }
+
+async function changePage(p) {
+  page.value = p
+  await loadData()
+}
+
+async function changeLimit(l) {
+  limit.value = l
+  page.value = 1
+  await loadData()
+}
 </script>
 
 <template>
@@ -214,6 +238,13 @@ async function toggleFavorite(estimate) {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             <p>Сметы отсутствуют.</p>
           </div>
+          <QePagination
+            :total="estimatesStore.pagination.total"
+            :limit="limit"
+            :offset="estimatesStore.pagination.offset"
+            @update:page="changePage"
+            @update:limit="changeLimit"
+          />
         </template>
       </div>
 

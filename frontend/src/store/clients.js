@@ -4,26 +4,28 @@ import axios from "@/lib/axios";
 export const useClientsStore = defineStore("clients", {
   state: () => ({
     clients: [],
+    pagination: { total: 0, limit: 20, offset: 0 },
   }),
   actions: {
     async fetchClients(params = {}) {
       const res = await axios.get("/clients/", { params });
-      this.clients = res.data;
+      this.clients = res.data.items;
+      this.pagination = res.data.meta;
     },
     async getClientById(id) {
       const res = await axios.get(`/clients/${id}`);
       return res.data;
     },
-    async getClientWithEstimates(id) {
+    async getClientWithEstimates(id, params = {}) {
       const resClient = await axios.get(`/clients/${id}`);
       const client = resClient.data;
 
       const resEstimates = await axios.get("/estimates/", {
-        params: { client: client.id },
+        params: { client: client.id, ...params },
       });
-      const estimates = resEstimates.data;
+      const { items, meta } = resEstimates.data;
 
-      return { client, estimates };
+      return { client, estimates: items, pagination: meta };
     },
     async createClient(data) {
       const res = await axios.post("/clients/", data);
@@ -40,8 +42,8 @@ export const useClientsStore = defineStore("clients", {
       await this.fetchClients();
     },
 
-    async getClientLogs(id) {
-      const res = await axios.get(`/clients/${id}/logs`);
+    async getClientLogs(id, params = {}) {
+      const res = await axios.get(`/clients/${id}/logs`, { params });
       return res.data;
     },
   },

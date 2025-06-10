@@ -120,6 +120,13 @@ select.qe-input-sm {
   @apply w-full text-sm border-collapse rounded-xl overflow-hidden bg-white dark:bg-qe-black;
 }
 
+.qe-pagination-btn {
+  @apply px-3 py-1 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition disabled:opacity-50 disabled:pointer-events-none;
+}
+.qe-pagination-btn-active {
+  @apply bg-blue-600 text-white hover:bg-blue-600;
+}
+
 .qe-table-th {
   @apply px-4 py-2 font-medium text-gray-700 dark:text-gray-200;
 }

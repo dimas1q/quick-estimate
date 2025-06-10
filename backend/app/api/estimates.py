@@ -21,6 +21,7 @@ from app.models.item import EstimateItem
 from app.models.user import User
 from app.models.version import EstimateVersion
 from app.schemas.changelog import ChangeLogOut
+from app.schemas.pagination import Paginated
 from app.schemas.estimate import EstimateCreate, EstimateOut, EstimateUpdate
 from app.utils.auth import get_current_user
 from app.utils.excel import generate_excel
@@ -100,7 +101,7 @@ async def create_estimate(
     return result.scalar_one()
 
 
-@router.get("/", response_model=List[EstimateOut])
+@router.get("/", response_model=Paginated[EstimateOut])
 async def list_estimates(
     name: str = Query(None),
     client: Optional[int] = Query(None),  # Change type to Optional[int]
@@ -109,6 +110,8 @@ async def list_estimates(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     favorite: Optional[bool] = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
 ):
 
     query = (
@@ -137,7 +140,11 @@ async def list_estimates(
     if favorite:
         query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
 
-    result = await db.execute(query.order_by(Estimate.id.desc()))
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+
+    result = await db.execute(
+        query.order_by(Estimate.id.desc()).limit(limit).offset(offset)
+    )
 
     estimates = result.scalars().all()
 
@@ -150,7 +157,10 @@ async def list_estimates(
     for estimate in estimates:
         estimate.is_favorite = estimate.id in favorite_ids
 
-    return estimates
+    return {
+        "items": estimates,
+        "meta": {"total": total, "limit": limit, "offset": offset},
+    }
 
 
 @router.get("/{estimate_id}", response_model=EstimateOut)
@@ -181,11 +191,13 @@ async def get_estimate(
     return estimate
 
 
-@router.get("/{estimate_id}/logs", response_model=List[ChangeLogOut])
+@router.get("/{estimate_id}/logs", response_model=Paginated[ChangeLogOut])
 async def get_logs(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
 ):
     # Load the estimate and check access
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
@@ -197,14 +209,19 @@ async def get_logs(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     # Fetch and return logs
-    result = await db.execute(
+    base_q = (
         select(EstimateChangeLog)
         .options(selectinload(EstimateChangeLog.user))
         .where(EstimateChangeLog.estimate_id == estimate_id)
-        .order_by(EstimateChangeLog.timestamp.asc())
     )
 
-    return [
+    total = await db.scalar(select(func.count()).select_from(base_q.subquery()))
+
+    result = await db.execute(
+        base_q.order_by(EstimateChangeLog.timestamp.asc()).limit(limit).offset(offset)
+    )
+
+    items = [
         ChangeLogOut(
             id=log.id,
             action=log.action,
@@ -216,6 +233,8 @@ async def get_logs(
         )
         for log in result.scalars().all()
     ]
+
+    return {"items": items, "meta": {"total": total, "limit": limit, "offset": offset}}
 
 
 @router.get("/{estimate_id}/export/pdf")

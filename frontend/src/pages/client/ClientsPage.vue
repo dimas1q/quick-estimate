@@ -1,35 +1,52 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useClientsStore } from '@/store/clients'
+import QePagination from '@/components/QePagination.vue'
 
 const store = useClientsStore()
 const isLoading = ref(true)
+const page = ref(1)
+const limit = ref(20)
 const filters = ref({
   name: '',
   company: ''
 })
 
-onMounted(async () => {
+async function loadData() {
   isLoading.value = true
-  await store.fetchClients()
+  const params = {
+    limit: limit.value,
+    offset: (page.value - 1) * limit.value,
+    name: filters.value.name || undefined,
+    company: filters.value.company || undefined
+  }
+  await store.fetchClients(params)
   isLoading.value = false
-})
+}
+
+onMounted(loadData)
 
 async function applyFilters() {
-  isLoading.value = true
-  const query = {
-    name: filters.value.name,
-    company: filters.value.company
-  }
-  await store.fetchClients(query)
-  isLoading.value = false
+  page.value = 1
+  await loadData()
 }
 
 async function resetFilters() {
   isLoading.value = true
   filters.value = { name: '', company: '' }
-  await store.fetchClients()
-  isLoading.value = false
+  page.value = 1
+  await loadData()
+}
+
+async function changePage(p) {
+  page.value = p
+  await loadData()
+}
+
+async function changeLimit(l) {
+  limit.value = l
+  page.value = 1
+  await loadData()
 }
 </script>
 
@@ -65,6 +82,13 @@ async function resetFilters() {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             Клиенты отсутствуют.
           </div>
+          <QePagination
+            :total="store.pagination.total"
+            :limit="limit"
+            :offset="store.pagination.offset"
+            @update:page="changePage"
+            @update:limit="changeLimit"
+          />
         </template>
       </div>
 
