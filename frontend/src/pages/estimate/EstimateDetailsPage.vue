@@ -375,6 +375,12 @@
               </transition>
             </div>
           </div>
+          <QePagination
+            :total="logTotal"
+            :per-page="10"
+            :page="logPage"
+            @update:page="changeLogPage"
+            class="mt-2" />
         </div>
 
         <div v-if="versions.length" class="mt-2 pt-6 text-sm">
@@ -416,6 +422,12 @@
               </tbody>
             </table>
           </div>
+          <QePagination
+            :total="versionTotal"
+            :per-page="10"
+            :page="versionPage"
+            @update:page="changeVersionPage"
+            class="mt-2" />
         </div>
       </div>
     </div>
@@ -435,6 +447,7 @@ import { useEstimatesStore } from "@/store/estimates";
 import { onClickOutside } from "@vueuse/core";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
+import QePagination from "@/components/QePagination.vue";
 import fileDownload from "js-file-download";
 
 import {
@@ -483,6 +496,10 @@ const showConfirm = ref(false);
 const estimate = ref(null);
 const logs = ref([]);
 const versions = ref([]);
+const logTotal = ref(0);
+const versionTotal = ref(0);
+const logPage = ref(1);
+const versionPage = ref(1);
 const error = ref(null);
 
 const activeTab = ref("details");
@@ -510,8 +527,15 @@ async function loadAll() {
       estimate.value = await store.getEstimateById(id);
     }
 
-    logs.value = await store.getEstimateLogs(id);
-    versions.value = await store.getEstimateVersions(id);
+    logPage.value = 1;
+    versionPage.value = 1;
+
+    const logRes = await store.getEstimateLogs(id, { page: logPage.value, limit: 10 });
+    logs.value = logRes.items;
+    logTotal.value = logRes.total;
+    const verRes = await store.getEstimateVersions(id, { page: versionPage.value, limit: 10 });
+    versions.value = verRes.items;
+    versionTotal.value = verRes.total;
     error.value = null;
   } catch (e) {
     if (e.response?.status === 404) error.value = "❌ Смета не найдена.";
@@ -544,6 +568,20 @@ onClickOutside(menuRef, () => {
 
 function confirmDelete() {
   showConfirm.value = true;
+}
+
+async function changeLogPage(p) {
+  logPage.value = p;
+  const res = await store.getEstimateLogs(route.params.id, { page: p, limit: 10 });
+  logs.value = res.items;
+  logTotal.value = res.total;
+}
+
+async function changeVersionPage(p) {
+  versionPage.value = p;
+  const res = await store.getEstimateVersions(route.params.id, { page: p, limit: 10 });
+  versions.value = res.items;
+  versionTotal.value = res.total;
 }
 
 async function copyEstimate() {

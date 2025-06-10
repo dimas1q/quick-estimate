@@ -5,13 +5,15 @@ import axios from '@/lib/axios'
 export const useTemplatesStore = defineStore('templates', {
   state: () => ({
     templates: [],
+    total: 0,
     importedTemplate: null
   }),
 
   actions: {
     async fetchTemplates(params = {}) {
       const res = await axios.get('/templates/', { params })
-      this.templates = res.data
+      this.templates = res.data.items
+      this.total = res.data.total
     },
 
     async createTemplate(data) {

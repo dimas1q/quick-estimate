@@ -14,6 +14,7 @@ from app.models.client_changelog import ClientChangeLog
 from app.models.estimate import Estimate
 from app.models.user import User
 from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
+from app.schemas.paginated import Paginated
 from app.schemas.client_changelog import ClientChangeLogOut
 from app.utils.auth import get_current_user
 
@@ -58,21 +59,33 @@ async def create_client(
     return new
 
 
-@router.get("/", response_model=List[ClientOut])
+@router.get("/", response_model=Paginated[ClientOut])
 async def list_clients(
     name: Optional[str] = Query(None),
     company: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    q = select(Client).where(Client.user_id == user.id)
+    filters = [Client.user_id == user.id]
     if name:
-        q = q.where(Client.name.ilike(f"%{name}%"))
+        filters.append(Client.name.ilike(f"%{name}%"))
     if company:
-        q = q.where(Client.company.ilike(f"%{company}%"))
-    q = q.order_by(Client.name)
+        filters.append(Client.company.ilike(f"%{company}%"))
+
+    count_q = select(func.count()).select_from(Client).where(*filters)
+    total = await db.scalar(count_q)
+
+    q = (
+        select(Client)
+        .where(*filters)
+        .order_by(Client.name)
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
     result = await db.execute(q)
-    return result.scalars().all()
+    return {"items": result.scalars().all(), "total": total}
 
 
 @router.get("/{client_id}", response_model=ClientOut)
@@ -90,9 +103,11 @@ async def get_client(
     return client
 
 
-@router.get("/{client_id}/logs", response_model=List[ClientChangeLogOut])
+@router.get("/{client_id}/logs", response_model=Paginated[ClientChangeLogOut])
 async def get_client_logs(
     client_id: int,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -102,13 +117,20 @@ async def get_client_logs(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
+    count_q = select(func.count()).select_from(ClientChangeLog).where(
+        ClientChangeLog.client_id == client_id
+    )
+    total = await db.scalar(count_q)
+
     q = await db.execute(
         select(ClientChangeLog)
         .options(selectinload(ClientChangeLog.user))
         .where(ClientChangeLog.client_id == client_id)
         .order_by(ClientChangeLog.timestamp.asc())
+        .offset((page - 1) * limit)
+        .limit(limit)
     )
-    return [
+    items = [
         ClientChangeLogOut(
             id=log.id,
             action=log.action,
@@ -120,6 +142,7 @@ async def get_client_logs(
         )
         for log in q.scalars().all()
     ]
+    return {"items": items, "total": total}
 
 
 @router.put("/{client_id}", response_model=ClientOut)

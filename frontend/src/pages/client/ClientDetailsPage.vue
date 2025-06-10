@@ -154,6 +154,12 @@
               </span>
             </div>
           </div>
+          <QePagination
+            :total="estimatesTotal"
+            :per-page="5"
+            :page="estimatesPage"
+            @update:page="changeEstimatesPage"
+            class="col-span-full mt-4" />
         </div>
         <div v-else
           class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
@@ -216,6 +222,12 @@
               </ul>
             </transition>
           </div>
+          <QePagination
+            :total="logTotal"
+            :per-page="10"
+            :page="logPage"
+            @update:page="changeLogPage"
+            class="mt-2" />
         </div>
         <div v-else class="text-gray-500">Записей нет.</div>
       </div>
@@ -258,13 +270,18 @@ import {
   LucideTrash2,
   LucideChevronDown
 } from "lucide-vue-next";
+import QePagination from "@/components/QePagination.vue";
 
 
 const route = useRoute();
 const router = useRouter();
 const client = ref(null);
 const estimates = ref([]);
+const estimatesTotal = ref(0);
+const estimatesPage = ref(1);
 const logs = ref([]);
+const logTotal = ref(0);
+const logPage = ref(1);
 const activeTab = ref("details");
 const showConfirm = ref(false);
 const store = useClientsStore();
@@ -272,12 +289,16 @@ const toast = useToast();
 const showDetails = ref({})
 
 onMounted(async () => {
-  const { client: c, estimates: e } = await store.getClientWithEstimates(
+  const { client: c, estimates: e, total } = await store.getClientWithEstimates(
     route.params.id,
+    { page: estimatesPage.value, limit: 5 }
   );
   client.value = c;
   estimates.value = e;
-  logs.value = await store.getClientLogs(route.params.id);
+  estimatesTotal.value = total;
+  const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
+  logs.value = logRes.items;
+  logTotal.value = logRes.total;
 });
 
 function confirmDelete() {
@@ -286,6 +307,20 @@ function confirmDelete() {
 
 function toggleDetails(id) {
   showDetails.value[id] = !showDetails.value[id]
+}
+
+async function changeEstimatesPage(p) {
+  estimatesPage.value = p
+  const res = await store.getClientWithEstimates(route.params.id, { page: p, limit: 5 })
+  estimates.value = res.estimates
+  estimatesTotal.value = res.total
+}
+
+async function changeLogPage(p) {
+  logPage.value = p
+  const res = await store.getClientLogs(route.params.id, { page: p, limit: 10 })
+  logs.value = res.items
+  logTotal.value = res.total
 }
 
 async function deleteClient() {

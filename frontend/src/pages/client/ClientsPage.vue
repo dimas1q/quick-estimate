@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useClientsStore } from '@/store/clients'
+import QePagination from '@/components/QePagination.vue'
 
 const store = useClientsStore()
 const isLoading = ref(true)
@@ -9,9 +10,15 @@ const filters = ref({
   company: ''
 })
 
+const perPage = 5
+const currentPage = ref(1)
+const currentFilters = ref({})
+const totalClients = computed(() => store.total)
+
 onMounted(async () => {
   isLoading.value = true
-  await store.fetchClients()
+  await store.fetchClients({ page: currentPage.value, limit: perPage })
+  currentFilters.value = {}
   isLoading.value = false
 })
 
@@ -21,15 +28,25 @@ async function applyFilters() {
     name: filters.value.name,
     company: filters.value.company
   }
-  await store.fetchClients(query)
+  currentFilters.value = query
+  currentPage.value = 1
+  await store.fetchClients({ ...query, page: currentPage.value, limit: perPage })
   isLoading.value = false
 }
 
 async function resetFilters() {
   isLoading.value = true
   filters.value = { name: '', company: '' }
-  await store.fetchClients()
+  currentFilters.value = {}
+  currentPage.value = 1
+  await store.fetchClients({ page: currentPage.value, limit: perPage })
   isLoading.value = false
+}
+
+async function changePage(p) {
+  currentPage.value = p
+  await store.fetchClients({ ...currentFilters.value, page: p, limit: perPage })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
 
@@ -65,6 +82,12 @@ async function resetFilters() {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             Клиенты отсутствуют.
           </div>
+          <QePagination
+            :total="totalClients"
+            :per-page="perPage"
+            :page="currentPage"
+            @update:page="changePage"
+            class="mt-4" />
         </template>
       </div>
 

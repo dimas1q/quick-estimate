@@ -4,6 +4,7 @@ import axios from '@/lib/axios'
 export const useEstimatesStore = defineStore('estimates', {
   state: () => ({
     estimates: [],
+    total: 0,
     copiedEstimate: null,
     importedEstimate: null
   }),
@@ -12,7 +13,8 @@ export const useEstimatesStore = defineStore('estimates', {
     
     async fetchEstimates(params = {}) {
       const res = await axios.get('/estimates/', { params })
-      this.estimates = res.data
+      this.estimates = res.data.items
+      this.total = res.data.total
     },
 
     async createEstimate(data) {
@@ -44,9 +46,9 @@ export const useEstimatesStore = defineStore('estimates', {
       return res.data
     },
 
-    async getEstimateVersions(estimateId) {
+    async getEstimateVersions(estimateId, params = {}) {
       const res = await axios.get('/versions/', {
-        params: { estimate_id: estimateId }
+        params: { estimate_id: estimateId, ...params }
       })
       return res.data
     },
@@ -104,8 +106,8 @@ export const useEstimatesStore = defineStore('estimates', {
       this.copiedEstimate = null
     },
 
-    getEstimateLogs: async function (id) {
-      const res = await axios.get(`/estimates/${id}/logs`)
+    getEstimateLogs: async function (id, params = {}) {
+      const res = await axios.get(`/estimates/${id}/logs`, { params })
       return res.data
     },
     async addFavorite(id) {

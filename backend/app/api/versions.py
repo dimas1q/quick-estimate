@@ -14,6 +14,7 @@ from app.models.item import EstimateItem
 from app.models.version import EstimateVersion
 from app.schemas.estimate import EstimateOut
 from app.schemas.version import VersionOut
+from app.schemas.paginated import Paginated
 from app.utils.auth import get_current_user
 
 router = APIRouter(
@@ -22,9 +23,11 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[VersionOut])
+@router.get("/", response_model=Paginated[VersionOut])
 async def list_versions(
     estimate_id: int,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1),
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
@@ -33,12 +36,19 @@ async def list_versions(
     if not est or est.user_id != user.id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
 
+    count_q = select(func.count()).select_from(EstimateVersion).where(
+        EstimateVersion.estimate_id == estimate_id
+    )
+    total = await db.scalar(count_q)
+
     q = await db.execute(
         select(EstimateVersion)
         .where(EstimateVersion.estimate_id == estimate_id)
         .order_by(EstimateVersion.version.asc())
+        .offset((page - 1) * limit)
+        .limit(limit)
     )
-    return q.scalars().all()
+    return {"items": q.scalars().all(), "total": total}
 
 
 @router.get("/{version}", response_model=VersionOut)

@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useTemplatesStore } from '@/store/templates'
+import QePagination from '@/components/QePagination.vue'
 
 const fileInput = ref(null)
 const router = useRouter()
@@ -15,24 +16,40 @@ const filters = ref({
   name: ''
 })
 
+const perPage = 5
+const currentPage = ref(1)
+const currentFilters = ref({})
+const totalTemplates = computed(() => store.total)
+
 onMounted(async () => {
   isLoading.value = true
-  await store.fetchTemplates()
+  await store.fetchTemplates({ page: currentPage.value, limit: perPage })
+  currentFilters.value = {}
   isLoading.value = false
 })
 
 async function applyFilters() {
   isLoading.value = true
   const query = { name: filters.value.name }
-  await store.fetchTemplates(query)
+  currentFilters.value = query
+  currentPage.value = 1
+  await store.fetchTemplates({ ...query, page: currentPage.value, limit: perPage })
   isLoading.value = false
 }
 
 async function resetFilters() {
   isLoading.value = true
   filters.value.name = ''
-  await store.fetchTemplates()
+  currentFilters.value = {}
+  currentPage.value = 1
+  await store.fetchTemplates({ page: currentPage.value, limit: perPage })
   isLoading.value = false
+}
+
+async function changePage(p) {
+  currentPage.value = p
+  await store.fetchTemplates({ ...currentFilters.value, page: p, limit: perPage })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function triggerFileInput() {
@@ -127,6 +144,12 @@ function isValidTemplate(template) {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             <p>Шаблоны смет отсутствуют.</p>
           </div>
+          <QePagination
+            :total="totalTemplates"
+            :per-page="perPage"
+            :page="currentPage"
+            @update:page="changePage"
+            class="mt-4" />
         </template>
       </div>
       <!-- Правая панель: кнопки и фильтры -->
