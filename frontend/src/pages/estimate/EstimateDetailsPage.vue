@@ -374,10 +374,15 @@
                 </ul>
               </transition>
             </div>
-          </div>
         </div>
+        <QePagination
+          :total="logsTotal"
+          :limit="logLimit"
+          :offset="logOffset"
+          @update:offset="val => (logOffset = val)" />
+      </div>
 
-        <div v-if="versions.length" class="mt-2 pt-6 text-sm">
+      <div v-if="versions.length" class="mt-2 pt-6 text-sm">
           <h3 class="font-semibold mb-4">
             <span class="flex items-center gap-1">
               <GitGraph class="w-5 h-5 text-blue-600" />
@@ -416,6 +421,11 @@
               </tbody>
             </table>
           </div>
+          <QePagination
+            :total="versionsTotal"
+            :limit="versionLimit"
+            :offset="versionOffset"
+            @update:offset="val => (versionOffset = val)" />
         </div>
       </div>
     </div>
@@ -435,6 +445,7 @@ import { useEstimatesStore } from "@/store/estimates";
 import { onClickOutside } from "@vueuse/core";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
+import QePagination from "@/components/QePagination.vue";
 import fileDownload from "js-file-download";
 
 import {
@@ -483,6 +494,12 @@ const showConfirm = ref(false);
 const estimate = ref(null);
 const logs = ref([]);
 const versions = ref([]);
+const logsTotal = ref(0);
+const logLimit = ref(15);
+const logOffset = ref(0);
+const versionsTotal = ref(0);
+const versionLimit = ref(15);
+const versionOffset = ref(0);
 const error = ref(null);
 
 const activeTab = ref("details");
@@ -510,8 +527,22 @@ async function loadAll() {
       estimate.value = await store.getEstimateById(id);
     }
 
-    logs.value = await store.getEstimateLogs(id);
-    versions.value = await store.getEstimateVersions(id);
+    logOffset.value = 0;
+    versionOffset.value = 0;
+
+    const logRes = await store.getEstimateLogs(id, {
+      limit: logLimit.value,
+      offset: logOffset.value,
+    });
+    logs.value = logRes.items;
+    logsTotal.value = logRes.total;
+
+    const verRes = await store.getEstimateVersions(id, {
+      limit: versionLimit.value,
+      offset: versionOffset.value,
+    });
+    versions.value = verRes.items;
+    versionsTotal.value = verRes.total;
     error.value = null;
   } catch (e) {
     if (e.response?.status === 404) error.value = "❌ Смета не найдена.";
@@ -533,6 +564,24 @@ function isDate(val) {
 
 onMounted(loadAll);
 watch(() => route.query.version, loadAll);
+watch(logOffset, async () => {
+  const id = route.params.id;
+  const res = await store.getEstimateLogs(id, {
+    limit: logLimit.value,
+    offset: logOffset.value,
+  });
+  logs.value = res.items;
+  logsTotal.value = res.total;
+});
+watch(versionOffset, async () => {
+  const id = route.params.id;
+  const res = await store.getEstimateVersions(id, {
+    limit: versionLimit.value,
+    offset: versionOffset.value,
+  });
+  versions.value = res.items;
+  versionsTotal.value = res.total;
+});
 
 onUnmounted(() => {
   store.currentEstimate = null;

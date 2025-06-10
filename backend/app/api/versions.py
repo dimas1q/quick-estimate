@@ -1,8 +1,9 @@
 # backend/app/api/versions.py
 from typing import List
+from app.schemas.pagination import Paginated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import delete
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Query
+from sqlalchemy import delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -22,23 +23,33 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[VersionOut])
+@router.get("/", response_model=Paginated[VersionOut])
 async def list_versions(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
+    limit: int = Query(15, ge=1),
+    offset: int = Query(0, ge=0),
 ):
     # проверяем, что смета принадлежит пользователю
     est = await db.get(Estimate, estimate_id)
     if not est or est.user_id != user.id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
 
+    total = await db.scalar(
+        select(func.count()).select_from(EstimateVersion).where(
+            EstimateVersion.estimate_id == estimate_id
+        )
+    )
     q = await db.execute(
         select(EstimateVersion)
         .where(EstimateVersion.estimate_id == estimate_id)
         .order_by(EstimateVersion.version.asc())
+        .offset(offset)
+        .limit(limit)
     )
-    return q.scalars().all()
+    items = q.scalars().all()
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
 @router.get("/{version}", response_model=VersionOut)

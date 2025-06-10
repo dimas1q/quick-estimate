@@ -16,6 +16,7 @@ from app.models.user import User
 from app.utils.auth import get_current_user
 
 from typing import List
+from app.schemas.pagination import Paginated
 
 router = APIRouter(tags=["templates"], dependencies=[Depends(get_current_user)])
 
@@ -49,11 +50,13 @@ async def create_template(
     return result.scalar_one()
 
 
-@router.get("/", response_model=List[EstimateTemplateOut])
+@router.get("/", response_model=Paginated[EstimateTemplateOut])
 async def list_templates(
     name: str = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
 ):
     query = (
         select(EstimateTemplate)
@@ -65,8 +68,12 @@ async def list_templates(
         query = query.where(EstimateTemplate.name.ilike(f"%{name}%"))
 
     query = query.order_by(EstimateTemplate.id.desc())
-    result = await db.execute(query)
-    return result.scalars().all()
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+
+    result = await db.execute(query.offset(offset).limit(limit))
+    items = result.scalars().all()
+
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
 @router.get("/{template_id}", response_model=EstimateTemplateOut)

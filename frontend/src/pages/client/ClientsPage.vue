@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useClientsStore } from '@/store/clients'
+import QePagination from '@/components/QePagination.vue'
 
 const store = useClientsStore()
 const isLoading = ref(true)
@@ -8,10 +9,23 @@ const filters = ref({
   name: '',
   company: ''
 })
+const limit = ref(10)
+const offset = ref(0)
 
 onMounted(async () => {
   isLoading.value = true
-  await store.fetchClients()
+  await store.fetchClients({ limit: limit.value, offset: offset.value })
+  isLoading.value = false
+})
+
+watch(offset, async () => {
+  isLoading.value = true
+  await store.fetchClients({
+    name: filters.value.name,
+    company: filters.value.company,
+    limit: limit.value,
+    offset: offset.value
+  })
   isLoading.value = false
 })
 
@@ -21,14 +35,16 @@ async function applyFilters() {
     name: filters.value.name,
     company: filters.value.company
   }
-  await store.fetchClients(query)
+  offset.value = 0
+  await store.fetchClients({ ...query, limit: limit.value, offset: offset.value })
   isLoading.value = false
 }
 
 async function resetFilters() {
   isLoading.value = true
   filters.value = { name: '', company: '' }
-  await store.fetchClients()
+  offset.value = 0
+  await store.fetchClients({ limit: limit.value, offset: offset.value })
   isLoading.value = false
 }
 </script>
@@ -66,6 +82,7 @@ async function resetFilters() {
             Клиенты отсутствуют.
           </div>
         </template>
+        <QePagination :total="store.total" :limit="limit" :offset="offset" @update:offset="val => offset = val" />
       </div>
 
       <!-- Правая панель: добавление и фильтры -->

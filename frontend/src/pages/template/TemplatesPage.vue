@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useTemplatesStore } from '@/store/templates'
+import QePagination from '@/components/QePagination.vue'
 
 const fileInput = ref(null)
 const router = useRouter()
@@ -14,24 +15,34 @@ const store = useTemplatesStore()
 const filters = ref({
   name: ''
 })
+const limit = ref(10)
+const offset = ref(0)
 
 onMounted(async () => {
   isLoading.value = true
-  await store.fetchTemplates()
+  await store.fetchTemplates({ limit: limit.value, offset: offset.value })
+  isLoading.value = false
+})
+
+watch(offset, async () => {
+  isLoading.value = true
+  await store.fetchTemplates({ name: filters.value.name, limit: limit.value, offset: offset.value })
   isLoading.value = false
 })
 
 async function applyFilters() {
   isLoading.value = true
   const query = { name: filters.value.name }
-  await store.fetchTemplates(query)
+  offset.value = 0
+  await store.fetchTemplates({ ...query, limit: limit.value, offset: offset.value })
   isLoading.value = false
 }
 
 async function resetFilters() {
   isLoading.value = true
   filters.value.name = ''
-  await store.fetchTemplates()
+  offset.value = 0
+  await store.fetchTemplates({ limit: limit.value, offset: offset.value })
   isLoading.value = false
 }
 
@@ -128,6 +139,7 @@ function isValidTemplate(template) {
             <p>Шаблоны смет отсутствуют.</p>
           </div>
         </template>
+        <QePagination :total="store.total" :limit="limit" :offset="offset" @update:offset="val => offset = val" />
       </div>
       <!-- Правая панель: кнопки и фильтры -->
       <div class="w-72 space-y-4">

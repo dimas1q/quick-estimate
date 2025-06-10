@@ -4,26 +4,37 @@ import axios from "@/lib/axios";
 export const useClientsStore = defineStore("clients", {
   state: () => ({
     clients: [],
+    total: 0,
+    limit: 10,
+    offset: 0,
   }),
   actions: {
     async fetchClients(params = {}) {
       const res = await axios.get("/clients/", { params });
-      this.clients = res.data;
+      this.clients = res.data.items;
+      this.total = res.data.total;
+      this.limit = res.data.limit;
+      this.offset = res.data.offset;
+      return res.data;
     },
     async getClientById(id) {
       const res = await axios.get(`/clients/${id}`);
       return res.data;
     },
-    async getClientWithEstimates(id) {
+    async getClientWithEstimates(id, estimateParams = {}) {
       const resClient = await axios.get(`/clients/${id}`);
       const client = resClient.data;
 
       const resEstimates = await axios.get("/estimates/", {
-        params: { client: client.id },
+        params: { client: client.id, ...estimateParams },
       });
-      const estimates = resEstimates.data;
+      const estimates = resEstimates.data.items;
 
-      return { client, estimates };
+      return { client, estimates, meta: {
+        total: resEstimates.data.total,
+        limit: resEstimates.data.limit,
+        offset: resEstimates.data.offset,
+      }};
     },
     async createClient(data) {
       const res = await axios.post("/clients/", data);
@@ -40,8 +51,8 @@ export const useClientsStore = defineStore("clients", {
       await this.fetchClients();
     },
 
-    async getClientLogs(id) {
-      const res = await axios.get(`/clients/${id}/logs`);
+    async getClientLogs(id, params = {}) {
+      const res = await axios.get(`/clients/${id}/logs`, { params });
       return res.data;
     },
   },

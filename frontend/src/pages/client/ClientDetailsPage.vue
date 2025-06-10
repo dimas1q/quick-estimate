@@ -140,20 +140,27 @@
             Сметы клиента
           </h2>
         </div>
-        <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="e in estimates" :key="e.id"
-            class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
-            <div class="flex justify-between items-center">
-              <RouterLink :to="`/estimates/${e.id}`"
-                class="flex items-center gap-2 font-semibold text-blue-700 dark:text-blue-400 hover:underline">
-                <LucideFileText class="w-5 h-5" /> {{ e.name }}
-              </RouterLink>
-              <span class="text-gray-500 text-xs flex items-center gap-1">
-                <LucideCalendar class="w-4 h-4" />
-                <span>{{ new Date(e.date).toLocaleDateString() }}</span>
-              </span>
+        <div v-if="estimates.length > 0">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="e in estimates" :key="e.id"
+              class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
+              <div class="flex justify-between items-center">
+                <RouterLink :to="`/estimates/${e.id}`"
+                  class="flex items-center gap-2 font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                  <LucideFileText class="w-5 h-5" /> {{ e.name }}
+                </RouterLink>
+                <span class="text-gray-500 text-xs flex items-center gap-1">
+                  <LucideCalendar class="w-4 h-4" />
+                  <span>{{ new Date(e.date).toLocaleDateString() }}</span>
+                </span>
+              </div>
             </div>
           </div>
+          <QePagination
+            :total="estimatesTotal"
+            :limit="estLimit"
+            :offset="estOffset"
+            @update:offset="val => (estOffset = val)" />
         </div>
         <div v-else
           class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
@@ -216,6 +223,11 @@
               </ul>
             </transition>
           </div>
+          <QePagination
+            :total="logsTotal"
+            :limit="logsLimit"
+            :offset="logsOffset"
+            @update:offset="val => (logsOffset = val)" />
         </div>
         <div v-else class="text-gray-500">Записей нет.</div>
       </div>
@@ -231,11 +243,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useClientsStore } from "@/store/clients";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
+import QePagination from "@/components/QePagination.vue";
 
 import {
   LucideUserRound,
@@ -265,6 +278,12 @@ const router = useRouter();
 const client = ref(null);
 const estimates = ref([]);
 const logs = ref([]);
+const estimatesTotal = ref(0);
+const estLimit = ref(10);
+const estOffset = ref(0);
+const logsTotal = ref(0);
+const logsLimit = ref(15);
+const logsOffset = ref(0);
 const activeTab = ref("details");
 const showConfirm = ref(false);
 const store = useClientsStore();
@@ -272,12 +291,40 @@ const toast = useToast();
 const showDetails = ref({})
 
 onMounted(async () => {
-  const { client: c, estimates: e } = await store.getClientWithEstimates(
+  estOffset.value = 0;
+  logsOffset.value = 0;
+  const { client: c, estimates: e, meta } = await store.getClientWithEstimates(
     route.params.id,
+    { limit: estLimit.value, offset: estOffset.value }
   );
   client.value = c;
   estimates.value = e;
-  logs.value = await store.getClientLogs(route.params.id);
+  estimatesTotal.value = meta.total;
+
+  const logRes = await store.getClientLogs(route.params.id, {
+    limit: logsLimit.value,
+    offset: logsOffset.value,
+  });
+  logs.value = logRes.items;
+  logsTotal.value = logRes.total;
+});
+
+watch(estOffset, async () => {
+  const { estimates: e, meta } = await store.getClientWithEstimates(route.params.id, {
+    limit: estLimit.value,
+    offset: estOffset.value,
+  });
+  estimates.value = e;
+  estimatesTotal.value = meta.total;
+});
+
+watch(logsOffset, async () => {
+  const res = await store.getClientLogs(route.params.id, {
+    limit: logsLimit.value,
+    offset: logsOffset.value,
+  });
+  logs.value = res.items;
+  logsTotal.value = res.total;
 });
 
 function confirmDelete() {

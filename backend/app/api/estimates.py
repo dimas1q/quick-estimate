@@ -21,6 +21,7 @@ from app.models.item import EstimateItem
 from app.models.user import User
 from app.models.version import EstimateVersion
 from app.schemas.changelog import ChangeLogOut
+from app.schemas.pagination import Paginated
 from app.schemas.estimate import EstimateCreate, EstimateOut, EstimateUpdate
 from app.utils.auth import get_current_user
 from app.utils.excel import generate_excel
@@ -100,15 +101,17 @@ async def create_estimate(
     return result.scalar_one()
 
 
-@router.get("/", response_model=List[EstimateOut])
+@router.get("/", response_model=Paginated[EstimateOut])
 async def list_estimates(
     name: str = Query(None),
-    client: Optional[int] = Query(None),  # Change type to Optional[int]
+    client: Optional[int] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     favorite: Optional[bool] = Query(None),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
 ):
 
     query = (
@@ -137,7 +140,32 @@ async def list_estimates(
     if favorite:
         query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
 
-    result = await db.execute(query.order_by(Estimate.id.desc()))
+    count_query = select(func.count()).select_from(Estimate)
+    if favorite:
+        count_query = count_query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
+    count_query = count_query.where(Estimate.user_id == user.id)
+    if name:
+        count_query = count_query.where(Estimate.name.ilike(f"%{name}%"))
+    if client:
+        count_query = count_query.where(Estimate.client_id == client)
+    if date_from:
+        try:
+            dt_from = datetime.fromisoformat(date_from)
+            count_query = count_query.where(Estimate.date >= dt_from)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = datetime.fromisoformat(date_to)
+            count_query = count_query.where(Estimate.date < dt_to)
+        except ValueError:
+            pass
+
+    total = await db.scalar(count_query)
+
+    result = await db.execute(
+        query.order_by(Estimate.id.desc()).offset(offset).limit(limit)
+    )
 
     estimates = result.scalars().all()
 
@@ -150,7 +178,12 @@ async def list_estimates(
     for estimate in estimates:
         estimate.is_favorite = estimate.id in favorite_ids
 
-    return estimates
+    return {
+        "items": estimates,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/{estimate_id}", response_model=EstimateOut)
@@ -181,11 +214,13 @@ async def get_estimate(
     return estimate
 
 
-@router.get("/{estimate_id}/logs", response_model=List[ChangeLogOut])
+@router.get("/{estimate_id}/logs", response_model=Paginated[ChangeLogOut])
 async def get_logs(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    limit: int = Query(15, ge=1),
+    offset: int = Query(0, ge=0),
 ):
     # Load the estimate and check access
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
@@ -197,14 +232,21 @@ async def get_logs(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     # Fetch and return logs
+    count_query = select(func.count()).select_from(EstimateChangeLog).where(
+        EstimateChangeLog.estimate_id == estimate_id
+    )
+    total = await db.scalar(count_query)
+
     result = await db.execute(
         select(EstimateChangeLog)
         .options(selectinload(EstimateChangeLog.user))
         .where(EstimateChangeLog.estimate_id == estimate_id)
         .order_by(EstimateChangeLog.timestamp.asc())
+        .offset(offset)
+        .limit(limit)
     )
 
-    return [
+    logs = [
         ChangeLogOut(
             id=log.id,
             action=log.action,
@@ -216,6 +258,8 @@ async def get_logs(
         )
         for log in result.scalars().all()
     ]
+
+    return {"items": logs, "total": total, "limit": limit, "offset": offset}
 
 
 @router.get("/{estimate_id}/export/pdf")

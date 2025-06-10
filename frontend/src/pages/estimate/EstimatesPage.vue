@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEstimatesStore } from '@/store/estimates'
@@ -7,6 +7,7 @@ import { useClientsStore } from '@/store/clients'
 import { Star } from 'lucide-vue-next'
 
 import QeDatePicker from '@/components/QeDatePicker.vue'
+import QePagination from '@/components/QePagination.vue'
 
 function formatDateToYYYYMMDD(date) {
   if (!date) return ''
@@ -28,6 +29,8 @@ const filters = ref({
   date_from: '',
   date_to: ''
 })
+const limit = ref(10)
+const offset = ref(0)
 
 const estimatesStore = useEstimatesStore()
 const clientsStore = useClientsStore()
@@ -44,7 +47,20 @@ const filteredEstimates = computed(() => {
 onMounted(async () => {
   isLoading.value = true
   await clientsStore.fetchClients()
-  await estimatesStore.fetchEstimates()
+  await estimatesStore.fetchEstimates({ limit: limit.value, offset: offset.value })
+  isLoading.value = false
+})
+
+watch(offset, async () => {
+  isLoading.value = true
+  await estimatesStore.fetchEstimates({
+    name: filters.value.name,
+    client: filters.value.client ? Number(filters.value.client) : undefined,
+    date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : undefined,
+    date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : undefined,
+    limit: limit.value,
+    offset: offset.value
+  })
   isLoading.value = false
 })
 
@@ -65,7 +81,8 @@ async function applyFilters() {
     date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : undefined,
     date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : undefined
   }
-  await estimatesStore.fetchEstimates(query)
+  offset.value = 0
+  await estimatesStore.fetchEstimates({ ...query, limit: limit.value, offset: offset.value })
   isLoading.value = false
 }
 
@@ -77,7 +94,8 @@ async function resetFilters() {
     date_from: '',
     date_to: ''
   }
-  await estimatesStore.fetchEstimates()
+  offset.value = 0
+  await estimatesStore.fetchEstimates({ limit: limit.value, offset: offset.value })
   isLoading.value = false
 }
 
@@ -215,6 +233,7 @@ async function toggleFavorite(estimate) {
             <p>Сметы отсутствуют.</p>
           </div>
         </template>
+        <QePagination :total="estimatesStore.total" :limit="limit" :offset="offset" @update:offset="val => offset = val" />
       </div>
 
       <!-- Боковая панель с фильтрами и импортом -->
