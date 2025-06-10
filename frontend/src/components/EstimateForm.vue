@@ -207,6 +207,9 @@ async function submit() {
   }
   if (!validateEstimate()) return
 
+  if (!estimate.event_datetime) estimate.event_datetime = null
+  if (!estimate.event_place) estimate.event_place = null
+
   let result
   if (props.mode === 'edit') {
     result = await store.updateEstimate(props.initial.id, estimate)
