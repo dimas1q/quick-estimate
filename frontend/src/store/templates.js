@@ -37,7 +37,11 @@ export const useTemplatesStore = defineStore('templates', {
       await this.fetchTemplates()
       return res.data
     },
-    
+
+    setImportedTemplate(data) {
+      this.importedTemplate = data
+    },
+
     async exportTemplate(id) {
       const res = await axios.get(`/templates/${id}`)
       const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })

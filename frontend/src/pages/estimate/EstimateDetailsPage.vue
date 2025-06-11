@@ -13,7 +13,7 @@
             <LucideFileText class="w-7 h-7 text-blue-600" />
             <span>Смета: {{ estimate.name }}</span>
             <span :class="[
-              'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1',
+              'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1 mt-1',
               {
                 'bg-gray-200 text-gray-800': estimate.status === 'draft',
                 'bg-yellow-200 text-yellow-800': estimate.status === 'sent',
@@ -23,13 +23,13 @@
               },
             ]">
               {{
-              {
-              draft: "Черновик",
-              sent: "Отправлена",
-              approved: "Согласована",
-              paid: "Оплачена",
-              cancelled: "Отменена",
-              }[estimate.status]
+                {
+                  draft: "Черновик",
+                  sent: "Отправлена",
+                  approved: "Согласована",
+                  paid: "Оплачена",
+                  cancelled: "Отменена",
+                }[estimate.status]
               }}
             </span>
           </h1>
@@ -140,7 +140,7 @@
             <div v-if="estimate.event_datetime" class="flex items-center gap-2">
               <LucideCalendar class="w-5 h-5 text-yellow-500" />
               <span><span class="font-semibold">Дата и время: </span><span>{{
-                  new Date(estimate.event_datetime).toLocaleString()
+                new Date(estimate.event_datetime).toLocaleString()
                   }}</span></span>
             </div>
             <div class="flex items-center gap-2">
@@ -192,7 +192,7 @@
                   <span>Внутренняя:</span>
                 </div>
                 <span class="text-lg font-semibold text-green-700 dark:text-green-400">{{ formatCurrency(totalInternal)
-                  }}</span>
+                }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -200,7 +200,7 @@
                   <span>Внешняя:</span>
                 </div>
                 <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{ formatCurrency(totalExternal)
-                  }}</span>
+                }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -208,7 +208,7 @@
                   <span>Разница:</span>
                 </div>
                 <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">{{ formatCurrency(totalDiff)
-                  }}</span>
+                }}</span>
               </div>
               <div v-if="estimate.vat_enabled" class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -216,7 +216,7 @@
                   <span>НДС ({{ estimate.vat_rate }}%):</span>
                 </div>
                 <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{ formatCurrency(vat)
-                  }}</span>
+                }}</span>
               </div>
               <div v-if="estimate.vat_enabled"
                 class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
@@ -226,7 +226,7 @@
                 </div>
                 <span class="text-xl font-bold text-gray-800 dark:text-white">{{
                   formatCurrency(totalWithVat)
-                  }}</span>
+                }}</span>
               </div>
             </div>
           </div>
@@ -356,17 +356,17 @@
                     <span class="font-semibold">{{ d.label }}:</span>
                     <span class="mx-1 text-gray-500 line-through">
                       {{
-                      isDate(d.old) && isDate(d.new)
-                      ? formatDate(d.old)
-                      : d.old
+                        isDate(d.old) && isDate(d.new)
+                          ? formatDate(d.old)
+                          : d.old
                       }}
                     </span>
                     <span class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold">
                       →
                       {{
-                      isDate(d.old) && isDate(d.new)
-                      ? formatDate(d.new)
-                      : d.new
+                        isDate(d.old) && isDate(d.new)
+                          ? formatDate(d.new)
+                          : d.new
                       }}
                     </span>
                   </li>
@@ -375,12 +375,7 @@
               </transition>
             </div>
           </div>
-          <QePagination
-            :total="logTotal"
-            :per-page="10"
-            :page="logPage"
-            @update:page="changeLogPage"
-            class="mt-2" />
+          <QePagination :total="logTotal" :per-page="10" :page="logPage" @update:page="changeLogPage" class="mt-2" />
         </div>
 
         <div v-if="versions.length" class="mt-2 pt-6 text-sm">
@@ -422,11 +417,7 @@
               </tbody>
             </table>
           </div>
-          <QePagination
-            :total="versionTotal"
-            :per-page="10"
-            :page="versionPage"
-            @update:page="changeVersionPage"
+          <QePagination :total="versionTotal" :per-page="10" :page="versionPage" @update:page="changeVersionPage"
             class="mt-2" />
         </div>
       </div>

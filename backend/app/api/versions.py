@@ -1,8 +1,8 @@
 # backend/app/api/versions.py
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import delete
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Query
+from sqlalchemy import delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -36,8 +36,10 @@ async def list_versions(
     if not est or est.user_id != user.id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
 
-    count_q = select(func.count()).select_from(EstimateVersion).where(
-        EstimateVersion.estimate_id == estimate_id
+    count_q = (
+        select(func.count())
+        .select_from(EstimateVersion)
+        .where(EstimateVersion.estimate_id == estimate_id)
     )
     total = await db.scalar(count_q)
 

@@ -126,21 +126,28 @@ function isValidEstimate(estimate) {
 
   for (const [i, item] of estimate.items.entries()) {
     if (!item || typeof item !== 'object') return false
-    const { name, quantity, unit, unit_price } = item
+    const { name, quantity, unit, internal_price, external_price } = item
     if (!name || typeof name !== 'string' || !name.trim()) {
       toast.error(`Ошибка в услуге №${i + 1}: отсутствует название`)
       return false
     }
     if (!['шт', 'час', 'день', 'м²', 'м'].includes(unit)) {
-      toast.error(`Ошибка в услуге №${i + 1}: недопустимая единица измерения`)
+      toast.error(`Ошибка в услуге ${item.name}: недопустимая единица измерения`)
       return false
     }
+
     if (typeof quantity !== 'number' || quantity <= 0) {
-      toast.error(`Ошибка в услуге №${i + 1}: количество должно быть > 0`)
+      toast.error(`Ошибка в услуге ${item.name}: количество должно быть > 0`)
       return false
     }
-    if (typeof unit_price !== 'number' || unit_price <= 0) {
-      toast.error(`Ошибка в услуге №${i + 1}: цена должна быть > 0`)
+
+    if (typeof internal_price !== 'number' || internal_price <= 0) {
+      toast.error(`Ошибка в услуге ${item.name}: внутренняя цена должна быть > 0`)
+      return false
+    }
+
+    if (typeof external_price !== 'number' || external_price <= 0) {
+      toast.error(`Ошибка в услуге ${item.name}: внешняя цена должна быть > 0`)
       return false
     }
   }
@@ -231,11 +238,7 @@ async function changePage(p) {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             <p>Сметы отсутствуют.</p>
           </div>
-          <QePagination
-            :total="totalEstimates"
-            :per-page="perPage"
-            :page="currentPage"
-            @update:page="changePage"
+          <QePagination :total="totalEstimates" :per-page="perPage" :page="currentPage" @update:page="changePage"
             class="mt-4" />
         </template>
       </div>

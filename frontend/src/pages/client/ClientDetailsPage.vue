@@ -75,12 +75,12 @@
             </div>
             <div v-if="client.actual_address" class="flex items-center ">
               <LucideMapPin class="w-5 h-5 text-indigo-500 mr-2" />
-              <span class="font-semibold mr-1">Факт. адрес:</span>
+              <span class="font-semibold mr-1">Фактический адрес:</span>
               <span>{{ client.actual_address }}</span>
             </div>
             <div v-if="client.legal_address" class="flex items-center ">
               <LucideMap class="w-5 h-5 text-purple-500 mr-2" />
-              <span class="font-semibold mr-1">Юр. адрес:</span>
+              <span class="font-semibold mr-1">Юридический адрес:</span>
               <span>{{ client.legal_address }}</span>
             </div>
             <div v-if="client.notes" class="flex items-center ">
@@ -98,12 +98,12 @@
             <div class="space-y-2">
               <div class="flex items-center">
                 <LucideWallet class="w-5 h-5 text-blue-500 mr-2" />
-                <span class="font-semibold mr-1">Рассч. счет:</span>
+                <span class="font-semibold mr-1">Рассчетный счет:</span>
                 <span>{{ client.account || "—" }}</span>
               </div>
               <div class="flex items-center">
                 <LucideWallet class="w-5 h-5 text-blue-500 mr-2" />
-                <span class="font-semibold mr-1">Корр. счет:</span>
+                <span class="font-semibold mr-1">Корреспондентский счет:</span>
                 <span>{{ client.corr_account || "—" }}</span>
               </div>
               <div class="flex items-center">
@@ -154,22 +154,22 @@
               </span>
             </div>
           </div>
-          <QePagination
-            :total="estimatesTotal"
-            :per-page="5"
-            :page="estimatesPage"
-            @update:page="changeEstimatesPage"
+          <QePagination :total="estimatesTotal" :per-page="10" :page="estimatesPage" @update:page="changeEstimatesPage"
             class="col-span-full mt-4" />
         </div>
         <div v-else
           class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
-          <LucideAlertCircle class="w-5 h-5 text-yellow-400 inline-block mr-1" />
-          Сметы отсутствуют.
+          <div class="flex items-center justify-center gap-1">
+            <LucideAlertCircle class="w-5 h-5 text-yellow-400 inline-block mr-1" />
+            Сметы отсутствуют
+          </div>
+
+
         </div>
       </div>
 
       <!-- История изменений -->
-      <div v-if="activeTab === 'history'" class="mt-6">
+      <div v-if="activeTab === 'history'" class="mt-6 ">
         <h2 class="text-sm font-semibold mb-4 text-gray-800 dark:text-white flex items-center gap-3">
           <span class="flex items-center justify-center gap-1">
             <LucideHistory class="w-5 h-5 text-blue-600" />
@@ -178,7 +178,8 @@
 
         </h2>
         <div v-if="logs.length"
-          class="rounded-xl border border-gray-200 dark:border-qe-black2 dark:bg-qe-black3 bg-white dark:bg-gray-900 divide-y dark:divide-qe-black2 shadow-sm">
+          class="rounded-xl border border-gray-200 dark:border-qe-black2 dark:bg-qe-black3 bg-white dark:bg-gray-900 divide-y dark:divide-qe-black2 shadow-sm text-sm"
+          я>
           <!-- Заголовок -->
           <div
             class="flex items-center px-5 py-2 bg-gray-50 dark:bg-qe-black2 rounded-t-xl font-medium text-gray-700 dark:text-gray-200">
@@ -186,20 +187,20 @@
             <div class="flex-1">Событие</div>
           </div>
           <!-- Логи -->
-          <div v-for="log in logs" :key="log.id" class="px-5 py-2 group">
+          <div v-for="log in logs" :key="log.id" class="px-5 py-2 group" :style="{ minHeight: '41px' }">
             <div class="flex items-center">
               <div class="w-40 text-sm text-gray-400 shrink-0">
                 {{ new Date(log.timestamp).toLocaleString() }}
               </div>
-              <div class="flex-1 flex items-center gap-2 min-w-0">
+              <div class="flex-1 flex items-center gap-2">
                 <span class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
                   {{ log.description }}
                 </span>
                 <span class="text-sm text-gray-500 truncate">— {{ log.user_name || '-' }}</span>
               </div>
-              <div class="w-[140px] shrink-0 text-right pr-4 flex justify-end">
-                <button v-if="log.details && log.details.length" @click="toggleDetails(log.id)"
-                  class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-blue-600 hover:bg-blue-50 transition -mr-6">
+              <div class="shrink-0 text-right pr-4 flex justify-end">
+                <button :disabled="!log.details || !log.details.length" @click="toggleDetails(log.id)"
+                  class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-blue-600 hover:bg-blue-50 transition -mr-6 disabled:opacity-50 disabled:cursor-not-allowed">
                   <span>{{ showDetails[log.id] ? 'Скрыть детали' : 'Детали' }}</span>
                   <LucideChevronDown
                     :class="['w-4 h-4 transition-transform', showDetails[log.id] ? 'rotate-180' : '']" />
@@ -222,15 +223,12 @@
               </ul>
             </transition>
           </div>
-          <QePagination
-            :total="logTotal"
-            :per-page="10"
-            :page="logPage"
-            @update:page="changeLogPage"
-            class="mt-2" />
+
         </div>
         <div v-else class="text-gray-500">Записей нет.</div>
+        <QePagination :total="logTotal" :per-page="10" :page="logPage" @update:page="changeLogPage" class="mt-2" />
       </div>
+
     </div>
 
     <!-- Модалка подтверждения удаления -->
@@ -259,8 +257,7 @@ import {
   LucideMapPin,
   LucideMap,
   LucideWallet,
-  LucideBookUser,
-  LucideScanBarcode,  
+  LucideScanBarcode,
   LucideBanknote,
   LucideFileText,
   LucideCalendar,
