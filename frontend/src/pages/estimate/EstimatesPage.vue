@@ -7,6 +7,7 @@ import { useClientsStore } from '@/store/clients'
 import { Star } from 'lucide-vue-next'
 
 import QeDatePicker from '@/components/QeDatePicker.vue'
+import QePagination from '@/components/QePagination.vue'
 
 function formatDateToYYYYMMDD(date) {
   if (!date) return ''
@@ -34,6 +35,11 @@ const clientsStore = useClientsStore()
 
 const clients = computed(() => clientsStore.clients)
 
+const perPage = 5
+const currentPage = ref(1)
+const currentFilters = ref({})
+const totalEstimates = computed(() => estimatesStore.total)
+
 const filteredEstimates = computed(() => {
   if (viewMode.value === 'fav') {
     return estimatesStore.estimates.filter(e => e.is_favorite)
@@ -44,7 +50,8 @@ const filteredEstimates = computed(() => {
 onMounted(async () => {
   isLoading.value = true
   await clientsStore.fetchClients()
-  await estimatesStore.fetchEstimates()
+  await estimatesStore.fetchEstimates({ page: currentPage.value, limit: perPage })
+  currentFilters.value = {}
   isLoading.value = false
 })
 
@@ -65,7 +72,9 @@ async function applyFilters() {
     date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : undefined,
     date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : undefined
   }
-  await estimatesStore.fetchEstimates(query)
+  currentFilters.value = query
+  currentPage.value = 1
+  await estimatesStore.fetchEstimates({ ...query, page: currentPage.value, limit: perPage })
   isLoading.value = false
 }
 
@@ -77,7 +86,9 @@ async function resetFilters() {
     date_from: '',
     date_to: ''
   }
-  await estimatesStore.fetchEstimates()
+  currentFilters.value = {}
+  currentPage.value = 1
+  await estimatesStore.fetchEstimates({ page: currentPage.value, limit: perPage })
   isLoading.value = false
 }
 
@@ -115,21 +126,28 @@ function isValidEstimate(estimate) {
 
   for (const [i, item] of estimate.items.entries()) {
     if (!item || typeof item !== 'object') return false
-    const { name, quantity, unit, unit_price } = item
+    const { name, quantity, unit, internal_price, external_price } = item
     if (!name || typeof name !== 'string' || !name.trim()) {
       toast.error(`Ошибка в услуге №${i + 1}: отсутствует название`)
       return false
     }
     if (!['шт', 'час', 'день', 'м²', 'м'].includes(unit)) {
-      toast.error(`Ошибка в услуге №${i + 1}: недопустимая единица измерения`)
+      toast.error(`Ошибка в услуге ${item.name}: недопустимая единица измерения`)
       return false
     }
+
     if (typeof quantity !== 'number' || quantity <= 0) {
-      toast.error(`Ошибка в услуге №${i + 1}: количество должно быть > 0`)
+      toast.error(`Ошибка в услуге ${item.name}: количество должно быть > 0`)
       return false
     }
-    if (typeof unit_price !== 'number' || unit_price <= 0) {
-      toast.error(`Ошибка в услуге №${i + 1}: цена должна быть > 0`)
+
+    if (typeof internal_price !== 'number' || internal_price <= 0) {
+      toast.error(`Ошибка в услуге ${item.name}: внутренняя цена должна быть > 0`)
+      return false
+    }
+
+    if (typeof external_price !== 'number' || external_price <= 0) {
+      toast.error(`Ошибка в услуге ${item.name}: внешняя цена должна быть > 0`)
       return false
     }
   }
@@ -154,6 +172,12 @@ async function toggleFavorite(estimate) {
   } catch (e) {
     toast.error('Ошибка при изменении избранного')
   }
+}
+
+async function changePage(p) {
+  currentPage.value = p
+  await estimatesStore.fetchEstimates({ ...currentFilters.value, page: p, limit: perPage })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
 
@@ -214,6 +238,8 @@ async function toggleFavorite(estimate) {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             <p>Сметы отсутствуют.</p>
           </div>
+          <QePagination :total="totalEstimates" :per-page="perPage" :page="currentPage" @update:page="changePage"
+            class="mt-4" />
         </template>
       </div>
 

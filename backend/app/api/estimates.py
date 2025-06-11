@@ -100,44 +100,56 @@ async def create_estimate(
     return result.scalar_one()
 
 
-@router.get("/", response_model=List[EstimateOut])
+from app.schemas.paginated import Paginated
+
+
+@router.get("/", response_model=Paginated[EstimateOut])
 async def list_estimates(
     name: str = Query(None),
     client: Optional[int] = Query(None),  # Change type to Optional[int]
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     favorite: Optional[bool] = Query(None),
 ):
-
-    query = (
-        select(Estimate)
-        .options(selectinload(Estimate.items), selectinload(Estimate.client))
-        .where(Estimate.user_id == user.id)
-    )
+    filters = [Estimate.user_id == user.id]
 
     if name:
-        query = query.where(Estimate.name.ilike(f"%{name}%"))
+        filters.append(Estimate.name.ilike(f"%{name}%"))
     if client:
-        query = query.where(Estimate.client_id == client)
+        filters.append(Estimate.client_id == client)
     if date_from:
         try:
             dt_from = datetime.fromisoformat(date_from)
-            query = query.where(Estimate.date >= dt_from)
+            filters.append(Estimate.date >= dt_from)
         except ValueError:
             pass
 
     if date_to:
         try:
             dt_to = datetime.fromisoformat(date_to)
-            query = query.where(Estimate.date < dt_to)
+            filters.append(Estimate.date < dt_to)
         except ValueError:
             pass
+
+    query = (
+        select(Estimate)
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .where(*filters)
+    )
+    count_query = select(func.count()).select_from(Estimate).where(*filters)
     if favorite:
         query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
+        count_query = count_query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
 
-    result = await db.execute(query.order_by(Estimate.id.desc()))
+    total = await db.scalar(count_query)
+
+    result = await db.execute(
+        query.order_by(Estimate.id.desc()).offset((page - 1) * limit).limit(limit)
+    )
 
     estimates = result.scalars().all()
 
@@ -150,7 +162,7 @@ async def list_estimates(
     for estimate in estimates:
         estimate.is_favorite = estimate.id in favorite_ids
 
-    return estimates
+    return {"items": estimates, "total": total}
 
 
 @router.get("/{estimate_id}", response_model=EstimateOut)
@@ -181,9 +193,11 @@ async def get_estimate(
     return estimate
 
 
-@router.get("/{estimate_id}/logs", response_model=List[ChangeLogOut])
+@router.get("/{estimate_id}/logs", response_model=Paginated[ChangeLogOut])
 async def get_logs(
     estimate_id: int,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -197,14 +211,21 @@ async def get_logs(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     # Fetch and return logs
+    count_q = select(func.count()).select_from(EstimateChangeLog).where(
+        EstimateChangeLog.estimate_id == estimate_id
+    )
+    total = await db.scalar(count_q)
+
     result = await db.execute(
         select(EstimateChangeLog)
         .options(selectinload(EstimateChangeLog.user))
         .where(EstimateChangeLog.estimate_id == estimate_id)
         .order_by(EstimateChangeLog.timestamp.asc())
+        .offset((page - 1) * limit)
+        .limit(limit)
     )
 
-    return [
+    items = [
         ChangeLogOut(
             id=log.id,
             action=log.action,
@@ -216,6 +237,8 @@ async def get_logs(
         )
         for log in result.scalars().all()
     ]
+
+    return {"items": items, "total": total}
 
 
 @router.get("/{estimate_id}/export/pdf")

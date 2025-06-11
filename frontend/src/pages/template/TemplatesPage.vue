@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useTemplatesStore } from '@/store/templates'
+import QePagination from '@/components/QePagination.vue'
 
 const fileInput = ref(null)
 const router = useRouter()
@@ -15,24 +16,40 @@ const filters = ref({
   name: ''
 })
 
+const perPage = 5
+const currentPage = ref(1)
+const currentFilters = ref({})
+const totalTemplates = computed(() => store.total)
+
 onMounted(async () => {
   isLoading.value = true
-  await store.fetchTemplates()
+  await store.fetchTemplates({ page: currentPage.value, limit: perPage })
+  currentFilters.value = {}
   isLoading.value = false
 })
 
 async function applyFilters() {
   isLoading.value = true
   const query = { name: filters.value.name }
-  await store.fetchTemplates(query)
+  currentFilters.value = query
+  currentPage.value = 1
+  await store.fetchTemplates({ ...query, page: currentPage.value, limit: perPage })
   isLoading.value = false
 }
 
 async function resetFilters() {
   isLoading.value = true
   filters.value.name = ''
-  await store.fetchTemplates()
+  currentFilters.value = {}
+  currentPage.value = 1
+  await store.fetchTemplates({ page: currentPage.value, limit: perPage })
   isLoading.value = false
+}
+
+async function changePage(p) {
+  currentPage.value = p
+  await store.fetchTemplates({ ...currentFilters.value, page: p, limit: perPage })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function triggerFileInput() {
@@ -52,7 +69,7 @@ async function handleFile(event) {
 
     if (!isValidTemplate(json)) return
 
-    store.importedTemplate = json
+    store.setImportedTemplate(json)
     router.push({ path: '/templates/create', state: { importedData: json } })
 
   } catch (e) {
@@ -69,7 +86,7 @@ function isValidTemplate(template) {
   for (const [i, item] of template.items.entries()) {
     if (!item || typeof item !== 'object') return false
 
-    const { name, quantity, unit, unit_price } = item
+    const { name, quantity, unit, internal_price, external_price } = item
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       toast.error(`Ошибка в услуге №${i + 1}: отсутствует название`)
@@ -77,17 +94,22 @@ function isValidTemplate(template) {
     }
 
     if (!['шт', 'час', 'день', 'м²', 'м'].includes(unit)) {
-      toast.error(`Ошибка в услуге №${i + 1}: недопустимая единица измерения`)
+      toast.error(`Ошибка в услуге ${item.name}: недопустимая единица измерения`)
       return false
     }
 
     if (typeof quantity !== 'number' || quantity <= 0) {
-      toast.error(`Ошибка в услуге №${i + 1}: количество должно быть > 0`)
+      toast.error(`Ошибка в услуге ${item.name}: количество должно быть > 0`)
       return false
     }
 
-    if (typeof unit_price !== 'number' || unit_price <= 0) {
-      toast.error(`Ошибка в услуге №${i + 1}: цена должна быть > 0`)
+    if (typeof internal_price !== 'number' || internal_price <= 0) {
+      toast.error(`Ошибка в услуге ${item.name}: внутренняя цена должна быть > 0`)
+      return false
+    }
+
+    if (typeof external_price !== 'number' || external_price <= 0) {
+      toast.error(`Ошибка в услуге ${item.name}: внешняя цена должна быть > 0`)
       return false
     }
   }
@@ -127,6 +149,8 @@ function isValidTemplate(template) {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             <p>Шаблоны смет отсутствуют.</p>
           </div>
+          <QePagination :total="totalTemplates" :per-page="perPage" :page="currentPage" @update:page="changePage"
+            class="mt-4" />
         </template>
       </div>
       <!-- Правая панель: кнопки и фильтры -->

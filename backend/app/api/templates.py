@@ -6,12 +6,13 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import delete
+from sqlalchemy import delete, func
 
 from app.core.database import get_db
 from app.models.template import EstimateTemplate
 from app.models.item import EstimateItem
 from app.schemas.template import EstimateTemplateCreate, EstimateTemplateOut
+from app.schemas.paginated import Paginated
 from app.models.user import User
 from app.utils.auth import get_current_user
 
@@ -49,24 +50,31 @@ async def create_template(
     return result.scalar_one()
 
 
-@router.get("/", response_model=List[EstimateTemplateOut])
+@router.get("/", response_model=Paginated[EstimateTemplateOut])
 async def list_templates(
     name: str = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    filters = [EstimateTemplate.user_id == user.id]
+
+    if name:
+        filters.append(EstimateTemplate.name.ilike(f"%{name}%"))
+    count_q = select(func.count()).select_from(EstimateTemplate).where(*filters)
+    total = await db.scalar(count_q)
+
     query = (
         select(EstimateTemplate)
         .options(selectinload(EstimateTemplate.items))
-        .where(EstimateTemplate.user_id == user.id)
+        .where(*filters)
+        .order_by(EstimateTemplate.id.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
     )
-
-    if name:
-        query = query.where(EstimateTemplate.name.ilike(f"%{name}%"))
-
-    query = query.order_by(EstimateTemplate.id.desc())
     result = await db.execute(query)
-    return result.scalars().all()
+    return {"items": result.scalars().all(), "total": total}
 
 
 @router.get("/{template_id}", response_model=EstimateTemplateOut)
