@@ -10,6 +10,7 @@ import Toast, { POSITION } from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
 import { useAuthStore } from '@/store/auth'
+import { initRipple } from './lib/ripple'
 
 const savedTheme = localStorage.getItem('theme')
 if (
@@ -44,5 +45,7 @@ app.use(Toast, {
   maxToasts: 5,
   newestOnTop: true
 })
+
+initRipple()
 
 app.mount('#app')

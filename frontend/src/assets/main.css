@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  @apply font-sans bg-gray-50 text-gray-900 dark:bg-qe-black dark:text-gray-100 scroll-smooth;
+}
+
 /* Кастомизация toast-уведомлений */
 .Vue-Toastification__toast {
   border-radius: 12px !important;
@@ -78,27 +82,27 @@ select.qe-input-sm {
 }
 
 .qe-btn {
-  @apply py-2 px-4 rounded-lg bg-blue-600 font-medium text-sm text-white transition border border-transparent shadow-sm hover:bg-blue-700 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-95;
+  @apply relative overflow-hidden py-2 px-4 rounded-lg bg-blue-600 font-medium text-sm text-white transition border border-transparent shadow-sm hover:bg-blue-700 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-95;
   @apply dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-gray-100 dark:shadow-md;
 }
 
 .qe-btn-secondary {
-  @apply py-2 px-4 rounded-lg font-medium text-sm bg-gray-50 text-gray-800 border border-gray-200 transition hover:bg-gray-100 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-95;
+  @apply relative overflow-hidden py-2 px-4 rounded-lg font-medium text-sm bg-gray-50 text-gray-800 border border-gray-200 transition hover:bg-gray-100 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-95;
   @apply dark:bg-qe-black2 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-qe-black3 dark:hover:border-blue-700;
 }
 
 .qe-btn-danger {
-  @apply py-2 px-4 rounded-lg bg-red-600 font-medium text-sm text-white transition border border-transparent shadow-sm hover:bg-red-700 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 active:scale-95;
+  @apply relative overflow-hidden py-2 px-4 rounded-lg bg-red-600 font-medium text-sm text-white transition border border-transparent shadow-sm hover:bg-red-700 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 active:scale-95;
   @apply dark:bg-red-700 dark:hover:bg-red-800 dark:text-gray-100 dark:shadow-md;
 }
 
 .qe-btn-success {
-  @apply py-2 px-4 rounded-lg font-medium text-sm bg-green-600 text-white border border-transparent shadow-sm transition hover:bg-green-700 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 active:scale-95;
+  @apply relative overflow-hidden py-2 px-4 rounded-lg font-medium text-sm bg-green-600 text-white border border-transparent shadow-sm transition hover:bg-green-700 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 active:scale-95;
   @apply dark:bg-green-700 dark:hover:bg-green-800 dark:text-gray-100;
 }
 
 .qe-btn-warning {
-  @apply py-2 px-4 rounded-lg font-medium text-sm bg-yellow-400 border border-transparent transition hover:bg-yellow-500 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 active:scale-95;
+  @apply relative overflow-hidden py-2 px-4 rounded-lg font-medium text-sm bg-yellow-400 border border-transparent transition hover:bg-yellow-500 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 active:scale-95;
   @apply dark:bg-yellow-600 dark:text-gray-100 dark:hover:bg-yellow-700;
 }
 
@@ -106,6 +110,43 @@ select.qe-input-sm {
 .qe-btn-secondary[disabled],
 .qe-btn-danger[disabled] {
   @apply opacity-60 pointer-events-none;
+}
+
+.qe-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: qe-ripple 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes qe-ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  @apply transition-opacity duration-150;
+}
+.fade-enter-from,
+.fade-leave-to {
+  @apply opacity-0;
+}
+.slide-enter-active {
+  @apply transition-all duration-200 ease-out;
+}
+.slide-enter-from {
+  @apply opacity-0 translate-y-2;
+}
+.slide-leave-active {
+  @apply transition-all duration-150 ease-in;
+}
+.slide-leave-to {
+  @apply opacity-0 -translate-y-2;
 }
 
 .qe-card {

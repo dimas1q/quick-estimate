@@ -8,6 +8,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Helvetica', 'Arial', 'sans-serif']
+      },
       colors: {
         'qe-black': '#1A1D1F',
         'qe-black2': '#303343',
