@@ -159,13 +159,10 @@ onMounted(async () => {
     estimate.vat_rate = store.importedEstimate.vat_rate ?? 20.0
     estimate.status = store.importedEstimate.status || 'draft'
 
-    estimate.items.splice(0)
-    for (const item of store.importedEstimate.items || []) {
-      estimate.items.push({
-        ...item,
-        category_input: item.category || ''
-      })
-    }
+    estimate.items = (store.importedEstimate.items || []).map(item => ({
+      ...item,
+      category_input: item.category || ''
+    }))
 
     store.importedEstimate = null
   }

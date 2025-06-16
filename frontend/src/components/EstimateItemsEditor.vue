@@ -135,29 +135,39 @@ const emit = defineEmits(['update:modelValue'])
 // Категории для работы
 const categories = ref([])
 
-// --- Инициализация и преобразование modelValue (важно!)
+// --- Преобразование modelValue в категории
+function transformModelValue(value) {
+  if (!value || !Array.isArray(value)) return []
+  if (value.length && value[0]?.items) {
+    // Уже новая структура
+    return JSON.parse(JSON.stringify(value))
+  }
+  // Плоский массив услуг — преобразуем в категории
+  const groups = {}
+  for (const item of value) {
+    const cat = (item.category || 'Без категории').trim()
+    if (!groups[cat]) groups[cat] = []
+    groups[cat].push({ ...item })
+  }
+  return Object.entries(groups).map(([name, items]) => ({
+    id: Date.now() + Math.random(),
+    name,
+    items,
+  }))
+}
+
 onMounted(() => {
   templatesStore.fetchTemplates() // Загружаем шаблоны при монтировании
-  if (props.modelValue && Array.isArray(props.modelValue)) {
-    if (props.modelValue.length && props.modelValue[0]?.items) {
-      // Уже новая структура
-      categories.value = JSON.parse(JSON.stringify(props.modelValue))
-    } else {
-      // Плоский массив услуг — преобразуем в категории
-      const groups = {}
-      for (const item of props.modelValue) {
-        const cat = (item.category || 'Без категории').trim()
-        if (!groups[cat]) groups[cat] = []
-        groups[cat].push({ ...item })
-      }
-      categories.value = Object.entries(groups).map(([name, items]) => ({
-        id: Date.now() + Math.random(),
-        name,
-        items,
-      }))
-    }
-  }
 })
+
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (val === categories.value) return
+    categories.value = transformModelValue(val)
+  },
+  { immediate: true }
+)
 
 // Всегда синхронизируем наружу
 watch(categories, () => {
