@@ -138,14 +138,17 @@ const categories = ref([])
 // --- Инициализация и преобразование modelValue (важно!)
 onMounted(() => {
   templatesStore.fetchTemplates() // Загружаем шаблоны при монтировании
-  if (props.modelValue && Array.isArray(props.modelValue)) {
-    if (props.modelValue.length && props.modelValue[0]?.items) {
+})
+
+watch(() => props.modelValue, (val) => {
+  if (val && Array.isArray(val)) {
+    if (val.length && val[0]?.items) {
       // Уже новая структура
-      categories.value = JSON.parse(JSON.stringify(props.modelValue))
+      categories.value = JSON.parse(JSON.stringify(val))
     } else {
       // Плоский массив услуг — преобразуем в категории
       const groups = {}
-      for (const item of props.modelValue) {
+      for (const item of val) {
         const cat = (item.category || 'Без категории').trim()
         if (!groups[cat]) groups[cat] = []
         groups[cat].push({ ...item })
@@ -156,8 +159,10 @@ onMounted(() => {
         items,
       }))
     }
+  } else {
+    categories.value = []
   }
-})
+}, { immediate: true, deep: true })
 
 // Всегда синхронизируем наружу
 watch(categories, () => {
