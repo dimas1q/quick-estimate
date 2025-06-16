@@ -150,11 +150,14 @@ function convertToCategories(val) {
     if (!groups[cat]) groups[cat] = []
     groups[cat].push({ ...item })
   }
-  return Object.entries(groups).map(([name, items]) => ({
-    id: Date.now() + Math.random(),
-    name,
-    items,
-  }))
+  return Object.entries(groups).map(([name, items]) => {
+    const existing = categories.value.find(c => c.name === name)
+    return {
+      id: existing ? existing.id : `cat_${name}_${Math.random()}`,
+      name,
+      items,
+    }
+  })
 }
 
 watch(
