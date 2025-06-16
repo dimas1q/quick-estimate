@@ -3,13 +3,11 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from app.api import estimates, auth, user, templates, clients, versions, analytics
 from app.core.database import create_tables
-
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 app = FastAPI(title="QuickEstimate")
 
-# CORS (только для разработки)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -18,9 +16,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 async def startup():
     await create_tables()
+
 
 # API
 app.include_router(auth.router, prefix="/api/auth")
@@ -31,15 +31,18 @@ app.include_router(clients.router, prefix="/api/clients")
 app.include_router(versions.router, prefix="/api/versions")
 app.include_router(analytics.router, prefix="/api/analytics")
 
-# SPA frontend fallback
+# Path to built frontend (dist)
 frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 index_file = os.path.join(frontend_path, "index.html")
 
 if os.path.exists(index_file):
-    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="assets")
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="static")
 
-    @app.get("/{full_path:path}")
-    async def serve_vue_app(request: Request, full_path: str):
+    @app.exception_handler(404)
+    async def custom_404_handler(request: Request, exc):
         if request.url.path.startswith("/api"):
             raise HTTPException(status_code=404, detail="API route not found")
+        if os.path.splitext(request.url.path)[1]:
+            # Это запрос к статике — отдаём стандартный 404
+            return await app.default_exception_handler(request, exc)
         return FileResponse(index_file)
