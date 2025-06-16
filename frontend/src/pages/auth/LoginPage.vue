@@ -25,7 +25,7 @@ async function handleLogin() {
     <div
         class="w-full max-w-sm bg-white dark:bg-qe-black3 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
         <div class="flex flex-col items-center mb-7">
-            <img src="/vite.svg" class="h-10 mb-2 opacity-90" alt="QuickEstimate" />
+            <img src="/logo.svg" class="w-16 h-16" alt="QuickEstimate" />
             <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">QuickEstimate</span>
         </div>
         <form @submit.prevent="handleLogin" autocomplete="on">
