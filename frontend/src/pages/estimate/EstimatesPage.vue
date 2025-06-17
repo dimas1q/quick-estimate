@@ -182,7 +182,7 @@ async function changePage(p) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto center-with-sidebar">
     <!-- Навигационный переключатель -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
@@ -314,5 +314,11 @@ async function changePage(p) {
   /* text-gray-100 */
   border-color: #374151 !important;
   /* dark:border-gray-700 */
+}
+
+@media (min-width: 768px) {
+  .center-with-sidebar {
+    transform: translateX(calc(var(--sidebar-width) / -2));
+  }
 }
 </style>

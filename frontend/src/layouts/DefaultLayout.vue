@@ -15,6 +15,9 @@ const route = useRoute()
 const showMenu = ref(false)
 const menuRef = ref(null)
 const showSidebar = ref(false)
+const sidebarCollapsed = ref(
+  JSON.parse(localStorage.getItem('sidebar-collapsed')) || false
+)
 
 watch(
   () => auth.user,
@@ -100,9 +103,16 @@ onClickOutside(menuRef, () => {
       </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
+    <div
+      class="flex flex-1 overflow-hidden"
+      :style="{ '--sidebar-width': sidebarCollapsed ? '4rem' : '12rem' }"
+    >
       <!-- SIDEBAR -->
-      <Sidebar v-if="auth.user && showSidebar" />
+      <Sidebar
+        v-if="auth.user && showSidebar"
+        :collapsed="sidebarCollapsed"
+        @update:collapsed="val => (sidebarCollapsed.value = val)"
+      />
 
       <!-- MAIN -->
       <main class="flex-1 overflow-y-auto dark:bg-qe-black3 bg-gray-50 p-4">

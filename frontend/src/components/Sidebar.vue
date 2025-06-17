@@ -1,14 +1,33 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+const emit = defineEmits(['update:collapsed'])
+const props = defineProps({ collapsed: { type: Boolean, default: null } })
 import { FileText, Folder, Users, ChevronLeft, ChartNoAxesCombined } from 'lucide-vue-next'
 
 const route = useRoute()
-const collapsed = ref(JSON.parse(localStorage.getItem('sidebar-collapsed')) || false)
+const collapsed = ref(
+  props.collapsed !== null
+    ? props.collapsed
+    : JSON.parse(localStorage.getItem('sidebar-collapsed')) || false
+)
+
+watch(
+  () => props.collapsed,
+  (val) => {
+    if (val !== null && val !== collapsed.value) {
+      collapsed.value = val
+    }
+  }
+)
+
+watch(collapsed, (val) => {
+  localStorage.setItem('sidebar-collapsed', JSON.stringify(val))
+  emit('update:collapsed', val)
+})
 
 function toggleSidebar() {
   collapsed.value = !collapsed.value
-  localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed.value))
 }
 
 function isActive(path) {

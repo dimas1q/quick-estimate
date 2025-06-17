@@ -118,7 +118,7 @@ function isValidTemplate(template) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto center-with-sidebar">
     <!-- Шапка -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Шаблоны смет</h1>
@@ -177,3 +177,11 @@ function isValidTemplate(template) {
     </div>
   </div>
 </template>
+
+<style scoped>
+@media (min-width: 768px) {
+  .center-with-sidebar {
+    transform: translateX(calc(var(--sidebar-width) / -2));
+  }
+}
+</style>
