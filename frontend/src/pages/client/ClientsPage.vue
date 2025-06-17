@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import QePagination from '@/components/QePagination.vue'
 
@@ -13,6 +13,8 @@ const filters = ref({
 const perPage = 5
 const currentPage = ref(1)
 const currentFilters = ref({})
+const sidebarWidth = inject('sidebarWidth', ref(64))
+const contentTransform = computed(() => `translateX(-${sidebarWidth.value / 2}px)`)
 const totalClients = computed(() => store.total)
 
 onMounted(async () => {
@@ -51,7 +53,7 @@ async function changePage(p) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto" :style="{ transform: contentTransform }">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Клиенты</h1>
       <!-- Можно добавить импорт/экспорт позже -->

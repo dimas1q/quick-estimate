@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEstimatesStore } from '@/store/estimates'
@@ -38,6 +38,8 @@ const clients = computed(() => clientsStore.clients)
 const perPage = 5
 const currentPage = ref(1)
 const currentFilters = ref({})
+const sidebarWidth = inject('sidebarWidth', ref(64))
+const contentTransform = computed(() => `translateX(-${sidebarWidth.value / 2}px)`)
 const totalEstimates = computed(() => estimatesStore.total)
 
 const filteredEstimates = computed(() => {
@@ -182,7 +184,7 @@ async function changePage(p) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto" :style="{ transform: contentTransform }">
     <!-- Навигационный переключатель -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">

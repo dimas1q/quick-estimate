@@ -1,6 +1,6 @@
 <!-- frontend/src/layouts/DefaultLayout.vue -->
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed, provide } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRoute, useRouter } from 'vue-router'
 import { onClickOutside } from '@vueuse/core'
@@ -15,6 +15,11 @@ const route = useRoute()
 const showMenu = ref(false)
 const menuRef = ref(null)
 const showSidebar = ref(false)
+const sidebarRef = ref(null)
+
+const sidebarCollapsed = computed(() => sidebarRef.value?.collapsed.value ?? false)
+const sidebarWidth = computed(() => (sidebarCollapsed.value ? 64 : 192))
+provide('sidebarWidth', sidebarWidth)
 
 watch(
   () => auth.user,
@@ -102,7 +107,7 @@ onClickOutside(menuRef, () => {
 
     <div class="flex flex-1 overflow-hidden">
       <!-- SIDEBAR -->
-      <Sidebar v-if="auth.user && showSidebar" />
+      <Sidebar ref="sidebarRef" v-if="auth.user && showSidebar" />
 
       <!-- MAIN -->
       <main class="flex-1 overflow-y-auto dark:bg-qe-black3 bg-gray-50 p-4">

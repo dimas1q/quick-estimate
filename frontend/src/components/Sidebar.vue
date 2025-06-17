@@ -6,6 +6,10 @@ import { FileText, Folder, Users, ChevronLeft, ChartNoAxesCombined } from 'lucid
 const route = useRoute()
 const collapsed = ref(JSON.parse(localStorage.getItem('sidebar-collapsed')) || false)
 
+defineExpose({
+  collapsed
+})
+
 function toggleSidebar() {
   collapsed.value = !collapsed.value
   localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed.value))

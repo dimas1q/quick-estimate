@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useTemplatesStore } from '@/store/templates'
@@ -19,6 +19,8 @@ const filters = ref({
 const perPage = 5
 const currentPage = ref(1)
 const currentFilters = ref({})
+const sidebarWidth = inject('sidebarWidth', ref(64))
+const contentTransform = computed(() => `translateX(-${sidebarWidth.value / 2}px)`)
 const totalTemplates = computed(() => store.total)
 
 onMounted(async () => {
@@ -118,7 +120,7 @@ function isValidTemplate(template) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto" :style="{ transform: contentTransform }">
     <!-- Шапка -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Шаблоны смет</h1>
