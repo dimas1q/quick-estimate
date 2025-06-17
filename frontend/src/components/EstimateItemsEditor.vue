@@ -135,29 +135,41 @@ const emit = defineEmits(['update:modelValue'])
 // Категории для работы
 const categories = ref([])
 
-// --- Инициализация и преобразование modelValue (важно!)
 onMounted(() => {
-  templatesStore.fetchTemplates() // Загружаем шаблоны при монтировании
-  if (props.modelValue && Array.isArray(props.modelValue)) {
-    if (props.modelValue.length && props.modelValue[0]?.items) {
-      // Уже новая структура
-      categories.value = JSON.parse(JSON.stringify(props.modelValue))
-    } else {
-      // Плоский массив услуг — преобразуем в категории
-      const groups = {}
-      for (const item of props.modelValue) {
-        const cat = (item.category || 'Без категории').trim()
-        if (!groups[cat]) groups[cat] = []
-        groups[cat].push({ ...item })
-      }
-      categories.value = Object.entries(groups).map(([name, items]) => ({
-        id: Date.now() + Math.random(),
-        name,
-        items,
-      }))
-    }
-  }
+  templatesStore.fetchTemplates()
 })
+
+function convertToCategories(val) {
+  if (!Array.isArray(val)) return []
+  if (val.length && val[0]?.items) {
+    return JSON.parse(JSON.stringify(val))
+  }
+  const groups = {}
+  for (const item of val) {
+    const cat = (item.category || 'Без категории').trim()
+    if (!groups[cat]) groups[cat] = []
+    groups[cat].push({ ...item })
+  }
+  return Object.entries(groups).map(([name, items]) => {
+    const existing = categories.value.find(c => c.name === name)
+    return {
+      id: existing ? existing.id : `cat_${name}_${Math.random()}`,
+      name,
+      items,
+    }
+  })
+}
+
+watch(
+  () => props.modelValue,
+  (val) => {
+    const newCats = convertToCategories(val)
+    if (JSON.stringify(newCats) !== JSON.stringify(categories.value)) {
+      categories.value = newCats
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 // Всегда синхронизируем наружу
 watch(categories, () => {
