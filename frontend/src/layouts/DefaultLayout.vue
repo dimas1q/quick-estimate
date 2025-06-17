@@ -4,7 +4,7 @@ import { ref, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRoute, useRouter } from 'vue-router'
 import { onClickOutside } from '@vueuse/core'
-import { LogOut, User, Settings, ChevronDown } from 'lucide-vue-next'
+import { LogOut, User, Settings, ChevronDown, Menu } from 'lucide-vue-next'
 import Sidebar from '@/components/Sidebar.vue'
 import ThemeSlider from '@/components/ThemeSlider.vue'
 
@@ -15,6 +15,7 @@ const route = useRoute()
 const showMenu = ref(false)
 const menuRef = ref(null)
 const showSidebar = ref(false)
+const mobileSidebar = ref(false)
 
 watch(
   () => auth.user,
@@ -38,11 +39,16 @@ async function logout() {
 
 watch(() => route.path, () => {
   showMenu.value = false
+  mobileSidebar.value = false
 })
 
 onClickOutside(menuRef, () => {
   showMenu.value = false
 })
+
+function toggleMobileSidebar() {
+  mobileSidebar.value = !mobileSidebar.value
+}
 </script>
 
 <template>
@@ -51,6 +57,9 @@ onClickOutside(menuRef, () => {
     <header
       class="bg-white/80 dark:bg-qe-black3 border-b border-gray-200 dark:border-qe-black2 shadow-sm px-4 py-2 flex justify-between items-center">
       <div class="flex items-center gap-2">
+        <button @click="toggleMobileSidebar" class="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-qe-black2">
+          <Menu class="w-6 h-6" />
+        </button>
         <img src="/logo.svg" class="w-10 h-10" alt="QuickEstimate" />
         <RouterLink to="/" class="flex items-center gap-2 text-xl font-extrabold text-blue-600 dark:text-blue-600">
           QuickEstimate
@@ -101,13 +110,22 @@ onClickOutside(menuRef, () => {
     </header>
 
     <div class="flex flex-1 overflow-hidden">
-      <!-- SIDEBAR -->
-      <Sidebar v-if="auth.user && showSidebar" />
+      <!-- SIDEBAR desktop -->
+      <Sidebar v-if="auth.user && showSidebar" class="hidden md:block" />
 
       <!-- MAIN -->
       <main class="flex-1 overflow-y-auto dark:bg-qe-black3 bg-gray-50 p-4">
         <slot />
       </main>
+
+      <!-- SIDEBAR mobile -->
+      <Sidebar
+        v-if="auth.user && showSidebar"
+        :mobile="true"
+        :open="mobileSidebar"
+        @close="mobileSidebar = false"
+        class="md:hidden" />
     </div>
+    <div v-if="mobileSidebar" @click="mobileSidebar = false" class="fixed inset-0 bg-black/40 z-30 md:hidden"></div>
   </div>
 </template>

@@ -124,7 +124,7 @@ function isValidTemplate(template) {
       <h1 class="text-2xl font-bold">Шаблоны смет</h1>
       <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
     </div>
-    <div class="flex gap-6 items-start">
+    <div class="flex flex-col lg:flex-row gap-6 items-start">
       <!-- Левая колонка — список шаблонов -->
       <div class="flex-1 space-y-4">
         <div v-if="isLoading" class="flex flex-col gap-5">
@@ -154,7 +154,7 @@ function isValidTemplate(template) {
         </template>
       </div>
       <!-- Правая панель: кнопки и фильтры -->
-      <div class="w-72 space-y-4">
+      <div class="w-full lg:w-72 space-y-4">
         <router-link to="/templates/create" class="qe-btn block w-full text-center">
           Создать шаблон
         </router-link>

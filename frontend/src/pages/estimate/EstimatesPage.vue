@@ -197,7 +197,7 @@ async function changePage(p) {
 
     <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
 
-    <div class="flex gap-6 items-start">
+    <div class="flex flex-col lg:flex-row gap-6 items-start">
       <div class="flex-1 space-y-4">
         <!-- Скелетон-карточки -->
         <div v-if="isLoading" class="flex flex-col gap-5">
@@ -244,7 +244,7 @@ async function changePage(p) {
       </div>
 
       <!-- Боковая панель с фильтрами и импортом -->
-      <div class="w-72 space-y-4">
+      <div class="w-full lg:w-72 space-y-4">
         <router-link to="/estimates/create" class="qe-btn block w-full text-center">
           Создать смету
         </router-link>

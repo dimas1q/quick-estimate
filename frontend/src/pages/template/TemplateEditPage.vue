@@ -3,7 +3,7 @@
     <div v-if="error" class="text-red-500 text-center text-lg font-medium mt-10">
       {{ error }}
     </div>
-    <div v-if="template" class="space-y-6 max-w-6xl mx-auto px-16 py-4">
+    <div v-if="template" class="space-y-6 max-w-6xl mx-auto px-4 sm:px-8 lg:px-16 py-4">
       <h1 class="text-2xl font-bold mb-6 text-center py-2">Редактирование шаблона: {{ template?.name }}</h1>
       <TemplateForm v-if="template" :initial="template" mode="edit" @updated="goToDetails" />
     </div>

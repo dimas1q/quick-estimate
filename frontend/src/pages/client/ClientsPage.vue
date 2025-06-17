@@ -56,7 +56,7 @@ async function changePage(p) {
       <h1 class="text-2xl font-bold">Клиенты</h1>
       <!-- Можно добавить импорт/экспорт позже -->
     </div>
-    <div class="flex gap-6 items-start">
+    <div class="flex flex-col lg:flex-row gap-6 items-start">
       <!-- Список клиентов -->
       <div class="flex-1 space-y-4">
         <div v-if="isLoading" class="flex flex-col gap-5">
@@ -92,7 +92,7 @@ async function changePage(p) {
       </div>
 
       <!-- Правая панель: добавление и фильтры -->
-      <div class="w-72 space-y-4">
+      <div class="w-full lg:w-72 space-y-4">
         <router-link to="/clients/create" class="qe-btn block w-full text-center">
           Добавить клиента
         </router-link>
