@@ -58,7 +58,7 @@
           <div
             class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col justify-center">
             <div class="flex items-center gap-2 mb-2">
-              <Info class="w-7 h-7 text-blue-600" />
+              <Info class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Основная информация</span>
             </div>
             <div class="flex-1 flex flex-col justify-center space-y-2">
@@ -103,7 +103,7 @@
           <div
             class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full">
             <div class="flex items-center mb-4 gap-2">
-              <Landmark class="w-7 h-7 text-blue-600" />
+              <Landmark class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Реквизиты</span>
             </div>
             <div class="space-y-2">
@@ -143,37 +143,40 @@
 
       </div>
 
-      <div v-if="activeTab === 'details'"
-        class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-sm p-6 ">
+      <div v-if="activeTab === 'details'" class=" dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl  ">
         <NotesBlock class="mb-6" :notes="notes" @add="addNote" @update="updateNote" @delete="deleteNote" />
-        <div class="flex items-center gap-2 mb-5">
-          <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
-            Сметы клиента
-          </h2>
-        </div>
-        <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="e in estimates" :key="e.id"
-            class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
-            <div class="flex justify-between items-center">
-              <RouterLink :to="`/estimates/${e.id}`"
-                class="flex items-center gap-2 font-semibold text-blue-700 dark:text-blue-400 hover:underline">
-                <LucideFileText class="w-5 h-5" /> {{ e.name }}
-              </RouterLink>
-              <span class="text-gray-500 text-xs flex items-center gap-1">
-                <LucideCalendar class="w-4 h-4" />
-                <span>{{ new Date(e.date).toLocaleDateString() }}</span>
-              </span>
+        <div
+          class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col justify-center">
+          <div class="flex items-center gap-2 mb-2">
+            <LucideFileText class="w-6 h-6 text-blue-600" />
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Сметы клиента</h3>
+
+          </div>
+          <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="e in estimates" :key="e.id"
+              class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
+              <div class="flex justify-between items-center">
+                <RouterLink :to="`/estimates/${e.id}`"
+                  class="flex items-center gap-2 font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                  {{ e.name }}
+                </RouterLink>
+                <span class="text-gray-500 text-xs flex items-center gap-1">
+                  <LucideCalendar class="w-4 h-4" />
+                  <span>{{ new Date(e.date).toLocaleDateString() }}</span>
+                </span>
+              </div>
+            </div>
+            <QePagination :total="estimatesTotal" :per-page="10" :page="estimatesPage"
+              @update:page="changeEstimatesPage" class="col-span-full mt-4" />
+          </div>
+          <div v-else
+            class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
+            <div class="flex items-center justify-center gap-1">
+              <LucideAlertCircle class="w-5 h-5 text-yellow-400 inline-block mr-1" />
+              Сметы отсутствуют
             </div>
           </div>
-          <QePagination :total="estimatesTotal" :per-page="10" :page="estimatesPage" @update:page="changeEstimatesPage"
-            class="col-span-full mt-4" />
-        </div>
-        <div v-else
-          class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
-          <div class="flex items-center justify-center gap-1">
-            <LucideAlertCircle class="w-5 h-5 text-yellow-400 inline-block mr-1" />
-            Сметы отсутствуют
-          </div>
+
 
 
         </div>

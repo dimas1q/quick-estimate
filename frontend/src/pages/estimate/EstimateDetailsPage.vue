@@ -14,7 +14,7 @@
             <LucideFileText class="w-7 h-7 text-blue-600" />
             <span>Смета: {{ estimate.name }}</span>
             <span :class="[
-              'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1 mt-2',
+              'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1 mt-1',
               {
                 'bg-gray-200 text-gray-800': estimate.status === 'draft',
                 'bg-yellow-200 text-yellow-800': estimate.status === 'sent',
@@ -141,7 +141,7 @@
             class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col">
             <!-- Заголовок всегда сверху -->
             <div class="flex items-center gap-2 mb-2">
-              <Info class="w-7 h-7 text-blue-600" />
+              <Info class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Основная информация</span>
             </div>
             <!-- Данные по центру блока -->
@@ -188,11 +188,6 @@
                 <span><span class="font-semibold">Обновлена:</span>
                   {{ new Date(estimate.updated_at).toLocaleString() }}</span>
               </div>
-              <div class="flex items-center gap-2">
-                <NotebookPen class="w-5 h-5 text-gray-400" />
-                <span><span class="font-semibold">Примечания:</span>
-                  {{ estimate.notes || "—" }}</span>
-              </div>
             </div>
           </div>
 
@@ -200,7 +195,7 @@
           <div
             class="bg-white dark:bg-qe-black3 0 rounded-2xl shadow-sm p-6 border dark:border-qe-black2 flex flex-col gap-4 justify-center h-full">
             <div class="flex items-center gap-2">
-              <LucideWallet class="w-7 h-7 text-blue-600" />
+              <LucideWallet class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Суммы по смете</span>
             </div>
             <div class="space-y-2 mt-2">
