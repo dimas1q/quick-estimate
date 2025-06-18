@@ -13,7 +13,7 @@
       <div>
         <label class="block text-sm font-semibold dark:text-white text-gray-700 mb-1">Клиент</label>
         <select v-model="estimate.client_id" class="w-full qe-input">
-          <option :value="null">Выберите клиента</option>
+          <option :value="null">Без клиента</option>
           <option v-for="c in clients" :key="c.id" :value="c.id">
             {{ c.name }} <span v-if="c.company">({{ c.company }})</span>
           </option>
@@ -51,7 +51,7 @@
 
       <!-- Заметки (на всю ширину) -->
       <div class="md:col-span-2">
-        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Заметки</label>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Примечания</label>
         <textarea v-model="estimate.notes" rows="2" placeholder="Дополнительная информация"
           class="w-full qe-textarea resize-none" />
       </div>
@@ -75,7 +75,7 @@
           <transition name="fade">
             <div v-if="estimate.vat_enabled" class="flex items-center gap-2">
               <div class="relative">
-                <input type="number" min="0" max="100" step="1" v-model.number="estimate.vat_rate"
+                <input type="number" min="1" max="99" step="1" v-model.number="estimate.vat_rate"
                   class="w-22 pr-8 pl-3 py-1.5 border rounded-lg text-base  focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white dark:bg-qe-black3 dark:border-qe-black2 dark:text-white dark:border-blue-800"
                   placeholder="%" @input="checkVatRate" />
                 <span
@@ -225,27 +225,20 @@ function cancel() {
   router.back()
 }
 
-const eventDateTimeInput = computed({
-  get() {
-    if (!estimate.event_datetime) return ''
-    // Обрезать лишнее: только yyyy-MM-ddTHH:mm
-    // Если приходит ISO: 2024-06-01T13:30:00.000Z
-    const dt = estimate.event_datetime
-    if (dt.length >= 16) return dt.slice(0, 16)
-    return dt
-  },
-  set(val) {
-    estimate.event_datetime = val
-  }
-})
+const format = (date) => {
+  if (!date) return ''
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${day}.${month}.${year} ${hours}:${minutes}`
+}
+
 
 function validateEstimate() {
   if (!estimate.name?.trim()) {
     toast.error("Название сметы обязательно")
-    return false
-  }
-  if (!estimate.client_id) {
-    toast.error("Выберите клиента")
     return false
   }
   if (!estimate.responsible?.trim()) {

@@ -114,12 +114,22 @@ async function submit() {
         toast.error('Имя обязательно')
         return
     }
+    if (!(client.email || '').trim() && !(client.phone || '').trim()) {
+        toast.error('Укажите хотя бы один контакт: Email или Телефон')
+        return
+    }
+
+    // Готовим данные без пустых строк
+    const dataToSend = { ...client }
+    dataToSend.email = (dataToSend.email || '').trim() === '' ? null : dataToSend.email
+    dataToSend.phone = (dataToSend.phone || '').trim() === '' ? null : dataToSend.phone
+
     let res
     if (props.mode === 'edit') {
-        res = await store.updateClient(props.initial.id, client)
+        res = await store.updateClient(props.initial.id, dataToSend)
         emit('updated')
     } else {
-        res = await store.createClient(client)
+        res = await store.createClient(dataToSend)
         toast.success('Клиент создан')
         router.push(`/clients/${res.id}`)
     }

@@ -154,8 +154,21 @@ function isValidEstimate(estimate) {
   return true
 }
 
+async function fetchEstimatesPage() {
+  isLoading.value = true
+  const params = {
+    page: currentPage.value,
+    limit: perPage,
+  }
+  if (viewMode.value === 'fav') params.favorite = true
+  await estimatesStore.fetchEstimates(params)
+  isLoading.value = false
+}
+
 function setViewMode(mode) {
   viewMode.value = mode
+  currentPage.value = 1
+  fetchEstimatesPage()
 }
 
 async function toggleFavorite(estimate) {
@@ -174,10 +187,9 @@ async function toggleFavorite(estimate) {
   }
 }
 
-async function changePage(p) {
+function changePage(p) {
   currentPage.value = p
-  await estimatesStore.fetchEstimates({ ...currentFilters.value, page: p, limit: perPage })
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  fetchEstimatesPage()
 }
 </script>
 
@@ -214,7 +226,7 @@ async function changePage(p) {
         <template v-else>
 
           <div v-for="e in filteredEstimates" :key="e.id"
-            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col gap-1 relative ">
+            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col  relative ">
             <!-- Звезда -->
             <button
               class="absolute top-2 right-2 rounded-full bg-transparent p-1 transition flex items-center justify-center"
@@ -224,12 +236,12 @@ async function changePage(p) {
               <Star v-else class="w-6 h-6 text-gray-300 hover:text-yellow-400 transition" :stroke-width="1.5" />
             </button>
             <div class="font-semibold text-lg">{{ e.name }}</div>
-            <div class="text-sm">
+            <div class="text-sm dark:text-gray-400">
               Клиент: {{ e.client?.name || '—' }}
               <span v-if="e.client?.company">({{ e.client.company }})</span>
             </div>
-            <div class="text-sm">Ответственный: {{ e.responsible || '—' }}</div>
-            <div class="text-xs text-gray-500">Создана: {{ new Date(e.date).toLocaleString() }}</div>
+            <div class="text-sm dark:text-gray-400">Ответственный: {{ e.responsible || '—' }}</div>
+            <div class="text-xs text-gray-500 mt-2">Создана: {{ new Date(e.date).toLocaleString() }}</div>
             <router-link :to="`/estimates/${e.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">
               Подробнее →
             </router-link>
@@ -244,7 +256,7 @@ async function changePage(p) {
       </div>
 
       <!-- Боковая панель с фильтрами и импортом -->
-      <div class="w-72 space-y-4">
+      <div class="w-68 space-y-4">
         <router-link to="/estimates/create" class="qe-btn block w-full text-center">
           Создать смету
         </router-link>
@@ -286,33 +298,3 @@ async function changePage(p) {
     </div>
   </div>
 </template>
-
-
-<style scoped>
-.dp__theme_dark {
-  --dp-background-color: #1a1d1f;
-}
-
-.dp__input {
-  width: 100% !important;
-  padding: 0.5rem 1rem !important;
-  border-radius: 0.5rem !important;
-  /* rounded-lg */
-  border: 1px solid #d1d5db !important;
-  /* gray-300 */
-  font-size: 1rem !important;
-  background: #fff !important;
-  color: #18181b !important;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-
-.dark .dp__input {
-  background: #1a1d1f !important;
-  /* твой qe-black */
-  color: #f3f4f6 !important;
-  /* text-gray-100 */
-  border-color: #374151 !important;
-  /* dark:border-gray-700 */
-}
-</style>

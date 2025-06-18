@@ -118,7 +118,7 @@ function isValidTemplate(template) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
     <!-- Шапка -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Шаблоны смет</h1>
@@ -137,9 +137,9 @@ function isValidTemplate(template) {
         </div>
         <template v-else>
           <div v-for="template in store.templates" :key="template.id"
-            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col gap-1">
+            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col ">
             <div class="font-semibold text-lg">{{ template.name }}</div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">Описание: {{ template.description || '—' }}</div>
+            <div class="text-sm  dark:text-gray-400">Описание: {{ template.description || '—' }}</div>
             <router-link :to="`/templates/${template.id}`"
               class="text-blue-600 dark:text-blue-400 text-sm hover:underline mt-2 inline-block">
               Подробнее →
@@ -154,7 +154,7 @@ function isValidTemplate(template) {
         </template>
       </div>
       <!-- Правая панель: кнопки и фильтры -->
-      <div class="w-72 space-y-4">
+      <div class="w-68 space-y-4">
         <router-link to="/templates/create" class="qe-btn block w-full text-center">
           Создать шаблон
         </router-link>

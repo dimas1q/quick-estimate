@@ -20,21 +20,59 @@ from app.utils.auth import get_current_user
 
 router = APIRouter(tags=["clients"], dependencies=[Depends(get_current_user)])
 
-FIELD_NAMES_RU = {
-    "name": "Изменено имя",
-    "company": "Изменена компания",
-    "email": "Изменен email",
-    "phone": "Изменен телефон",
-    "account": "Изменён расчетный счет",
-    "corr_account": "Изменён корр. счет",
-    "actual_address": "Изменён факт. адрес",
-    "legal_address": "Изменён юр. адрес",
-    "inn": "Изменён ИНН",
-    "kpp": "Изменён КПП",
-    "bik": "Изменён БИК",
-    "bank": "Изменён банк",
-    "notes": "Изменены примечания",
+FIELD_ACTIONS_CLIENT_RU = {
+    "name": {
+        "add": "Добавлено имя",
+        "del": "Удалено имя",
+        "edit": "Изменено имя",
+    },
+    "company": {
+        "add": "Добавлена компания",
+        "del": "Удалена компания",
+        "edit": "Изменена компания",
+    },
+    "email": {"add": "Добавлен email", "del": "Удален email", "edit": "Изменен email"},
+    "phone": {
+        "add": "Добавлен телефон",
+        "del": "Удален телефон",
+        "edit": "Изменен телефон",
+    },
+    "legal_address": {
+        "add": "Добавлен юр. адрес",
+        "del": "Удален юр. адрес",
+        "edit": "Изменен юр. адрес",
+    },
+    "actual_address": {
+        "add": "Добавлен факт. адрес",
+        "del": "Удален факт. адрес",
+        "edit": "Изменен факт. адрес",
+    },
+    "inn": {"add": "Добавлен ИНН", "del": "Удален ИНН", "edit": "Изменен ИНН"},
+    "kpp": {"add": "Добавлен КПП", "del": "Удален КПП", "edit": "Изменен КПП"},
+    "bik": {"add": "Добавлен БИК", "del": "Удален БИК", "edit": "Изменен БИК"},
+    "account": {
+        "add": "Добавлен расчетный счет",
+        "del": "Удален расчетный счет",
+        "edit": "Изменен расчетный счет",
+    },
+    "bank": {"add": "Добавлен банк", "del": "Удален банк", "edit": "Изменен банк"},
+    "corr_account": {
+        "add": "Добавлен корр. счет",
+        "del": "Удален корр. счет",
+        "edit": "Изменен корр. счет",
+    },
+    "notes": {
+        "add": "Добавлены примечания",
+        "del": "Удалены примечания",
+        "edit": "Изменены примечания",
+    },
 }
+
+
+def prettify_value(val):
+    if val in [None, ""]:
+        return "—"
+    return str(val)
 
 
 @router.post("/", response_model=ClientOut, status_code=status.HTTP_201_CREATED)
@@ -117,8 +155,10 @@ async def get_client_logs(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
-    count_q = select(func.count()).select_from(ClientChangeLog).where(
-        ClientChangeLog.client_id == client_id
+    count_q = (
+        select(func.count())
+        .select_from(ClientChangeLog)
+        .where(ClientChangeLog.client_id == client_id)
     )
     total = await db.scalar(count_q)
 
@@ -162,13 +202,31 @@ async def update_client(
     details = []
     for field, val in client_in.dict(exclude_unset=True).items():
         old_val = getattr(client, field)
-        if old_val != val:
-            ru = FIELD_NAMES_RU.get(field, field)
-            details.append({
-                "label": ru,
-                "old": str(old_val) if old_val is not None else "—",
-                "new": str(val) if val is not None else "—"
-            })
+        actions = FIELD_ACTIONS_CLIENT_RU.get(field)
+        if actions:
+            # Добавление
+            if not old_val and val:
+                details.append(
+                    {"label": actions["add"], "old": None, "new": prettify_value(val)}
+                )
+            # Удаление
+            elif old_val and not val:
+                details.append(
+                    {
+                        "label": actions["del"],
+                        "old": prettify_value(old_val),
+                        "new": None,
+                    }
+                )
+            # Изменение
+            elif old_val != val:
+                details.append(
+                    {
+                        "label": actions["edit"],
+                        "old": prettify_value(old_val),
+                        "new": prettify_value(val),
+                    }
+                )
         setattr(client, field, val)
 
     if details:

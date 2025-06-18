@@ -8,12 +8,13 @@
     <div v-if="estimate" class="space-y-7">
       <!-- Заголовок и статус -->
       <div class="flex flex-wrap justify-between items-center pb-1 mb-7 gap-4">
+
         <div>
           <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
             <LucideFileText class="w-7 h-7 text-blue-600" />
             <span>Смета: {{ estimate.name }}</span>
             <span :class="[
-              'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1 mt-1',
+              'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1 mt-2',
               {
                 'bg-gray-200 text-gray-800': estimate.status === 'draft',
                 'bg-yellow-200 text-yellow-800': estimate.status === 'sent',
@@ -39,6 +40,30 @@
         </div>
 
         <!-- Кнопки управления -->
+
+      </div>
+
+      <div class="flex items-center justify-between mb-6 gap-4">
+        <!-- Табы -->
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 w-fit">
+          <button :class="[
+            'px-5 py-2 rounded-lg text-sm font-semibold transition',
+            activeTab === 'details'
+              ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
+              : 'text-gray-500 hover:text-blue-600',
+          ]" @click="activeTab = 'details'">
+            Сведения
+          </button>
+          <button :class="[
+            'px-5 py-2 rounded-lg text-sm font-semibold transition',
+            activeTab === 'history'
+              ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
+              : 'text-gray-500 hover:text-blue-600',
+          ]" @click="activeTab = 'history'">
+            История
+          </button>
+        </div>
+
         <div class="flex space-x-2 items-center relative">
           <!-- если мы в режиме версии, показываем другие кнопки -->
           <template v-if="isVersionView">
@@ -66,9 +91,10 @@
               <button @click="showExport = !showExport" class="qe-btn-success inline-flex items-center">
                 <Download class="w-4 h-4 mr-1" />
                 <span>Экспортировать</span>
-                <!-- <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 ml-2 transition-transform duration-200" :class="{ 'rotate-180': showExport }"
+                  fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                </svg> -->
+                </svg>
               </button>
               <div v-if="showExport"
                 class="absolute right-0 mt-2 w-38 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
@@ -88,102 +114,92 @@
             </div>
 
             <!-- Основные кнопки -->
-            <RouterLink :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning flex items-center">
-              <LucidePencilLine class="w-4 h-4 mr-1" />
-              <span>Редактировать</span>
-            </RouterLink>
+
             <button @click="copyEstimate" class="qe-btn flex items-center">
               <ClipboardPaste class="w-4 h-4 mr-1" />
               <span>Копировать</span>
             </button>
+            <RouterLink :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning flex items-center">
+              <LucidePencilLine class="w-4 h-4 mr-1" />
+              <span>Редактировать</span>
+            </RouterLink>
             <button @click="confirmDelete" class="qe-btn-danger flex items-center">
               <LucideTrash2 class="w-4 h-4 mr-1" />
               <span>Удалить</span>
             </button>
           </template>
         </div>
-      </div>
 
-      <!-- Табы -->
-      <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 mb-6 w-fit">
-        <button :class="[
-          'px-5 py-2 rounded-lg text-sm font-semibold transition',
-          activeTab === 'details'
-            ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
-            : 'text-gray-500 hover:text-blue-600',
-        ]" @click="activeTab = 'details'">
-          Сведения
-        </button>
-        <button :class="[
-          'px-5 py-2 rounded-lg text-sm font-semibold transition',
-          activeTab === 'history'
-            ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
-            : 'text-gray-500 hover:text-blue-600',
-        ]" @click="activeTab = 'history'">
-          История
-        </button>
       </div>
 
       <!-- Основной контент -->
       <div v-if="activeTab === 'details'">
         <!-- Краткая информация -->
         <div class="grid gap-4 text-sm text-gray-800 dark:text-gray-200 grid-cols-1 md:grid-cols-2">
+          <!-- Левый блок: Краткая информация -->
           <div
-            class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col justify-center">
-            <div class="flex items-center gap-2">
-              <LucideUser class="w-5 h-5 text-blue-500" />
-              <span><span class="font-semibold">Клиент: </span>
-                <RouterLink :to="`/clients/${estimate.client.id}`" class="text-blue-700 hover:underline">
-                  {{ estimate.client.name }}
-                </RouterLink>
-              </span>
+            class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col">
+            <!-- Заголовок всегда сверху -->
+            <div class="flex items-center gap-2 mb-2">
+              <Info class="w-7 h-7 text-blue-600" />
+              <span class="text-lg font-bold">Основная информация</span>
             </div>
-
-            <div class="flex items-center gap-2">
-              <LucideUserCircle class="w-5 h-5 text-green-500" />
-              <span><span class="font-semibold">Ответственный: </span><span>{{ estimate.responsible }}</span></span>
-            </div>
-            <div v-if="estimate.event_datetime" class="flex items-center gap-2">
-              <LucideCalendar class="w-5 h-5 text-yellow-500" />
-              <span><span class="font-semibold">Дата и время: </span><span>{{
-                new Date(estimate.event_datetime).toLocaleString()
-                  }}</span></span>
-            </div>
-            <div v-if="estimate.event_place" class="flex items-center gap-2">
-              <LucideMapPin class="w-5 h-5 text-pink-500" />
-              <span><span class="font-semibold">Место проведения: </span><span>{{ estimate.event_place }}</span></span>
-            </div>
-            <div class="flex items-center gap-2">
-              <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
-              <span>
-                <span class="font-semibold">НДС:</span>
-                <span v-if="estimate.vat_enabled">
-                  Включён ({{ estimate.vat_rate }}%)</span>
-                <span v-else> Не включён</span>
-              </span>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <LucideClock3 class="w-5 h-5 text-gray-400" />
-              <span><span class="font-semibold">Создана:</span>
-                {{ new Date(estimate.date).toLocaleString() }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <LucideRefreshCw class="w-5 h-5 text-gray-400" />
-              <span><span class="font-semibold">Обновлена:</span>
-                {{ new Date(estimate.updated_at).toLocaleString() }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <NotebookPen class="w-5 h-5 text-gray-400" />
-              <span><span class="font-semibold">Примечания:</span>
-                {{ estimate.notes || "—" }}</span>
+            <!-- Данные по центру блока -->
+            <div class="flex-1 flex flex-col justify-center space-y-2">
+              <div v-if="estimate.client" class="flex items-center gap-2">
+                <LucideUser class="w-5 h-5 text-blue-500" />
+                <span><span class="font-semibold">Клиент: </span>
+                  <RouterLink :to="`/clients/${estimate.client.id}`" class="text-blue-700 hover:underline">
+                    {{ estimate.client.name }}
+                  </RouterLink>
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <LucideUserCircle class="w-5 h-5 text-green-500" />
+                <span><span class="font-semibold">Ответственный: </span><span>{{ estimate.responsible }}</span></span>
+              </div>
+              <div v-if="estimate.event_datetime" class="flex items-center gap-2">
+                <LucideCalendar class="w-5 h-5 text-yellow-500" />
+                <span><span class="font-semibold">Дата и время: </span><span>{{
+                  new Date(estimate.event_datetime).toLocaleString()
+                    }}</span></span>
+              </div>
+              <div v-if="estimate.event_place" class="flex items-center gap-2">
+                <LucideMapPin class="w-5 h-5 text-pink-500" />
+                <span><span class="font-semibold">Место проведения: </span><span>{{ estimate.event_place
+                }}</span></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
+                <span>
+                  <span class="font-semibold">НДС:</span>
+                  <span v-if="estimate.vat_enabled">
+                    Включён ({{ estimate.vat_rate }}%)</span>
+                  <span v-else> Не включён</span>
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <LucideClock3 class="w-5 h-5 text-gray-400" />
+                <span><span class="font-semibold">Создана:</span>
+                  {{ new Date(estimate.date).toLocaleString() }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <LucideRefreshCw class="w-5 h-5 text-gray-400" />
+                <span><span class="font-semibold">Обновлена:</span>
+                  {{ new Date(estimate.updated_at).toLocaleString() }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <NotebookPen class="w-5 h-5 text-gray-400" />
+                <span><span class="font-semibold">Примечания:</span>
+                  {{ estimate.notes || "—" }}</span>
+              </div>
             </div>
           </div>
 
           <!-- Общие суммы -->
           <div
             class="bg-white dark:bg-qe-black3 0 rounded-2xl shadow-sm p-6 border dark:border-qe-black2 flex flex-col gap-4 justify-center h-full">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
               <LucideWallet class="w-7 h-7 text-blue-600" />
               <span class="text-lg font-bold">Суммы по смете</span>
             </div>
@@ -194,7 +210,7 @@
                   <span>Внутренняя:</span>
                 </div>
                 <span class="text-lg font-semibold text-green-700 dark:text-green-400">{{ formatCurrency(totalInternal)
-                  }}</span>
+                }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -202,7 +218,7 @@
                   <span>Внешняя:</span>
                 </div>
                 <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{ formatCurrency(totalExternal)
-                  }}</span>
+                }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -210,7 +226,7 @@
                   <span>Разница:</span>
                 </div>
                 <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">{{ formatCurrency(totalDiff)
-                  }}</span>
+                }}</span>
               </div>
               <div v-if="estimate.vat_enabled" class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -218,7 +234,7 @@
                   <span>НДС ({{ estimate.vat_rate }}%):</span>
                 </div>
                 <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{ formatCurrency(vat)
-                  }}</span>
+                }}</span>
               </div>
               <div v-if="estimate.vat_enabled"
                 class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
@@ -228,7 +244,7 @@
                 </div>
                 <span class="text-xl font-bold text-gray-800 dark:text-white">{{
                   formatCurrency(totalWithVat)
-                  }}</span>
+                }}</span>
               </div>
             </div>
           </div>
@@ -307,7 +323,7 @@
         <div v-if="logs.length" class="text-sm w-full mt-6">
           <h3 class="font-semibold mb-4">
 
-            <span class="flex items-center gap-1">
+            <span class="flex items-center gap-2">
               <LucideHistory class="w-5 h-5 text-blue-600" />
               <span>История изменений</span>
             </span>
@@ -351,27 +367,41 @@
                 <ul v-if="log.details && log.details.length && showDetails[log.id]"
                   class="mt-2 mb-2 pl-2 border-l dark:border-qe-black2 border-blue-200 text-sm space-y-1">
                   <li v-for="(d, i) in log.details" :key="i" class="text-blue-700 dark:text-blue-500">
-                  <li v-if="typeof d === 'string'">
-                    {{ d }}
-                  </li>
-                  <li v-else>
-                    <span class="font-semibold">{{ d.label }}:</span>
-                    <span class="mx-1 text-gray-500 line-through">
-                      {{
-                        isDate(d.old) && isDate(d.new)
-                          ? formatDate(d.old)
-                          : d.old
-                      }}
-                    </span>
-                    <span class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold">
-                      →
-                      {{
-                        isDate(d.old) && isDate(d.new)
-                          ? formatDate(d.new)
-                          : d.new
-                      }}
-                    </span>
-                  </li>
+                    <template v-if="typeof d === 'string'">
+                      <span class="font-semibold">{{ d }}</span>
+                    </template>
+                    <template v-else>
+                      <!-- Удаление -->
+                      <span v-if="d.label && d.old && !d.new">
+                        <span class="font-semibold">{{ d.label }}:</span>
+                        <span v-if="isDate(d.old)" class="mx-1 text-gray-500 line-through">
+                          {{ formatLogDate(d.old) }}
+                        </span>
+                        <span v-else class="mx-1 text-gray-500 line-through">{{ d.old }}</span>
+                      </span>
+                      <!-- Добавление -->
+                      <span v-else-if="d.label && d.new && !d.old">
+                        <span class="font-semibold">{{ d.label }}:</span>
+                        <span v-if="isDate(d.new)" class="mx-1 text-blue-700 dark:text-blue-400 font-semibold">
+                          {{ formatLogDate(d.new) }}
+                        </span>
+                        <span v-else class="mx-1 text-blue-700 dark:text-blue-400 font-semibold">{{ d.new }}</span>
+                      </span>
+                      <!-- Изменение -->
+                      <span v-else>
+                        <span class="font-semibold">{{ d.label }}:</span>
+
+                        <span v-if="isDate(d.old)" class="mx-1 text-gray-500 line-through">
+                          {{ formatLogDate(d.old) }}
+                        </span>
+                        <span v-else class="mx-1 text-gray-500 line-through">{{ d.old }}</span>
+                        <span v-if="isDate(d.new)" class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold">
+                          → {{ formatLogDate(d.new) }}
+                        </span>
+                        <span v-else class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold"> → {{ d.new
+                        }}</span>
+                      </span>
+                    </template>
                   </li>
                 </ul>
               </transition>
@@ -382,8 +412,8 @@
 
         <div v-if="versions.length" class="mt-2 pt-6 text-sm">
           <h3 class="font-semibold mb-4">
-            <span class="flex items-center gap-1">
-              <GitGraph class="w-5 h-5 text-blue-600" />
+            <span class="flex items-center gap-2">
+              <GitCommitVertical class="w-5 h-5 text-blue-600" />
               <span>История версий</span>
             </span>
 
@@ -447,6 +477,7 @@ import {
   LucideFileText,
   LucideUser,
   Undo2,
+  Info,
   RotateCcw,
   LucideCalendar,
   LucideUserCircle,
@@ -462,7 +493,7 @@ import {
   LucideHistory,
   LucidePiggyBank,
   LucideReceipt,
-  GitGraph,
+  GitCommitVertical,
   LucideArrowUpRight,
   LucideCalculator,
   LucideFolder,
@@ -538,14 +569,30 @@ async function loadAll() {
 }
 
 function isDate(val) {
-  // Проверяет, является ли значение датой или строкой-датой
   if (!val) return false;
   if (val instanceof Date) return true;
-  // Проверка на строку в формате ISO или похожем на дату
+  // Очень примитивно: ISO date string содержит 'T', обычно длинная
   return (
     typeof val === "string" &&
+    val.length >= 10 && // минимальная длина для ISO/русской даты
+    (
+      val.includes('T') ||           // ISO ("2025-06-19T13:43:00Z")
+      val.match(/^\d{4}-\d{2}-\d{2}/) // "2025-06-19"
+    ) &&
     !isNaN(Date.parse(val))
   );
+}
+
+function formatLogDate(dt) {
+  if (!dt) return "—";
+  const date = typeof dt === "string" ? new Date(dt) : dt;
+  return date.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 onMounted(loadAll);

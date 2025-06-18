@@ -51,7 +51,7 @@ async function changePage(p) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Клиенты</h1>
       <!-- Можно добавить импорт/экспорт позже -->
@@ -69,10 +69,10 @@ async function changePage(p) {
         </div>
         <template v-else>
           <div v-for="c in store.clients" :key="c.id"
-            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col gap-1">
+            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col ">
             <div class="font-semibold text-lg">{{ c.name }}</div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">Компания: {{ c.company || '—' }}</div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">Контакт: {{ c.email || c.phone || '—' }}</div>
+            <div class="text-sm  dark:text-gray-400">Компания: {{ c.company || '—' }}</div>
+            <div class="text-sm  dark:text-gray-400">Контакт: {{ c.email || c.phone || '—' }}</div>
             <router-link :to="`/clients/${c.id}`"
               class="text-blue-600 dark:text-blue-400 text-sm hover:underline mt-2 inline-block">
               Подробнее →
@@ -82,17 +82,13 @@ async function changePage(p) {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             Клиенты отсутствуют.
           </div>
-          <QePagination
-            :total="totalClients"
-            :per-page="perPage"
-            :page="currentPage"
-            @update:page="changePage"
+          <QePagination :total="totalClients" :per-page="perPage" :page="currentPage" @update:page="changePage"
             class="mt-4" />
         </template>
       </div>
 
       <!-- Правая панель: добавление и фильтры -->
-      <div class="w-72 space-y-4">
+      <div class="w-68 space-y-4">
         <router-link to="/clients/create" class="qe-btn block w-full text-center">
           Добавить клиента
         </router-link>

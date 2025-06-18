@@ -9,7 +9,7 @@ from app.schemas.client import ClientOut
 
 class EstimateBase(BaseModel):
     name: str = Field(..., min_length=1)
-    client_id: int
+    client_id: Optional[int] = None
     responsible: str = Field(..., min_length=1)
     event_datetime: Optional[datetime]
     event_place: Optional[str]

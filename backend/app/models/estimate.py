@@ -17,8 +17,6 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
-
-
 class EstimateStatus(str, enum.Enum):
     DRAFT = "draft"
     SENT = "sent"
@@ -43,7 +41,7 @@ class Estimate(Base):
     client_id = Column(
         Integer,
         ForeignKey("clients.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
     )
     client = relationship(
         "Client",
@@ -66,9 +64,7 @@ class Estimate(Base):
     from app.models.estimate_favorite import EstimateFavorite
 
     favorites = relationship(
-        "EstimateFavorite",
-        back_populates="estimate",
-        cascade="all, delete-orphan"
+        "EstimateFavorite", back_populates="estimate", cascade="all, delete-orphan"
     )
 
     from app.models.version import EstimateVersion

@@ -8,8 +8,9 @@ from pydantic import BaseModel
 
 class ChangeDetail(BaseModel):
     label: str
-    old: str
-    new: str
+    old: Optional[str] = None
+    new: Optional[str] = None
+
 
 class ClientChangeLogOut(BaseModel):
     id: int

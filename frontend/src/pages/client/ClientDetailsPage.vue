@@ -15,6 +15,29 @@
             </h1>
           </div>
         </div>
+
+      </div>
+
+      <div class="flex items-center justify-between mb-6 gap-4">
+        <!-- Табы -->
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 w-fit">
+          <button :class="[
+            'px-5 py-2 rounded-lg text-sm font-semibold transition',
+            activeTab === 'details'
+              ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
+              : 'text-gray-500 hover:text-blue-600',
+          ]" @click="activeTab = 'details'">
+            Сведения
+          </button>
+          <button :class="[
+            'px-5 py-2 rounded-lg text-sm font-semibold transition',
+            activeTab === 'history'
+              ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
+              : 'text-gray-500 hover:text-blue-600',
+          ]" @click="activeTab = 'history'">
+            История
+          </button>
+        </div>
         <div class="flex space-x-2 items-center">
           <RouterLink :to="`/clients/${client.id}/edit`" class="qe-btn-warning flex items-center">
             <LucidePencilLine class="w-4 h-4 mr-1" />
@@ -25,26 +48,7 @@
             <span>Удалить</span>
           </button>
         </div>
-      </div>
 
-      <!-- Табы -->
-      <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1 mb-6 w-fit">
-        <button :class="[
-          'px-5 py-2 rounded-lg text-sm font-semibold transition',
-          activeTab === 'details'
-            ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
-            : 'text-gray-500 hover:text-blue-600',
-        ]" @click="activeTab = 'details'">
-          Сведения
-        </button>
-        <button :class="[
-          'px-5 py-2 rounded-lg text-sm font-semibold transition',
-          activeTab === 'history'
-            ? 'bg-white dark:bg-gray-900 text-blue-600 shadow'
-            : 'text-gray-500 hover:text-blue-600',
-        ]" @click="activeTab = 'history'">
-          История
-        </button>
       </div>
 
       <!-- Данные клиента -->
@@ -53,46 +57,53 @@
           <!-- Левый блок -->
           <div
             class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col justify-center">
-            <div class="flex items-center">
-              <LucideUserCircle class="w-5 h-5 text-blue-500 mr-2" />
-              <span class="font-semibold mr-1">Контактное лицо:</span>
-              <span>{{ client.name }}</span>
+            <div class="flex items-center gap-2 mb-2">
+              <Info class="w-7 h-7 text-blue-600" />
+              <span class="text-lg font-bold">Основная информация</span>
             </div>
-            <div v-if="client.company" class="flex items-center ">
-              <LucideBuilding2 class="w-5 h-5 text-pink-500 mr-2" />
-              <span class="font-semibold mr-1">Компания:</span>
-              <span>{{ client.company }}</span>
-            </div>
-            <div v-if="client.email" class="flex items-center ">
-              <LucideMail class="w-5 h-5 text-green-600 mr-2" />
-              <span class="font-semibold mr-1">Email:</span>
-              <span>{{ client.email }}</span>
-            </div>
-            <div v-if="client.phone" class="flex items-center ">
-              <LucidePhone class="w-5 h-5 text-yellow-500 mr-2" />
-              <span class="font-semibold mr-1">Телефон:</span>
-              <span>{{ client.phone }}</span>
-            </div>
-            <div v-if="client.actual_address" class="flex items-center ">
-              <LucideMapPin class="w-5 h-5 text-indigo-500 mr-2" />
-              <span class="font-semibold mr-1">Фактический адрес:</span>
-              <span>{{ client.actual_address }}</span>
-            </div>
-            <div v-if="client.legal_address" class="flex items-center ">
-              <LucideMap class="w-5 h-5 text-purple-500 mr-2" />
-              <span class="font-semibold mr-1">Юридический адрес:</span>
-              <span>{{ client.legal_address }}</span>
-            </div>
-            <div v-if="client.notes" class="flex items-center ">
-              <LucideNotebookPen class="w-5 h-5 text-gray-400 mr-2" />
-              <span class="font-semibold mr-1">Примечания:</span>
-              <span>{{ client.notes }}</span>
+            <div class="flex-1 flex flex-col justify-center space-y-2">
+              <div class="flex items-center">
+                <LucideUserCircle class="w-5 h-5 text-blue-500 mr-2" />
+                <span class="font-semibold mr-1">Контактное лицо:</span>
+                <span>{{ client.name }}</span>
+              </div>
+              <div v-if="client.company" class="flex items-center ">
+                <LucideBuilding2 class="w-5 h-5 text-pink-500 mr-2" />
+                <span class="font-semibold mr-1">Компания:</span>
+                <span>{{ client.company }}</span>
+              </div>
+              <div v-if="client.email" class="flex items-center ">
+                <LucideMail class="w-5 h-5 text-green-600 mr-2" />
+                <span class="font-semibold mr-1">Email:</span>
+                <span>{{ client.email }}</span>
+              </div>
+              <div v-if="client.phone" class="flex items-center ">
+                <LucidePhone class="w-5 h-5 text-yellow-500 mr-2" />
+                <span class="font-semibold mr-1">Телефон:</span>
+                <span>{{ client.phone }}</span>
+              </div>
+              <div v-if="client.actual_address" class="flex items-center ">
+                <LucideMapPin class="w-5 h-5 text-indigo-500 mr-2" />
+                <span class="font-semibold mr-1">Фактический адрес:</span>
+                <span>{{ client.actual_address }}</span>
+              </div>
+              <div v-if="client.legal_address" class="flex items-center ">
+                <LucideMap class="w-5 h-5 text-purple-500 mr-2" />
+                <span class="font-semibold mr-1">Юридический адрес:</span>
+                <span>{{ client.legal_address }}</span>
+              </div>
+              <div v-if="client.notes" class="flex items-center ">
+                <LucideNotebookPen class="w-5 h-5 text-gray-400 mr-2" />
+                <span class="font-semibold mr-1">Примечания:</span>
+                <span>{{ client.notes }}</span>
+              </div>
             </div>
           </div>
           <!-- Правый блок -->
           <div
             class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full">
-            <div class="flex items-center mb-4">
+            <div class="flex items-center mb-4 gap-2">
+              <Landmark class="w-7 h-7 text-blue-600" />
               <span class="text-lg font-bold">Реквизиты</span>
             </div>
             <div class="space-y-2">
@@ -171,7 +182,7 @@
       <!-- История изменений -->
       <div v-if="activeTab === 'history'" class="mt-6 ">
         <h2 class="text-sm font-semibold mb-4 text-gray-800 dark:text-white flex items-center gap-3">
-          <span class="flex items-center justify-center gap-1">
+          <span class="flex items-center justify-center gap-2">
             <LucideHistory class="w-5 h-5 text-blue-600" />
             <span>История клиента</span>
           </span>
@@ -211,11 +222,26 @@
               <ul v-if="log.details && log.details.length && showDetails[log.id]"
                 class="mt-2 mb-2 pl-2 border-l dark:border-qe-black2 border-blue-200 text-sm space-y-1">
                 <li v-for="(d, i) in log.details" :key="i" class="text-blue-700 dark:text-blue-500">
+                  <!-- Если объект и есть label -->
                   <template v-if="typeof d === 'object' && d.label">
-                    <span class="font-semibold">{{ d.label }}:</span>
-                    <span class="mx-1 text-gray-500 line-through">{{ d.old }}</span>
-                    <span class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold">→ {{ d.new }}</span>
+                    <!-- Формат: Добавлен ... -->
+                    <template v-if="(d.old === '—' || d.old === null || d.old === undefined) && d.new !== '—'">
+                      <span class="font-semibold">{{ d.label }}:</span>
+                      <span class="ml-1 text-blue-700 dark:text-blue-400 font-semibold">{{ d.new }}</span>
+                    </template>
+                    <!-- Формат: Удален ... -->
+                    <template v-else-if="d.old !== '—' && (d.new === '—' || d.new === null || d.new === undefined)">
+                      <span class="font-semibold">{{ d.label }}:</span>
+                      <span class="ml-1 text-gray-500 line-through">{{ d.old }}</span>
+                    </template>
+                    <!-- Формат: Изменено ... -->
+                    <template v-else>
+                      <span class="font-semibold">{{ d.label }}:</span>
+                      <span class="mx-1 text-gray-500 line-through">{{ d.old }}</span>
+                      <span class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold"> → {{ d.new }}</span>
+                    </template>
                   </template>
+                  <!-- Если просто строка (старые логи или ошибки) -->
                   <template v-else>
                     {{ d }}
                   </template>
@@ -265,7 +291,9 @@ import {
   LucideHistory,
   LucidePencilLine,
   LucideTrash2,
-  LucideChevronDown
+  LucideChevronDown,
+  Info,
+  Landmark
 } from "lucide-vue-next";
 import QePagination from "@/components/QePagination.vue";
 

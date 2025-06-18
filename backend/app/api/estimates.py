@@ -1,7 +1,7 @@
 # backend/app/api/estimates.py
 # Implementation of the estimates API endpoints
 import re
-from typing import List, Optional
+from typing import Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -19,34 +19,56 @@ from app.models.estimate import Estimate
 from app.models.estimate_favorite import EstimateFavorite
 from app.models.item import EstimateItem
 from app.models.user import User
+from app.models.client import Client
 from app.models.version import EstimateVersion
 from app.schemas.changelog import ChangeLogOut
 from app.schemas.estimate import EstimateCreate, EstimateOut, EstimateUpdate
 from app.utils.auth import get_current_user
 from app.utils.excel import generate_excel
 from app.utils.pdf import render_pdf
+from app.schemas.paginated import Paginated
 
 from datetime import datetime
 from datetime import timezone
+import logging
 
 router = APIRouter(tags=["estimates"], dependencies=[Depends(get_current_user)])
 
-FIELD_NAMES_RU = {
-    "name": "Изменено название",
-    "client_id": "Изменен клиент",
-    "responsible": "Изменен ответственный",
-    "status": "Изменен статус",
-    "event_datetime": "Изменено дата и время проведения мероприятия",
-    "event_place": "Изменено место проведения мероприятия",
-    "notes": "Изменены заметки",
-}
-ITEM_FIELD_NAMES_RU = {
-    "name": "Изменено название услуги",
-    "description": "Изменено описание услуги",
-    "quantity": "Изменено количество услуги",
-    "unit": "Изменена единица измерения услуги",
-    "internal_price": "Изменена внутренняя цена услуги",
-    "external_price": "Изменена внешняя цена услуги",
+FIELD_ACTIONS_RU = {
+    "name": {"edit": "Изменено название"},
+    "client_id": {
+        "add": "Добавлен клиент",
+        "del": "Удален клиент",
+        "edit": "Изменен клиент",
+    },
+    "responsible": {"edit": "Изменен ответственный"},
+    "status": {"edit": "Изменен статус"},
+    "event_datetime": {
+        "add": "Добавлена дата и время проведения мероприятия",
+        "del": "Удалена дата и время проведения мероприятия",
+        "edit": "Изменена дата и время проведения мероприятия",
+    },
+    "event_place": {
+        "add": "Добавлено место проведения мероприятия",
+        "del": "Удалено место проведения мероприятия",
+        "edit": "Изменено место проведения мероприятия",
+    },
+    "notes": {
+        "add": "Добавлены примечания",
+        "del": "Удалены примечания",
+        "edit": "Изменены примечания",
+    },
+    "service": {
+        "add": "Добавлена услуга",
+        "del": "Удалена услуга",
+    },
+    # Услуги
+    "item_name": {"edit": "Изменено название услуги"},
+    "item_description": {"edit": "Изменено описание услуги"},
+    "item_quantity": {"edit": "Изменено количество услуги"},
+    "item_unit": {"edit": "Изменена единица измерения услуги"},
+    "item_internal_price": {"edit": "Изменена внутренняя цена услуги"},
+    "item_external_price": {"edit": "Изменена внешняя цена услуги"},
 }
 
 STATUS_LABELS_RU = {
@@ -56,6 +78,27 @@ STATUS_LABELS_RU = {
     "paid": "Оплачена",
     "cancelled": "Отменена",
 }
+
+
+def prettify_value(value):
+    if value in [None, ""]:
+        return "—"
+    return str(value)
+
+
+def prettify_number(val):
+    # Если None — прочерк
+    if val in [None, ""]:
+        return "—"
+    try:
+        v = float(val)
+        # Если целое (например 1.0, 150.0) — передаем без точки
+        if v.is_integer():
+            return str(int(v))
+        else:
+            return str(v)
+    except Exception:
+        return str(val)
 
 
 @router.post("/", response_model=EstimateOut)
@@ -100,9 +143,6 @@ async def create_estimate(
     return result.scalar_one()
 
 
-from app.schemas.paginated import Paginated
-
-
 @router.get("/", response_model=Paginated[EstimateOut])
 async def list_estimates(
     name: str = Query(None),
@@ -143,7 +183,9 @@ async def list_estimates(
     count_query = select(func.count()).select_from(Estimate).where(*filters)
     if favorite:
         query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
-        count_query = count_query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
+        count_query = count_query.join(EstimateFavorite).where(
+            EstimateFavorite.user_id == user.id
+        )
 
     total = await db.scalar(count_query)
 
@@ -211,8 +253,10 @@ async def get_logs(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     # Fetch and return logs
-    count_q = select(func.count()).select_from(EstimateChangeLog).where(
-        EstimateChangeLog.estimate_id == estimate_id
+    count_q = (
+        select(func.count())
+        .select_from(EstimateChangeLog)
+        .where(EstimateChangeLog.estimate_id == estimate_id)
     )
     total = await db.scalar(count_q)
 
@@ -386,31 +430,60 @@ async def update_estimate(
         exclude={"items", "vat_enabled", "vat_rate"}
     ).items():
         old_val = getattr(estimate, field)
-        if field == "status":
-            old_val = old_val.value if hasattr(old_val, "value") else str(old_val)
-            new_val = value.value if hasattr(value, "value") else str(value)
-            if old_val != new_val:
+        actions = FIELD_ACTIONS_RU.get(field)
+
+        if field == "status" and old_val != value:
+            old_v = old_val.value if hasattr(old_val, "value") else str(old_val)
+            new_v = value.value if hasattr(value, "value") else str(value)
+            details.append(
+                {
+                    "label": actions["edit"] if actions else "Изменен статус",
+                    "old": STATUS_LABELS_RU.get(old_v, old_v),
+                    "new": STATUS_LABELS_RU.get(new_v, new_v),
+                }
+            )
+            logging.info(
+                f"Status changed from '{STATUS_LABELS_RU.get(old_v, old_v)}' to '{STATUS_LABELS_RU.get(new_v, new_v)}' for estimate {estimate_id} by user {user.id}"
+            )
+
+        elif actions:
+            # Для полей, где разрешены add/del/edit (например, client_id)
+            if "add" in actions and not old_val and value:
+                # Добавили значение
+                pretty_value = value
+                if field == "client_id":
+                    new_client = await db.get(Client, value) if value else None
+                    pretty_value = new_client.name if new_client else value
+                details.append(
+                    {"label": actions["add"], "new": prettify_value(pretty_value)}
+                )
+            elif "del" in actions and old_val and not value:
+                # Удалили значение
+                pretty_value = old_val
+                if field == "client_id":
+                    old_client = await db.get(Client, old_val) if old_val else None
+                    pretty_value = old_client.name if old_client else old_val
+                details.append(
+                    {"label": actions["del"], "old": prettify_value(pretty_value)}
+                )
+            elif "edit" in actions and old_val != value:
+                # Изменили значение
+                pretty_old = old_val
+                pretty_new = value
+                if field == "client_id":
+                    old_client = await db.get(Client, old_val) if old_val else None
+                    new_client = await db.get(Client, value) if value else None
+                    pretty_old = old_client.name if old_client else old_val
+                    pretty_new = new_client.name if new_client else value
                 details.append(
                     {
-                        "label": FIELD_NAMES_RU.get(field, field),
-                        "old": STATUS_LABELS_RU.get(old_val, old_val),
-                        "new": STATUS_LABELS_RU.get(new_val, new_val),
+                        "label": actions["edit"],
+                        "old": prettify_value(pretty_old),
+                        "new": prettify_value(pretty_new),
                     }
                 )
-        else:
-            ru = FIELD_NAMES_RU.get(field)
-            if getattr(estimate, field) != value and ru:
-                ru = FIELD_NAMES_RU.get(field)
-                if ru:
-                    details.append(
-                        {
-                            "label": ru,
-                            "old": str(getattr(estimate, field)),
-                            "new": str(value),
-                        }
-                    )
 
-            setattr(estimate, field, value)
+        setattr(estimate, field, value)
 
     old_items = {item.id: item for item in old_estimate.items if item.id is not None}
     new_items = {
@@ -422,25 +495,54 @@ async def update_estimate(
     # Добавленные услуги (новые, которых не было раньше)
     for item in updated_data.items:
         if item.id is None or item.id not in old_items:
-            details.append(f"Добавлена услуга ({item.name})")
+            details.append(
+                {
+                    "label": FIELD_ACTIONS_RU["service"]["add"],
+                    "new": item.name,
+                }
+            )
 
     # Удалённые услуги (были раньше, но пропали)
     for item_id, item in old_items.items():
         if item_id not in [i.id for i in updated_data.items if i.id is not None]:
-            details.append(f"Удалена услуга ({item.name})")
+            details.append(
+                {
+                    "label": FIELD_ACTIONS_RU["service"]["del"],
+                    "old": item.name,
+                }
+            )
 
     # Изменения в услугах
     for item_id, old_item in old_items.items():
         new_item = new_items.get(item_id)
         if new_item:
-            for f in ITEM_FIELD_NAMES_RU:
-                if getattr(old_item, f, None) != getattr(new_item, f, None):
-                    ru = ITEM_FIELD_NAMES_RU[f]
+            for f in [
+                "name",
+                "description",
+                "quantity",
+                "unit",
+                "internal_price",
+                "external_price",
+            ]:
+                key = f"item_{f}"
+                actions = FIELD_ACTIONS_RU.get(key)
+                old_v = getattr(old_item, f, None)
+                new_v = getattr(new_item, f, None)
+
+                # Числовые поля — кастомный формат вывода
+                if f in ["quantity", "internal_price", "external_price"]:
+                    pretty_old = prettify_number(old_v)
+                    pretty_new = prettify_number(new_v)
+                else:
+                    pretty_old = prettify_value(old_v)
+                    pretty_new = prettify_value(new_v)
+
+                if actions and old_v != new_v:
                     details.append(
                         {
-                            "label": f"{ru} ({new_item.name})",
-                            "old": str(getattr(old_item, f, "")),
-                            "new": str(getattr(new_item, f, "")),
+                            "label": f"{actions['edit']} ({old_item.name})",
+                            "old": pretty_old,
+                            "new": pretty_new,
                         }
                     )
 
