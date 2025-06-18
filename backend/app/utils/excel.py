@@ -43,8 +43,9 @@ def generate_excel(estimate: Estimate) -> BytesIO:
         ("НДС", f"Включён ({estimate.vat_rate}%)" if estimate.vat_enabled else "Не включён"),
         ("Дата создания", estimate.date.strftime("%d.%m.%Y %H:%M:%S")),
     ]
-    if estimate.notes and estimate.notes.strip():
-        fields.append(("Примечания", estimate.notes))
+    if getattr(estimate, "notes", None):
+        joined = "\n".join(f"{n.text} — {n.user.name} ({n.created_at.strftime('%d.%m.%Y %H:%M')})" for n in estimate.notes)
+        fields.append(("Примечания", joined))
 
     row = 3
     for label, value in fields:

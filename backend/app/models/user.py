@@ -33,3 +33,5 @@ class User(Base):
         EstimateTemplate, back_populates="user", cascade="all, delete-orphan"
     )
     clients = relationship(Client, back_populates="user", cascade="all, delete-orphan")
+
+    notes = relationship("Note", back_populates="user", cascade="all, delete-orphan")

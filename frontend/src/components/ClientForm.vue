@@ -57,12 +57,6 @@
                 <input v-model="client.corr_account" type="text" class="w-full qe-input" />
             </div>
 
-            <!-- Примечания -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Примечания</label>
-                <textarea v-model="client.notes" rows="2" placeholder="Любые дополнительные данные"
-                    class="w-full qe-textarea resize-none" />
-            </div>
         </div>
 
         <!-- 2. Кнопки -->
@@ -102,7 +96,7 @@ const client = reactive({
     account: '',
     bank: '',
     corr_account: '',
-    notes: ''
+    
 })
 
 watch(() => props.initial, v => {

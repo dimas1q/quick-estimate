@@ -250,6 +250,8 @@
           </div>
         </div>
 
+        <NotesBlock class="mt-8" :notes="notes" @add="addNote" @update="updateNote" @delete="deleteNote" />
+
         <!-- Категории и услуги -->
         <div class="mt-8">
           <div v-for="(groupItems, category) in groupedItems" :key="category"
@@ -467,10 +469,12 @@
 import { onMounted, onUnmounted, ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useEstimatesStore } from "@/store/estimates";
+import { useNotesStore } from "@/store/notes";
 import { onClickOutside } from "@vueuse/core";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
 import QePagination from "@/components/QePagination.vue";
+import NotesBlock from "@/components/NotesBlock.vue";
 import fileDownload from "js-file-download";
 
 import {
@@ -505,6 +509,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const store = useEstimatesStore();
+const notesStore = useNotesStore();
 const toast = useToast();
 
 const versionParam = computed(() =>
@@ -518,6 +523,7 @@ const menuRef = ref(null);
 const showConfirm = ref(false);
 
 const estimate = ref(null);
+const notes = ref([]);
 const logs = ref([]);
 const versions = ref([]);
 const logTotal = ref(0);
@@ -560,6 +566,7 @@ async function loadAll() {
     const verRes = await store.getEstimateVersions(id, { page: versionPage.value, limit: 10 });
     versions.value = verRes.items;
     versionTotal.value = verRes.total;
+    notes.value = await notesStore.fetchEstimateNotes(id);
     error.value = null;
   } catch (e) {
     if (e.response?.status === 404) error.value = "❌ Смета не найдена.";
@@ -597,6 +604,7 @@ function formatLogDate(dt) {
 
 onMounted(loadAll);
 watch(() => route.query.version, loadAll);
+watch(() => route.params.id, loadAll);
 
 onUnmounted(() => {
   store.currentEstimate = null;
@@ -684,6 +692,22 @@ const vat = computed(() =>
     : 0,
 );
 const totalWithVat = computed(() => totalExternal.value + vat.value);
+
+async function addNote(text) {
+  const n = await notesStore.addEstimateNote(route.params.id, text);
+  notes.value.unshift(n);
+}
+
+async function updateNote(payload) {
+  const n = await notesStore.updateNote(payload.id, payload.text);
+  const idx = notes.value.findIndex((x) => x.id === payload.id);
+  if (idx !== -1) notes.value[idx] = n;
+}
+
+async function deleteNote(id) {
+  await notesStore.deleteNote(id);
+  notes.value = notes.value.filter((n) => n.id !== id);
+}
 
 function formatCurrency(val) {
   return `${val.toFixed(2)} ₽`;

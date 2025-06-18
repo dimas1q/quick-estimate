@@ -1,6 +1,6 @@
 ## backend/app/models/client.py
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -21,7 +21,9 @@ class Client(Base):
     account = Column(String, nullable=True)
     bank = Column(String, nullable=True)
     corr_account = Column(String, nullable=True)
-    notes = Column(Text, nullable=True)
+    notes = relationship(
+        "Note", back_populates="client", cascade="all, delete-orphan"
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

@@ -73,7 +73,12 @@
         </p>
         <p><strong>Дата создания:</strong> {{ estimate.date.strftime('%d.%m.%Y %H:%M') }}</p>
         {% if estimate.notes %}
-        <p><strong>Примечания:</strong> {{ estimate.notes }}</p>
+        <p><strong>Примечания:</strong></p>
+        <ul>
+          {% for n in estimate.notes %}
+          <li>{{ n.text }} — {{ n.user.name }} ({{ n.created_at.strftime('%d.%m.%Y %H:%M') }})</li>
+          {% endfor %}
+        </ul>
         {% endif %}
     </div>
 

@@ -49,12 +49,6 @@
         <input v-model="estimate.event_place" type="text" placeholder="Адрес или площадка" class="w-full qe-input" />
       </div>
 
-      <!-- Заметки (на всю ширину) -->
-      <div class="md:col-span-2">
-        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Примечания</label>
-        <textarea v-model="estimate.notes" rows="2" placeholder="Дополнительная информация"
-          class="w-full qe-textarea resize-none" />
-      </div>
 
 
 
@@ -135,7 +129,6 @@ const estimate = reactive({
   name: '',
   client_id: null,
   responsible: '',
-  notes: '',
   event_datetime: '',
   event_place: '',
   items: [],
@@ -154,7 +147,6 @@ onMounted(async () => {
     estimate.responsible = store.importedEstimate.responsible || ''
     estimate.event_datetime = store.importedEstimate.event_datetime || ''
     estimate.event_place = store.importedEstimate.event_place || ''
-    estimate.notes = store.importedEstimate.notes || ''
     estimate.vat_enabled = store.importedEstimate.vat_enabled ?? true
     estimate.vat_rate = store.importedEstimate.vat_rate ?? 20.0
     estimate.status = store.importedEstimate.status || 'draft'
@@ -180,7 +172,6 @@ watch(() => props.initial, (value) => {
       responsible: value.responsible || '',
       event_datetime: value.event_datetime || '',
       event_place: value.event_place || '',
-      notes: value.notes || '',
       vat_enabled: value.vat_enabled ?? true,
       vat_rate: value.vat_rate ?? 20.0,
       status: value.status || 'draft',

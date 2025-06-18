@@ -37,8 +37,8 @@
           <div
             class="grid grid-cols-2 gap-4 shadow-sm border dark:border-qe-black2 bg-white dark:bg-qe-black3 rounded-2xl p-6">
             <p><strong>Описание:</strong> {{ template.description || '—' }}</p>
-            <p><strong>Примечания:</strong> {{ template.notes || '—' }}</p>
           </div>
+          <NotesBlock class="mt-4" :notes="notes" @add="addNote" @update="updateNote" @delete="deleteNote" />
         </div>
 
         <div class="mt-4">
@@ -118,12 +118,14 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTemplatesStore } from '@/store/templates'
+import { useNotesStore } from '@/store/notes'
 import { useToast } from 'vue-toastification'
 
 import QeModal from '@/components/QeModal.vue'
+import NotesBlock from '@/components/NotesBlock.vue'
 
 import {
   LucidePiggyBank,
@@ -139,14 +141,17 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useTemplatesStore()
+const notesStore = useNotesStore()
 const toast = useToast()
 
 const template = ref(null)
 const error = ref(null)
+const notes = ref([])
 
 onMounted(async () => {
   try {
     template.value = await store.getTemplateById(route.params.id)
+    notes.value = await notesStore.fetchTemplateNotes(route.params.id)
   } catch (e) {
     if (e.response?.status === 403) {
       error.value = '🚫 У вас нет доступа к этому шаблону.'
@@ -156,6 +161,11 @@ onMounted(async () => {
       error.value = '⚠️ Ошибка при загрузке шаблона.'
     }
   }
+})
+
+watch(() => route.params.id, async () => {
+  template.value = await store.getTemplateById(route.params.id)
+  notes.value = await notesStore.fetchTemplateNotes(route.params.id)
 })
 
 
@@ -189,6 +199,22 @@ const totalInternal = computed(() => template.value?.items?.reduce((sum, item) =
 const totalExternal = computed(() => template.value?.items?.reduce((sum, item) => sum + getItemExternal(item), 0) || 0)
 
 const totalDiff = computed(() => totalExternal.value - totalInternal.value)
+
+async function addNote(text) {
+  const n = await notesStore.addTemplateNote(route.params.id, text)
+  notes.value.unshift(n)
+}
+
+async function updateNote(payload) {
+  const n = await notesStore.updateNote(payload.id, payload.text)
+  const idx = notes.value.findIndex(n => n.id === payload.id)
+  if (idx !== -1) notes.value[idx] = n
+}
+
+async function deleteNote(id) {
+  await notesStore.deleteNote(id)
+  notes.value = notes.value.filter(n => n.id !== id)
+}
 
 function formatCurrency(val) {
   return `${val.toFixed(2)} ₽`

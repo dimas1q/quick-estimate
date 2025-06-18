@@ -143,9 +143,9 @@
 
       </div>
 
-      <!-- Сметы клиента -->
       <div v-if="activeTab === 'details'"
         class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-sm p-6 ">
+        <NotesBlock class="mb-6" :notes="notes" @add="addNote" @update="updateNote" @delete="deleteNote" />
         <div class="flex items-center gap-2 mb-5">
           <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
             Сметы клиента
@@ -267,9 +267,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useClientsStore } from "@/store/clients";
+import { useNotesStore } from "@/store/notes";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
 
@@ -296,6 +297,7 @@ import {
   Landmark
 } from "lucide-vue-next";
 import QePagination from "@/components/QePagination.vue";
+import NotesBlock from "@/components/NotesBlock.vue";
 
 
 const route = useRoute();
@@ -310,8 +312,10 @@ const logPage = ref(1);
 const activeTab = ref("details");
 const showConfirm = ref(false);
 const store = useClientsStore();
+const notesStore = useNotesStore();
 const toast = useToast();
 const showDetails = ref({})
+const notes = ref([])
 
 onMounted(async () => {
   const { client: c, estimates: e, total } = await store.getClientWithEstimates(
@@ -324,7 +328,22 @@ onMounted(async () => {
   const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
   logs.value = logRes.items;
   logTotal.value = logRes.total;
+  notes.value = await notesStore.fetchClientNotes(route.params.id);
 });
+
+watch(() => route.params.id, async () => {
+  const { client: c, estimates: e, total } = await store.getClientWithEstimates(
+    route.params.id,
+    { page: estimatesPage.value, limit: 5 }
+  );
+  client.value = c;
+  estimates.value = e;
+  estimatesTotal.value = total;
+  const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
+  logs.value = logRes.items;
+  logTotal.value = logRes.total;
+  notes.value = await notesStore.fetchClientNotes(route.params.id);
+})
 
 function confirmDelete() {
   showConfirm.value = true;
@@ -346,6 +365,22 @@ async function changeLogPage(p) {
   const res = await store.getClientLogs(route.params.id, { page: p, limit: 10 })
   logs.value = res.items
   logTotal.value = res.total
+}
+
+async function addNote(text) {
+  const n = await notesStore.addClientNote(route.params.id, text)
+  notes.value.unshift(n)
+}
+
+async function updateNote(payload) {
+  const n = await notesStore.updateNote(payload.id, payload.text)
+  const idx = notes.value.findIndex(n => n.id === payload.id)
+  if (idx !== -1) notes.value[idx] = n
+}
+
+async function deleteNote(id) {
+  await notesStore.deleteNote(id)
+  notes.value = notes.value.filter(n => n.id !== id)
 }
 
 async function deleteClient() {
