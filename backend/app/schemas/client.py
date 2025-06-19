@@ -18,7 +18,6 @@ class ClientBase(BaseModel):
     account: Optional[str]
     bank: Optional[str]
     corr_account: Optional[str]
-    notes: Optional[str]
 
 
 class ClientCreate(ClientBase):

@@ -15,7 +15,7 @@
                     <!-- Клиент -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Клиент</label>
-                        <select v-model="filters.clientId" class="qe-input w-full mt-1">
+                        <select v-model="filters.clientId" class="qe-input w-full">
                             <option :value="null">Все клиенты</option>
                             <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
@@ -23,23 +23,23 @@
                     <!-- Даты -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Дата от</label>
-                        <input v-model="filters.start_date" type="date" class="qe-input w-full mt-1" />
+                        <input v-model="filters.start_date" type="date" class="qe-input w-full" />
                     </div>
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Дата до</label>
-                        <input v-model="filters.end_date" type="date" class="qe-input w-full mt-1" />
+                        <input v-model="filters.end_date" type="date" class="qe-input w-full" />
                     </div>
                     <!-- Категории -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Категории (через
                             запятую)</label>
-                        <input v-model="filters.categories" type="text" class="qe-input w-full mt-1"
+                        <input v-model="filters.categories" type="text" class="qe-input w-full"
                             placeholder="Оборудование, Свет" />
                     </div>
                     <!-- НДС -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">НДС включён</label>
-                        <select v-model="filters.vat_enabled" class="qe-input w-full mt-1">
+                        <select v-model="filters.vat_enabled" class="qe-input w-full">
                             <option :value="null">Все</option>
                             <option :value="true">Да</option>
                             <option :value="false">Нет</option>
@@ -48,7 +48,7 @@
                     <!-- Гранулярность -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Гранулярность</label>
-                        <select v-model="filters.granularity" class="qe-input w-full mt-1">
+                        <select v-model="filters.granularity" class="qe-input w-full">
                             <option v-for="g in granularityOptions" :key="g.value" :value="g.value">{{ g.label }}
                             </option>
                         </select>

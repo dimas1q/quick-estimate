@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -9,7 +9,9 @@ class EstimateTemplate(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    notes = Column(Text, nullable=True)
+    notes = relationship(
+        "Note", back_populates="template", cascade="all, delete-orphan"
+    )
 
     items = relationship(
         "EstimateItem", back_populates="template", cascade="all, delete-orphan"

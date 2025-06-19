@@ -26,7 +26,7 @@ async function handleLogin() {
         class="w-full max-w-sm bg-white dark:bg-qe-black3 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
         <div class="flex flex-col items-center mb-7">
             <img src="/logo.svg" class="w-16 h-16" alt="QuickEstimate" />
-            <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">QuickEstimate</span>
+            <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">Quick Estimate</span>
         </div>
         <form @submit.prevent="handleLogin" autocomplete="on">
             <div class="mb-4">
@@ -36,12 +36,7 @@ async function handleLogin() {
                 <div class="relative">
                     <input v-model="email" id="identifier" type="text" autocomplete="username"
                         class="qe-input w-full pr-10" placeholder="Введите email или логин" required />
-                    <span class="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M16 12v.01M8 12v.01M12 16v.01M12 8v.01M7 7h10a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2z" />
-                        </svg>
-                    </span>
+
                 </div>
             </div>
             <div class="mb-6">

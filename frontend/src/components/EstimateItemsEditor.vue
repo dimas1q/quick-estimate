@@ -9,7 +9,7 @@
         <div class="flex items-center gap-3 mb-2">
           <input v-model="cat.name" placeholder="Название категории"
             class="flex-1 border-0 border-b dark:border-qe-black2 text-lg font-semibold bg-transparent focus:ring-0 focus:border-blue-400" />
-          <button @click="removeCategory(idx)" type="button" class="qe-btn-danger">Удалить
+          <button @click="removeCategory(idx)" type="button" class="text-sm text-red-600 hover:underline">Удалить
             категорию</button>
         </div>
 
@@ -102,7 +102,7 @@
         Общая сумма (внешн.): {{ formatCurrency(totalExternal) }}
       </p>
       <p class="text-right font-semibold text-lg">
-        Разница: {{ formatCurrency(totalDiff) }}
+        Маржа: {{ formatCurrency(totalDiff) }}
       </p>
       <p class="text-right text-gray-700 dark:text-white" v-if="props.vatEnabled">
         НДС ({{ props.vatRate }}%): {{ formatCurrency(vat) }}<br />
@@ -271,6 +271,17 @@ function getTemplateCategories(template) {
     items,
   }))
 }
-
-
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.22s cubic-bezier(.4, 0, .2, 1);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+}
+</style>

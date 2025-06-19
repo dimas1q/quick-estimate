@@ -194,7 +194,7 @@ function changePage(p) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-5xl mx-auto">
+  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
     <!-- Навигационный переключатель -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
@@ -256,7 +256,7 @@ function changePage(p) {
       </div>
 
       <!-- Боковая панель с фильтрами и импортом -->
-      <div class="w-68 space-y-4">
+      <div class="w-72 space-y-4">
         <router-link to="/estimates/create" class="qe-btn block w-full text-center">
           Создать смету
         </router-link>
@@ -265,12 +265,12 @@ function changePage(p) {
           class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
           <h2 class="font-semibold text-lg">Фильтры</h2>
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Название</label>
-            <input v-model="filters.name" class="qe-input w-full mt-2" type="text" placeholder="Название сметы" />
+            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Название</label>
+            <input v-model="filters.name" class="qe-input w-full mt-1" type="text" placeholder="Название сметы" />
           </div>
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Клиент</label>
-            <select v-model="filters.client" class="qe-input w-full mt-2">
+            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Клиент</label>
+            <select v-model="filters.client" class="qe-input w-full mt-1">
               <option :value="''">Все клиенты</option>
               <option v-for="c in clients" :key="c.id" :value="c.id">
                 {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
@@ -279,14 +279,14 @@ function changePage(p) {
           </div>
 
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Дата с</label>
+            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата с</label>
             <QeDatePicker v-model="filters.date_from" label="Дата с" placeholder="Выберите дату с" :format="format"
-              class="mt-2" />
+              class="mt-1" />
           </div>
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Дата по</label>
+            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата по</label>
             <QeDatePicker v-model="filters.date_to" label="Дата по" placeholder="Выберите дату по" :format="format"
-              class="mt-2" />
+              class="mt-1" />
           </div>
 
           <div class="flex gap-2 pt-2">

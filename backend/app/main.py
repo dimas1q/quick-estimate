@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
-from app.api import estimates, auth, user, templates, clients, versions, analytics
+from app.api import estimates, auth, user, templates, clients, versions, analytics, notes
 from app.core.database import create_tables
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
@@ -30,6 +30,7 @@ app.include_router(templates.router, prefix="/api/templates")
 app.include_router(clients.router, prefix="/api/clients")
 app.include_router(versions.router, prefix="/api/versions")
 app.include_router(analytics.router, prefix="/api/analytics")
+app.include_router(notes.router, prefix="/api/notes")
 
 # Path to built frontend (dist)
 frontend_path = os.path.join(os.path.dirname(__file__), "frontend")

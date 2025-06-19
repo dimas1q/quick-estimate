@@ -12,10 +12,6 @@
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Описание</label>
         <input v-model="template.description" placeholder="Краткое описание шаблона" class="w-full qe-input" />
       </div>
-      <div class="md:col-span-2">
-        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Примечания</label>
-        <textarea v-model="template.notes" rows="2" placeholder="Примечания к шаблону" class="w-full qe-textarea" />
-      </div>
     </div>
 
     <!-- 2. Редактор услуг -->
@@ -58,7 +54,6 @@ const router = useRouter()
 const template = reactive({
   name: '',
   description: '',
-  notes: '',
   items: []
 })
 
@@ -66,7 +61,6 @@ onMounted(() => {
   if (store.importedTemplate) {
     template.name = store.importedTemplate.name || ''
     template.description = store.importedTemplate.description || ''
-    template.notes = store.importedTemplate.notes || ''
 
     template.items.splice(0)
     for (const item of store.importedTemplate.items || []) {
@@ -92,7 +86,6 @@ watch(() => props.initial, (value) => {
     Object.assign(template, {
       name: value.name || '',
       description: value.description || '',
-      notes: value.notes || '',
       items: (value.items || []).map(item => ({
         ...item,
         category_input: item.category || ''

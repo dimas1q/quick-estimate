@@ -58,7 +58,7 @@
           <div
             class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col justify-center">
             <div class="flex items-center gap-2 mb-2">
-              <Info class="w-7 h-7 text-blue-600" />
+              <Info class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Основная информация</span>
             </div>
             <div class="flex-1 flex flex-col justify-center space-y-2">
@@ -103,7 +103,7 @@
           <div
             class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full">
             <div class="flex items-center mb-4 gap-2">
-              <Landmark class="w-7 h-7 text-blue-600" />
+              <Landmark class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Реквизиты</span>
             </div>
             <div class="space-y-2">
@@ -143,37 +143,40 @@
 
       </div>
 
-      <!-- Сметы клиента -->
-      <div v-if="activeTab === 'details'"
-        class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-sm p-6 ">
-        <div class="flex items-center gap-2 mb-5">
-          <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
-            Сметы клиента
-          </h2>
-        </div>
-        <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="e in estimates" :key="e.id"
-            class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
-            <div class="flex justify-between items-center">
-              <RouterLink :to="`/estimates/${e.id}`"
-                class="flex items-center gap-2 font-semibold text-blue-700 dark:text-blue-400 hover:underline">
-                <LucideFileText class="w-5 h-5" /> {{ e.name }}
-              </RouterLink>
-              <span class="text-gray-500 text-xs flex items-center gap-1">
-                <LucideCalendar class="w-4 h-4" />
-                <span>{{ new Date(e.date).toLocaleDateString() }}</span>
-              </span>
+      <div v-if="activeTab === 'details'" class=" dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl  ">
+        <NotesBlock class="mb-6" :notes="notes" @add="addNote" @update="updateNote" @delete="deleteNote" />
+        <div
+          class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col justify-center">
+          <div class="flex items-center gap-2 mb-2">
+            <LucideFileText class="w-6 h-6 text-blue-600" />
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Сметы клиента</h3>
+
+          </div>
+          <div v-if="estimates.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="e in estimates" :key="e.id"
+              class="border bg-white dark:bg-qe-black3 dark:border-qe-black2 p-4 rounded-xl shadow-sm flex flex-col gap-2 hover:shadow-md transition">
+              <div class="flex justify-between items-center">
+                <RouterLink :to="`/estimates/${e.id}`"
+                  class="flex items-center gap-2 font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                  {{ e.name }}
+                </RouterLink>
+                <span class="text-gray-500 text-xs flex items-center gap-1">
+                  <LucideCalendar class="w-4 h-4" />
+                  <span>{{ new Date(e.date).toLocaleDateString() }}</span>
+                </span>
+              </div>
+            </div>
+            <QePagination :total="estimatesTotal" :per-page="10" :page="estimatesPage"
+              @update:page="changeEstimatesPage" class="col-span-full mt-4" />
+          </div>
+          <div v-else
+            class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
+            <div class="flex items-center justify-center gap-1">
+              <LucideAlertCircle class="w-5 h-5 text-yellow-400 inline-block mr-1" />
+              Сметы отсутствуют
             </div>
           </div>
-          <QePagination :total="estimatesTotal" :per-page="10" :page="estimatesPage" @update:page="changeEstimatesPage"
-            class="col-span-full mt-4" />
-        </div>
-        <div v-else
-          class="text-center text-gray-500 border border-gray-200 dark:border-qe-black2 p-4 rounded-2xl py-8 mt-2 bg-white dark:bg-qe-black3">
-          <div class="flex items-center justify-center gap-1">
-            <LucideAlertCircle class="w-5 h-5 text-yellow-400 inline-block mr-1" />
-            Сметы отсутствуют
-          </div>
+
 
 
         </div>
@@ -267,9 +270,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useClientsStore } from "@/store/clients";
+import { useNotesStore } from "@/store/notes";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
 
@@ -296,6 +300,7 @@ import {
   Landmark
 } from "lucide-vue-next";
 import QePagination from "@/components/QePagination.vue";
+import NotesBlock from "@/components/NotesBlock.vue";
 
 
 const route = useRoute();
@@ -310,8 +315,10 @@ const logPage = ref(1);
 const activeTab = ref("details");
 const showConfirm = ref(false);
 const store = useClientsStore();
+const notesStore = useNotesStore();
 const toast = useToast();
 const showDetails = ref({})
+const notes = ref([])
 
 onMounted(async () => {
   const { client: c, estimates: e, total } = await store.getClientWithEstimates(
@@ -324,7 +331,22 @@ onMounted(async () => {
   const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
   logs.value = logRes.items;
   logTotal.value = logRes.total;
+  notes.value = await notesStore.fetchClientNotes(route.params.id);
 });
+
+watch(() => route.params.id, async () => {
+  const { client: c, estimates: e, total } = await store.getClientWithEstimates(
+    route.params.id,
+    { page: estimatesPage.value, limit: 5 }
+  );
+  client.value = c;
+  estimates.value = e;
+  estimatesTotal.value = total;
+  const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
+  logs.value = logRes.items;
+  logTotal.value = logRes.total;
+  notes.value = await notesStore.fetchClientNotes(route.params.id);
+})
 
 function confirmDelete() {
   showConfirm.value = true;
@@ -346,6 +368,22 @@ async function changeLogPage(p) {
   const res = await store.getClientLogs(route.params.id, { page: p, limit: 10 })
   logs.value = res.items
   logTotal.value = res.total
+}
+
+async function addNote(text) {
+  const n = await notesStore.addClientNote(route.params.id, text)
+  notes.value.unshift(n)
+}
+
+async function updateNote(payload) {
+  const n = await notesStore.updateNote(payload.id, payload.text)
+  const idx = notes.value.findIndex(n => n.id === payload.id)
+  if (idx !== -1) notes.value[idx] = n
+}
+
+async function deleteNote(id) {
+  await notesStore.deleteNote(id)
+  notes.value = notes.value.filter(n => n.id !== id)
 }
 
 async function deleteClient() {

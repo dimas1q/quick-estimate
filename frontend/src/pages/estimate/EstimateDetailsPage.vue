@@ -14,7 +14,7 @@
             <LucideFileText class="w-7 h-7 text-blue-600" />
             <span>Смета: {{ estimate.name }}</span>
             <span :class="[
-              'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1 mt-2',
+              'inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1 mt-1',
               {
                 'bg-gray-200 text-gray-800': estimate.status === 'draft',
                 'bg-yellow-200 text-yellow-800': estimate.status === 'sent',
@@ -141,7 +141,7 @@
             class="bg-white dark:bg-qe-black3 rounded-2xl p-6 border dark:border-qe-black2 shadow-sm space-y-2 h-full flex flex-col">
             <!-- Заголовок всегда сверху -->
             <div class="flex items-center gap-2 mb-2">
-              <Info class="w-7 h-7 text-blue-600" />
+              <Info class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Основная информация</span>
             </div>
             <!-- Данные по центру блока -->
@@ -167,7 +167,7 @@
               <div v-if="estimate.event_place" class="flex items-center gap-2">
                 <LucideMapPin class="w-5 h-5 text-pink-500" />
                 <span><span class="font-semibold">Место проведения: </span><span>{{ estimate.event_place
-                }}</span></span>
+                    }}</span></span>
               </div>
               <div class="flex items-center gap-2">
                 <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
@@ -188,11 +188,6 @@
                 <span><span class="font-semibold">Обновлена:</span>
                   {{ new Date(estimate.updated_at).toLocaleString() }}</span>
               </div>
-              <div class="flex items-center gap-2">
-                <NotebookPen class="w-5 h-5 text-gray-400" />
-                <span><span class="font-semibold">Примечания:</span>
-                  {{ estimate.notes || "—" }}</span>
-              </div>
             </div>
           </div>
 
@@ -200,7 +195,7 @@
           <div
             class="bg-white dark:bg-qe-black3 0 rounded-2xl shadow-sm p-6 border dark:border-qe-black2 flex flex-col gap-4 justify-center h-full">
             <div class="flex items-center gap-2">
-              <LucideWallet class="w-7 h-7 text-blue-600" />
+              <LucideWallet class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Суммы по смете</span>
             </div>
             <div class="space-y-2 mt-2">
@@ -210,7 +205,7 @@
                   <span>Внутренняя:</span>
                 </div>
                 <span class="text-lg font-semibold text-green-700 dark:text-green-400">{{ formatCurrency(totalInternal)
-                }}</span>
+                  }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -218,15 +213,15 @@
                   <span>Внешняя:</span>
                 </div>
                 <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{ formatCurrency(totalExternal)
-                }}</span>
+                  }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
                   <LucideArrowUpRight class="w-5 h-5 text-pink-600" />
-                  <span>Разница:</span>
+                  <span>Маржа:</span>
                 </div>
                 <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">{{ formatCurrency(totalDiff)
-                }}</span>
+                  }}</span>
               </div>
               <div v-if="estimate.vat_enabled" class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -234,7 +229,7 @@
                   <span>НДС ({{ estimate.vat_rate }}%):</span>
                 </div>
                 <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{ formatCurrency(vat)
-                }}</span>
+                  }}</span>
               </div>
               <div v-if="estimate.vat_enabled"
                 class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
@@ -244,19 +239,22 @@
                 </div>
                 <span class="text-xl font-bold text-gray-800 dark:text-white">{{
                   formatCurrency(totalWithVat)
-                }}</span>
+                  }}</span>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Примечания -->
+        <NotesBlock class="mt-8" :notes="notes" @add="addNote" @update="updateNote" @delete="deleteNote" />
+
         <!-- Категории и услуги -->
         <div class="mt-8">
           <div v-for="(groupItems, category) in groupedItems" :key="category"
-            class="mb-6 border p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow">
+            class="mb-6 border p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow-sm">
             <div class="flex items-center justify-center gap-2 mb-3">
-              <LucideFolder class="w-6 h-6 text-blue-500" />
-              <h3 class="text-xl font-semibold text-gray-800 dark:text-white pb-1">
+              <LucideFolder class="w-6 h-6 text-blue-600" />
+              <h3 class="text-lg font-bold text-gray-800 dark:text-white">
                 {{ category }}
               </h3>
             </div>
@@ -399,7 +397,7 @@
                           → {{ formatLogDate(d.new) }}
                         </span>
                         <span v-else class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold"> → {{ d.new
-                        }}</span>
+                          }}</span>
                       </span>
                     </template>
                   </li>
@@ -467,10 +465,12 @@
 import { onMounted, onUnmounted, ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useEstimatesStore } from "@/store/estimates";
+import { useNotesStore } from "@/store/notes";
 import { onClickOutside } from "@vueuse/core";
 import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
 import QePagination from "@/components/QePagination.vue";
+import NotesBlock from "@/components/NotesBlock.vue";
 import fileDownload from "js-file-download";
 
 import {
@@ -497,7 +497,6 @@ import {
   LucideArrowUpRight,
   LucideCalculator,
   LucideFolder,
-  NotebookPen,
 } from "lucide-vue-next";
 
 
@@ -505,6 +504,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const store = useEstimatesStore();
+const notesStore = useNotesStore();
 const toast = useToast();
 
 const versionParam = computed(() =>
@@ -518,6 +518,7 @@ const menuRef = ref(null);
 const showConfirm = ref(false);
 
 const estimate = ref(null);
+const notes = ref([]);
 const logs = ref([]);
 const versions = ref([]);
 const logTotal = ref(0);
@@ -560,6 +561,7 @@ async function loadAll() {
     const verRes = await store.getEstimateVersions(id, { page: versionPage.value, limit: 10 });
     versions.value = verRes.items;
     versionTotal.value = verRes.total;
+    notes.value = await notesStore.fetchEstimateNotes(id);
     error.value = null;
   } catch (e) {
     if (e.response?.status === 404) error.value = "❌ Смета не найдена.";
@@ -597,6 +599,7 @@ function formatLogDate(dt) {
 
 onMounted(loadAll);
 watch(() => route.query.version, loadAll);
+watch(() => route.params.id, loadAll);
 
 onUnmounted(() => {
   store.currentEstimate = null;
@@ -684,6 +687,22 @@ const vat = computed(() =>
     : 0,
 );
 const totalWithVat = computed(() => totalExternal.value + vat.value);
+
+async function addNote(text) {
+  const n = await notesStore.addEstimateNote(route.params.id, text);
+  notes.value.unshift(n);
+}
+
+async function updateNote(payload) {
+  const n = await notesStore.updateNote(payload.id, payload.text);
+  const idx = notes.value.findIndex((x) => x.id === payload.id);
+  if (idx !== -1) notes.value[idx] = n;
+}
+
+async function deleteNote(id) {
+  await notesStore.deleteNote(id);
+  notes.value = notes.value.filter((n) => n.id !== id);
+}
 
 function formatCurrency(val) {
   return `${val.toFixed(2)} ₽`;

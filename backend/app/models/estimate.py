@@ -5,9 +5,7 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    Float,
     DateTime,
-    Text,
     func,
     Boolean,
     ForeignKey,
@@ -49,7 +47,9 @@ class Estimate(Base):
         passive_deletes=True,
     )
     responsible = Column(String, nullable=False)
-    notes = Column(Text, nullable=True)
+    notes = relationship(
+        "Note", back_populates="estimate", cascade="all, delete-orphan"
+    )
 
     items = relationship(
         "EstimateItem", back_populates="estimate", cascade="all, delete-orphan"
