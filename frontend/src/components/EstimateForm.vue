@@ -82,12 +82,18 @@
         </div>
       </div>
 
+      <div class="md:col-span-2">
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" v-model="estimate.use_internal_price" class="h-4 w-4 accent-blue-600 rounded border-gray-300" />
+          <span class="text-sm font-semibold text-gray-800 dark:text-white">Внутренняя цена</span>
+        </label>
+      </div>
 
     </div>
 
     <!-- 2. Редактор услуг — растягивается на всю ширину -->
     <div>
-      <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" :vat-rate="estimate.vat_rate" />
+      <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" :vat-rate="estimate.vat_rate" :use-internal-price="estimate.use_internal_price" />
     </div>
 
     <!-- 3. Кнопки -->
@@ -134,6 +140,7 @@ const estimate = reactive({
   items: [],
   vat_enabled: true,
   vat_rate: 20,
+  use_internal_price: true,
   status: 'draft'
 })
 
@@ -149,6 +156,7 @@ onMounted(async () => {
     estimate.event_place = store.importedEstimate.event_place || ''
     estimate.vat_enabled = store.importedEstimate.vat_enabled ?? true
     estimate.vat_rate = store.importedEstimate.vat_rate ?? 20.0
+    estimate.use_internal_price = store.importedEstimate.use_internal_price ?? true
     estimate.status = store.importedEstimate.status || 'draft'
 
     estimate.items.splice(0)
@@ -174,6 +182,7 @@ watch(() => props.initial, (value) => {
       event_place: value.event_place || '',
       vat_enabled: value.vat_enabled ?? true,
       vat_rate: value.vat_rate ?? 20.0,
+      use_internal_price: value.use_internal_price ?? true,
       status: value.status || 'draft',
       items: (value.items || []).map(item => ({
         ...item,
@@ -275,7 +284,7 @@ function validateEstimate() {
       toast.error(`Услуга ${item.name}: количество должно быть > 0`)
       return false
     }
-    if (!item.internal_price || item.internal_price <= 0) {
+    if (estimate.use_internal_price && (!item.internal_price || item.internal_price <= 0)) {
       toast.error(`Услуга ${item.name}: внутренняя цена должна быть > 0`)
       return false
     }

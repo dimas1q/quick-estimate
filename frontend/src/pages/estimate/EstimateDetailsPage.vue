@@ -199,7 +199,7 @@
               <span class="text-lg font-bold">Суммы по смете</span>
             </div>
             <div class="space-y-2 mt-2">
-              <div class="flex justify-between items-center">
+              <div v-if="estimate.use_internal_price" class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
                   <LucidePiggyBank class="w-5 h-5 text-green-600" />
                   <span>Внутренняя:</span>
@@ -215,7 +215,7 @@
                 <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{ formatCurrency(totalExternal)
                   }}</span>
               </div>
-              <div class="flex justify-between items-center">
+              <div v-if="estimate.use_internal_price" class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
                   <LucideArrowUpRight class="w-5 h-5 text-pink-600" />
                   <span>Маржа:</span>
@@ -275,7 +275,7 @@
                     {{ item.quantity }} {{ item.unit }}
                   </div>
                 </div>
-                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
+                <div v-if="estimate.use_internal_price" class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
                   <span>Внутр. цена за единицу:</span>
                   <span>{{ formatCurrency(item.internal_price) }}</span>
                 </div>
@@ -283,7 +283,7 @@
                   <span>Внешн. цена за единицу:</span>
                   <span>{{ formatCurrency(item.external_price) }}</span>
                 </div>
-                <div class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
+                <div v-if="estimate.use_internal_price" class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
                   <span>Итог (внутр.):</span>
                   <span>{{ formatCurrency(getItemInternal(item)) }}</span>
                 </div>
@@ -295,7 +295,7 @@
             </div>
             <!-- Итоги по категории -->
             <div class="flex gap-3 justify-center mt-5">
-              <div
+              <div v-if="estimate.use_internal_price"
                 class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2">
                 <LucidePiggyBank class="w-4 h-4 text-green-500" />
                 <span class="text-xs text-gray-600 dark:text-gray-300">Итог по категории (внутр.):</span>
@@ -666,10 +666,9 @@ function getItemExternal(item) {
 
 const totalInternal = computed(
   () =>
-    estimate.value?.items?.reduce(
-      (sum, item) => sum + getItemInternal(item),
-      0,
-    ) || 0,
+    estimate.value?.use_internal_price
+      ? estimate.value.items?.reduce((sum, item) => sum + getItemInternal(item), 0) || 0
+      : 0,
 );
 const totalExternal = computed(
   () =>
@@ -679,7 +678,9 @@ const totalExternal = computed(
     ) || 0,
 );
 
-const totalDiff = computed(() => totalExternal.value - totalInternal.value);
+const totalDiff = computed(() =>
+  estimate.value?.use_internal_price ? totalExternal.value - totalInternal.value : 0
+);
 
 const vat = computed(() =>
   estimate.value?.vat_enabled

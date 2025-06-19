@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -16,6 +16,8 @@ class EstimateTemplate(Base):
     items = relationship(
         "EstimateItem", back_populates="template", cascade="all, delete-orphan"
     )
+
+    use_internal_price = Column(Boolean, default=True, nullable=False)
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="templates")

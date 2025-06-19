@@ -307,11 +307,11 @@ async def export_estimate_pdf(
     # --- Новые суммы ---
     total_internal = sum(
         (item.internal_price or 0) * (item.quantity or 0) for item in estimate.items
-    )
+    ) if estimate.use_internal_price else 0
     total_external = sum(
         (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
     )
-    total_diff = total_external - total_internal
+    total_diff = total_external - total_internal if estimate.use_internal_price else 0
     vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
     total_with_vat = total_external + vat
 
@@ -433,9 +433,15 @@ async def update_estimate(
         )
     estimate.vat_rate = updated_data.vat_rate
 
-    # Простые поля (кроме items, vat_enabled, vat_rate)
+    if estimate.use_internal_price != updated_data.use_internal_price:
+        details.append(
+            "Включена внутренняя цена" if updated_data.use_internal_price else "Выключена внутренняя цена"
+        )
+    estimate.use_internal_price = updated_data.use_internal_price
+
+    # Простые поля (кроме items, vat_enabled, vat_rate, use_internal_price)
     for field, value in updated_data.dict(
-        exclude={"items", "vat_enabled", "vat_rate"}
+        exclude={"items", "vat_enabled", "vat_rate", "use_internal_price"}
     ).items():
         old_val = getattr(estimate, field)
         actions = FIELD_ACTIONS_RU.get(field)

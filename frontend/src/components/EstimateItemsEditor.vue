@@ -15,20 +15,24 @@
 
         <!-- Таблица услуг -->
         <div>
-          <div class="grid grid-cols-9 gap-5 text-gray-600 text-xs dark:text-white font-semibold mb-2 text-center">
+          <div :class="['grid gap-5 text-gray-600 text-xs dark:text-white font-semibold mb-2 text-center', props.useInternalPrice ? 'grid-cols-9' : 'grid-cols-7']">
             <div>Название</div>
             <div>Описание</div>
             <div>Кол-во</div>
             <div>Ед.</div>
-            <div>Внутр. цена</div>
+            <template v-if="props.useInternalPrice">
+              <div>Внутр. цена</div>
+            </template>
             <div>Внеш. цена</div>
-            <div>Итог (внутр.)</div>
+            <template v-if="props.useInternalPrice">
+              <div>Итог (внутр.)</div>
+            </template>
             <div>Итог (внеш.)</div>
             <div></div>
           </div>
 
           <transition-group name="fade" tag="div">
-            <div v-for="(item, itemIdx) in cat.items" :key="itemIdx" class="grid grid-cols-9 items-center py-1 gap-4">
+            <div v-for="(item, itemIdx) in cat.items" :key="itemIdx" :class="['grid items-center py-1 gap-4', props.useInternalPrice ? 'grid-cols-9' : 'grid-cols-7']">
               <input v-model="item.name" class="qe-input-sm" placeholder="Название" />
               <input v-model="item.description" class="qe-input-sm" placeholder="Описание" />
               <input type="number" min="0" step="any" v-model.number="item.quantity" class="qe-input-sm"
@@ -36,11 +40,11 @@
               <select v-model="item.unit" class="qe-input-sm">
                 <option v-for="u in units" :key="u">{{ u }}</option>
               </select>
-              <input type="number" min="0" step="any" v-model.number="item.internal_price" class="qe-input-sm"
+              <input v-if="props.useInternalPrice" type="number" min="0" step="any" v-model.number="item.internal_price" class="qe-input-sm"
                 placeholder="Внутр. цена" />
               <input type="number" min="0" step="any" v-model.number="item.external_price" class="qe-input-sm"
                 placeholder="Внеш. цена" />
-              <div class="text-sm font-semibold text-center pr-2">
+              <div v-if="props.useInternalPrice" class="text-sm font-semibold text-center pr-2">
                 {{ formatCurrency(getItemInternal(item)) }}
               </div>
               <div class="text-sm font-semibold text-center pr-2">
@@ -55,7 +59,7 @@
 
         <!-- Итоги по категории -->
         <div class="flex flex-col text-sm font-semibold mt-3 border-t dark:border-qe-black2 pt-2 items-end text-right">
-          <span>Итог по категории (внутр.): {{ formatCurrency(getCategoryInternal(cat)) }}</span>
+          <span v-if="props.useInternalPrice">Итог по категории (внутр.): {{ formatCurrency(getCategoryInternal(cat)) }}</span>
           <span>Итог по категории (внешн.): {{ formatCurrency(getCategoryExternal(cat)) }}</span>
         </div>
 
@@ -95,13 +99,13 @@
     <!-- Итоги по всем категориям -->
     <div v-if="categories.some(cat => (cat.items && cat.items.length > 0)) && props.showSummary"
       class="pt-6 border-t dark:border-qe-black2">
-      <p class="text-right font-semibold text-lg">
+      <p v-if="props.useInternalPrice" class="text-right font-semibold text-lg">
         Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
       </p>
       <p class="text-right font-semibold text-lg">
         Общая сумма (внешн.): {{ formatCurrency(totalExternal) }}
       </p>
-      <p class="text-right font-semibold text-lg">
+      <p v-if="props.useInternalPrice" class="text-right font-semibold text-lg">
         Маржа: {{ formatCurrency(totalDiff) }}
       </p>
       <p class="text-right text-gray-700 dark:text-white" v-if="props.vatEnabled">
@@ -129,6 +133,10 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
+  useInternalPrice: {
+    type: Boolean,
+    default: true
+  }
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -214,9 +222,11 @@ function getCategoryInternal(cat) {
 function getCategoryExternal(cat) {
   return (cat.items || []).reduce((sum, item) => sum + getItemExternal(item), 0)
 }
-const totalInternal = computed(() => categories.value.reduce((sum, cat) => sum + getCategoryInternal(cat), 0))
+const totalInternal = computed(() =>
+  props.useInternalPrice ? categories.value.reduce((sum, cat) => sum + getCategoryInternal(cat), 0) : 0
+)
 const totalExternal = computed(() => categories.value.reduce((sum, cat) => sum + getCategoryExternal(cat), 0))
-const totalDiff = computed(() => totalExternal.value - totalInternal.value)
+const totalDiff = computed(() => props.useInternalPrice ? totalExternal.value - totalInternal.value : 0)
 const vat = computed(() => props.vatEnabled ? totalExternal.value * (props.vatRate / 100) : 0)
 const totalWithVat = computed(() => totalExternal.value + vat.value)
 

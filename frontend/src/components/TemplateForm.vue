@@ -3,11 +3,18 @@
   <form @submit.prevent="submit"
     class="space-y-8 border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-md p-6">
     <!-- 1. Основные поля: название и описание -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Название шаблона</label>
         <input v-model="template.name" type="text" placeholder="Введите название" class="w-full qe-input" />
-      </div>
+  </div>
+
+    <div>
+      <label class="flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" v-model="template.use_internal_price" class="h-4 w-4 accent-blue-600 rounded border-gray-300" />
+        <span class="text-sm font-semibold text-gray-800 dark:text-white">Внутренняя цена</span>
+      </label>
+    </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Описание</label>
         <input v-model="template.description" placeholder="Краткое описание шаблона" class="w-full qe-input" />
@@ -16,7 +23,7 @@
 
     <!-- 2. Редактор услуг -->
     <div>
-      <EstimateItemsEditor v-model="template.items" :vat-enabled="false" :show-summary="false" />
+      <EstimateItemsEditor v-model="template.items" :vat-enabled="false" :show-summary="false" :use-internal-price="template.use_internal_price" />
     </div>
 
     <!-- 3. Кнопки -->
@@ -54,13 +61,15 @@ const router = useRouter()
 const template = reactive({
   name: '',
   description: '',
-  items: []
+  items: [],
+  use_internal_price: true
 })
 
 onMounted(() => {
   if (store.importedTemplate) {
     template.name = store.importedTemplate.name || ''
     template.description = store.importedTemplate.description || ''
+    template.use_internal_price = store.importedTemplate.use_internal_price ?? true
 
     template.items.splice(0)
     for (const item of store.importedTemplate.items || []) {
@@ -86,6 +95,7 @@ watch(() => props.initial, (value) => {
     Object.assign(template, {
       name: value.name || '',
       description: value.description || '',
+      use_internal_price: value.use_internal_price ?? true,
       items: (value.items || []).map(item => ({
         ...item,
         category_input: item.category || ''
@@ -135,7 +145,7 @@ function validateTemplate() {
       toast.error(`Услуга №${i + 1}: количество должно быть > 0`)
       return false
     }
-    if (!item.internal_price || item.internal_price <= 0) {
+    if (template.use_internal_price && (!item.internal_price || item.internal_price <= 0)) {
       toast.error(`Услуга ${item.name}: внутренняя цена должна быть > 0`)
       return false
     }

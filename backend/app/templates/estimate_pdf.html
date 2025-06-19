@@ -120,8 +120,10 @@
         <th>Описание</th>
         <th>Кол-во</th>
         <th>Ед.</th>
+        {% if estimate.use_internal_price %}
         <th>Внутр. цена</th>
         <th>Итог (вн.)</th>
+        {% endif %}
         <th>Внеш. цена</th>
         <th>Итог (внеш.)</th>
       </tr>
@@ -133,8 +135,10 @@
         <td>{{ item.description or '' }}</td>
         <td>{{ item.quantity }}</td>
         <td>{{ item.unit }}</td>
+        {% if estimate.use_internal_price %}
         <td>{{ "%.2f"|format(item.internal_price or 0) }}</td>
         <td>{{ "%.2f"|format((item.quantity or 0) * (item.internal_price or 0)) }}</td>
+        {% endif %}
         <td>{{ "%.2f"|format(item.external_price or 0) }}</td>
         <td>{{ "%.2f"|format((item.quantity or 0) * (item.external_price or 0)) }}</td>
       </tr>
@@ -142,10 +146,14 @@
     </tbody>
     <tfoot>
       <tr>
+        {% if estimate.use_internal_price %}
         <td colspan="5" style="text-align: right;">Итог по категории (вн.):</td>
         <td>
           {{ "%.2f"|format(items | sum(attribute="internal_price", start=0) ) }}
         </td>
+        {% else %}
+        <td colspan="3"></td>
+        {% endif %}
         <td style="text-align: right;">Итог по категории (внеш.):</td>
         <td>
           {{ "%.2f"|format(items | sum(attribute="external_price", start=0) ) }}
@@ -157,9 +165,13 @@
   {% endfor %}
 
   <div class="details" style="margin-top: 30px; text-align: right">
+    {% if estimate.use_internal_price %}
     <p><strong>Общая сумма (внутр.):</strong> {{ "%.2f"|format(total_internal) }} ₽</p>
+    {% endif %}
     <p><strong>Общая сумма (внешняя):</strong> {{ "%.2f"|format(total_external) }} ₽</p>
+    {% if estimate.use_internal_price %}
     <p><strong>Маржа:</strong> {{ "%.2f"|format(total_diff) }} ₽</p>
+    {% endif %}
     {% if estimate.vat_enabled %}
     <p><strong>НДС ({{ estimate.vat_rate }}%):</strong> {{ "%.2f"|format(vat) }} ₽</p>
     <p><strong>Итого с НДС:</strong> {{ "%.2f"|format(total_with_vat) }} ₽</p>
