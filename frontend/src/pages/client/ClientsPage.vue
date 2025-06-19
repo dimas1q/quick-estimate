@@ -88,7 +88,7 @@ async function changePage(p) {
       </div>
 
       <!-- Правая панель: добавление и фильтры -->
-      <div class="w-68 space-y-4">
+      <div class="w-72 space-y-4">
         <router-link to="/clients/create" class="qe-btn block w-full text-center">
           Добавить клиента
         </router-link>
@@ -96,15 +96,15 @@ async function changePage(p) {
           class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
           <h2 class="font-semibold text-lg">Фильтры</h2>
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Имя</label>
-            <input v-model="filters.name" class="qe-input w-full mt-2" type="text" placeholder="Поиск по имени" />
+            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left">Имя</label>
+            <input v-model="filters.name" class="qe-input w-full mt-1" type="text" placeholder="Поиск по имени" />
           </div>
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Компания</label>
-            <input v-model="filters.company" class="qe-input w-full mt-2" type="text" placeholder="Поиск по компании" />
+            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left">Компания</label>
+            <input v-model="filters.company" class="qe-input w-full mt-1" type="text" placeholder="Поиск по компании" />
           </div>
           <div class="flex gap-2 pt-2">
-            <button @click="applyFilters" class="qe-btn w-full">Применить</button>
+            <button @click="applyFilters" class="qe-btn w-full block text-left ">Применить</button>
             <button @click="resetFilters" class="qe-btn-secondary w-full">Сбросить</button>
           </div>
         </div>

@@ -1,148 +1,171 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ estimate.name }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 20px;
-            color: #333;
-        }
-        h1 {
-            text-align: center;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        p {
-            margin: 5px 0;
-            font-size: 16px;
-        }
-        .details {
-            margin-bottom: 20px;
-        }
-        .details p {
-            font-size: 16px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f7f7f7;
-            font-weight: bold;
-        }
-        tfoot td {
-            font-weight: bold;
-        }
-        .summary {
-            margin-top: 20px;
-            font-size: 14px;
-        }
-        .summary p {
-            margin: 5px 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ estimate.name }}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 20px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    p {
+      margin: 5px 0;
+      font-size: 16px;
+    }
+
+    .details {
+      margin-bottom: 20px;
+    }
+
+    .details p {
+      font-size: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f7f7f7;
+      font-weight: bold;
+    }
+
+    tfoot td {
+      font-weight: bold;
+    }
+
+    .summary {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .summary p {
+      margin: 5px 0;
+    }
+  </style>
 </head>
+
 <body>
-    <h1>{{ estimate.name }}</h1>
+  <h1>{{ estimate.name }}</h1>
 
-    <div class="details">
-        <p><strong>Клиент:</strong> {{ estimate.client.name }}</p>
-        <p><strong>Компания клиента:</strong> {{ estimate.client.company }}</p>
-        <p><strong>Контакт:</strong> {{ estimate.client.email }}</p>
-        {% set labels = {'draft':'Черновик','sent':'Отправлена','approved':'Одобрена','paid':'Оплачена','cancelled':'Отменена'}
-        %}
-        <p><strong>Статус:</strong> {{ labels[estimate.status.value] }}</p>
-        <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
-        <p><strong>НДС:</strong>
-           {% if estimate.vat_enabled %}
-           Включён
-           {% else %}
-           Не включён
-           {% endif %}
-        </p>
-        <p><strong>Дата создания:</strong> {{ estimate.date.strftime('%d.%m.%Y %H:%M') }}</p>
-        {% if estimate.notes %}
-        <p><strong>Примечания:</strong></p>
-        <ul>
-          {% for n in estimate.notes %}
-          <li>{{ n.text }} — {{ n.user.name }} ({{ n.created_at.strftime('%d.%m.%Y %H:%M') }})</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-    </div>
-
-    <h1>Услуги</h1>
-
-    {% set grouped = {} %}
-    {% for item in estimate.items %}
-      {% set _ = grouped.setdefault(item.category or 'Без категории', []).append(item) %}
-    {% endfor %}
-    
-    {% for category, items in grouped.items() %}
-      <h2 style="margin-top: 30px; font-size: 16px; color: #444;">{{ category }}</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Услуга</th>
-            <th>Описание</th>
-            <th>Кол-во</th>
-            <th>Ед.</th>
-            <th>Внутр. цена</th>
-            <th>Итог (вн.)</th>
-            <th>Внеш. цена</th>
-            <th>Итог (внеш.)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in items %}
-          <tr>
-            <td>{{ item.name }}</td>
-            <td>{{ item.description or '' }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>{{ item.unit }}</td>
-            <td>{{ "%.2f"|format(item.internal_price or 0) }}</td>
-            <td>{{ "%.2f"|format((item.quantity or 0) * (item.internal_price or 0)) }}</td>
-            <td>{{ "%.2f"|format(item.external_price or 0) }}</td>
-            <td>{{ "%.2f"|format((item.quantity or 0) * (item.external_price or 0)) }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="5" style="text-align: right;">Итог по категории (вн.):</td>
-            <td>
-              {{ "%.2f"|format(items | sum(attribute="internal_price", start=0) ) }}
-            </td>
-            <td style="text-align: right;">Итог по категории (внеш.):</td>
-            <td>
-              {{ "%.2f"|format(items | sum(attribute="external_price", start=0) ) }}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-      
-    {% endfor %}
-
-    <div class="details" style="margin-top: 30px; text-align: right">
-      <p><strong>Общая сумма (внутр.):</strong> {{ "%.2f"|format(total_internal) }} ₽</p>
-      <p><strong>Общая сумма (внешняя):</strong> {{ "%.2f"|format(total_external) }} ₽</p>
-      <p><strong>Разница:</strong> {{ "%.2f"|format(total_diff) }} ₽</p>
+  <div class="details">
+    {%if estimate.client %}
+    <p><strong>Клиент:</strong> {{ estimate.client.name }}</p>
+    <p><strong>Компания клиента:</strong> {{ estimate.client.company }}</p>
+    <p><strong>Контакт клиента:</strong> {{ estimate.client.email }}</p>
+    {% endif %}
+    {% set labels =
+    {'draft':'Черновик','sent':'Отправлена','approved':'Одобрена','paid':'Оплачена','cancelled':'Отменена'}
+    %}
+    <p><strong>Статус:</strong> {{ labels[estimate.status.value] }}</p>
+    <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>
+    {% if estimate.event_datetime %}
+    <p><strong>Дата и время мероприятия:</strong> {{ estimate.responsible }}</p>
+    {% endif %}
+    {% if estimate.event_place %}
+    <p><strong>Место проведения мероприятия мероприятия:</strong> {{ estimate.responsible }}</p>
+    {% endif %}
+    <p><strong>НДС:</strong>
       {% if estimate.vat_enabled %}
-      <p><strong>НДС ({{ estimate.vat_rate }}%):</strong> {{ "%.2f"|format(vat) }} ₽</p>
-      <p><strong>Итого с НДС:</strong> {{ "%.2f"|format(total_with_vat) }} ₽</p>
+      Включён
+      {% else %}
+      Не включён
       {% endif %}
-    </div>
-    
+    </p>
+    <p><strong>Дата создания:</strong> {{ estimate.date.strftime('%d.%m.%Y %H:%M') }}</p>
+    <!-- {% if estimate.notes %}
+    <p><strong>Примечания:</strong></p>
+    <ul>
+      {% for n in estimate.notes %}
+      <li>{{ n.text }} — {{ n.user.name }} ({{ n.created_at.strftime('%d.%m.%Y %H:%M') }})</li>
+      {% endfor %}
+    </ul>
+    {% endif %} -->
+  </div>
+
+  <h1>Услуги</h1>
+
+  {% set grouped = {} %}
+  {% for item in estimate.items %}
+  {% set _ = grouped.setdefault(item.category or 'Без категории', []).append(item) %}
+  {% endfor %}
+
+  {% for category, items in grouped.items() %}
+  <h2 style="margin-top: 30px; font-size: 16px; color: #444;">{{ category }}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Услуга</th>
+        <th>Описание</th>
+        <th>Кол-во</th>
+        <th>Ед.</th>
+        <th>Внутр. цена</th>
+        <th>Итог (вн.)</th>
+        <th>Внеш. цена</th>
+        <th>Итог (внеш.)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.name }}</td>
+        <td>{{ item.description or '' }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.unit }}</td>
+        <td>{{ "%.2f"|format(item.internal_price or 0) }}</td>
+        <td>{{ "%.2f"|format((item.quantity or 0) * (item.internal_price or 0)) }}</td>
+        <td>{{ "%.2f"|format(item.external_price or 0) }}</td>
+        <td>{{ "%.2f"|format((item.quantity or 0) * (item.external_price or 0)) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5" style="text-align: right;">Итог по категории (вн.):</td>
+        <td>
+          {{ "%.2f"|format(items | sum(attribute="internal_price", start=0) ) }}
+        </td>
+        <td style="text-align: right;">Итог по категории (внеш.):</td>
+        <td>
+          {{ "%.2f"|format(items | sum(attribute="external_price", start=0) ) }}
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+  {% endfor %}
+
+  <div class="details" style="margin-top: 30px; text-align: right">
+    <p><strong>Общая сумма (внутр.):</strong> {{ "%.2f"|format(total_internal) }} ₽</p>
+    <p><strong>Общая сумма (внешняя):</strong> {{ "%.2f"|format(total_external) }} ₽</p>
+    <p><strong>Маржа:</strong> {{ "%.2f"|format(total_diff) }} ₽</p>
+    {% if estimate.vat_enabled %}
+    <p><strong>НДС ({{ estimate.vat_rate }}%):</strong> {{ "%.2f"|format(vat) }} ₽</p>
+    <p><strong>Итого с НДС:</strong> {{ "%.2f"|format(total_with_vat) }} ₽</p>
+    {% endif %}
+  </div>
+
 </body>
+
 </html>

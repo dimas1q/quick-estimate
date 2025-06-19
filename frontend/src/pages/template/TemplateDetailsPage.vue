@@ -43,7 +43,7 @@
 
         <div class="mt-4">
           <div v-for="(groupItems, category) in groupedItems" :key="category"
-            class="mb-6 border  p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow">
+            class="mb-6 border  p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow-sm">
             <div class="flex items-center justify-center gap-2 mb-3">
               <LucideFolder class="w-6 h-6 text-blue-500" />
               <h3 class="text-xl font-semibold text-gray-800 dark:text-white pb-1">{{ category }}</h3>

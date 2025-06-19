@@ -55,25 +55,25 @@
       <!-- НДС: современный и компактный блок -->
       <div class="md:col-span-2">
         <div :class="[
-          'flex items-center gap-4 rounded-xl p-3 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
+          'flex items-center gap-2 rounded-xl p-3 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
           estimate.vat_enabled
             ? 'bg-white-50  dark:bg-qe-black3 dark:border-blue-600'
             : 'bg-white-50  dark:bg-qe-black3 dark:border-qe-black2'
         ]">
-          <label for="vat" class="flex items-center gap-3 cursor-pointer select-none">
+          <label for="vat" class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
-              class="h-5 w-5 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
-            <span class="text-base font-semibold text-gray-800 dark:text-white">НДС</span>
+              class="h-4 w-4 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
+            <span class="text-sm font-semibold text-gray-800 dark:text-white">НДС</span>
           </label>
 
           <transition name="fade">
-            <div v-if="estimate.vat_enabled" class="flex items-center gap-2">
+            <div v-if="estimate.vat_enabled" class="flex items-center">
               <div class="relative">
-                <input type="number" min="1" max="99" step="1" v-model.number="estimate.vat_rate"
-                  class="w-22 pr-8 pl-3 py-1.5 border rounded-lg text-base  focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white dark:bg-qe-black3 dark:border-qe-black2 dark:text-white dark:border-blue-800"
-                  placeholder="%" @input="checkVatRate" />
+                <input maxlength="2" v-model.number="estimate.vat_rate"
+                  class="w-16 pl-3 py-1.5 border rounded-lg text-sm  focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white dark:bg-qe-black3 dark:border-qe-black2 dark:text-white dark:border-blue-800"
+                  @input="checkVatRate" />
                 <span
-                  class="absolute right-2 top-1/2 -translate-y-1/2 text-base text-gray-700 dark:text-white pointer-events-none">%</span>
+                  class="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-700 font-semibold dark:text-white pointer-events-none">%</span>
               </div>
             </div>
           </transition>
@@ -226,6 +226,18 @@ const format = (date) => {
   return `${day}.${month}.${year} ${hours}:${minutes}`
 }
 
+function checkVatRate() {
+  // Сначала приводим к целому
+  estimate.vat_rate = Math.round(estimate.vat_rate)
+  // Если не число, обнуляем
+  if (isNaN(estimate.vat_rate)) {
+    estimate.vat_rate = ''
+    return
+  }
+  // Обрезаем диапазон
+  if (estimate.vat_rate > 99) estimate.vat_rate = 99
+  if (estimate.vat_rate < 1) estimate.vat_rate = ''
+}
 
 function validateEstimate() {
   if (!estimate.name?.trim()) {
@@ -236,6 +248,19 @@ function validateEstimate() {
     toast.error("Ответственный обязателен")
     return false
   }
+
+  if (estimate.vat_enabled) {
+    if (
+      typeof estimate.vat_rate !== "number" ||
+      !Number.isInteger(estimate.vat_rate) ||
+      estimate.vat_rate < 1 ||
+      estimate.vat_rate > 99
+    ) {
+      toast.error("НДС должен быть целым числом от 1 до 99")
+      return false
+    }
+  }
+
   if (!estimate.items.length) {
     toast.error("Добавьте хотя бы одну услугу")
     return false

@@ -293,7 +293,11 @@ async def export_estimate_pdf(
 ):
     result = await db.execute(
         select(Estimate)
-        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .options(
+            selectinload(Estimate.items),
+            selectinload(Estimate.client),
+            selectinload(Estimate.notes),
+        )
         .where(Estimate.id == estimate_id)
     )
     estimate = result.scalar_one_or_none()
@@ -339,7 +343,11 @@ async def export_estimate_excel(
 ):
     result = await db.execute(
         select(Estimate)
-        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .options(
+            selectinload(Estimate.items),
+            selectinload(Estimate.client),
+            selectinload(Estimate.notes),
+        )
         .where(Estimate.id == estimate_id)
     )
     estimate = result.scalar_one_or_none()

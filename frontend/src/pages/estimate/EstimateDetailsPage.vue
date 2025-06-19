@@ -167,7 +167,7 @@
               <div v-if="estimate.event_place" class="flex items-center gap-2">
                 <LucideMapPin class="w-5 h-5 text-pink-500" />
                 <span><span class="font-semibold">Место проведения: </span><span>{{ estimate.event_place
-                }}</span></span>
+                    }}</span></span>
               </div>
               <div class="flex items-center gap-2">
                 <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
@@ -205,7 +205,7 @@
                   <span>Внутренняя:</span>
                 </div>
                 <span class="text-lg font-semibold text-green-700 dark:text-green-400">{{ formatCurrency(totalInternal)
-                }}</span>
+                  }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -213,15 +213,15 @@
                   <span>Внешняя:</span>
                 </div>
                 <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{ formatCurrency(totalExternal)
-                }}</span>
+                  }}</span>
               </div>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
                   <LucideArrowUpRight class="w-5 h-5 text-pink-600" />
-                  <span>Разница:</span>
+                  <span>Маржа:</span>
                 </div>
                 <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">{{ formatCurrency(totalDiff)
-                }}</span>
+                  }}</span>
               </div>
               <div v-if="estimate.vat_enabled" class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-gray-500">
@@ -229,7 +229,7 @@
                   <span>НДС ({{ estimate.vat_rate }}%):</span>
                 </div>
                 <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{ formatCurrency(vat)
-                }}</span>
+                  }}</span>
               </div>
               <div v-if="estimate.vat_enabled"
                 class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
@@ -239,21 +239,22 @@
                 </div>
                 <span class="text-xl font-bold text-gray-800 dark:text-white">{{
                   formatCurrency(totalWithVat)
-                }}</span>
+                  }}</span>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Примечания -->
         <NotesBlock class="mt-8" :notes="notes" @add="addNote" @update="updateNote" @delete="deleteNote" />
 
         <!-- Категории и услуги -->
         <div class="mt-8">
           <div v-for="(groupItems, category) in groupedItems" :key="category"
-            class="mb-6 border p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow">
+            class="mb-6 border p-6 rounded-2xl bg-white dark:border-qe-black2 dark:bg-qe-black3 shadow-sm">
             <div class="flex items-center justify-center gap-2 mb-3">
-              <LucideFolder class="w-6 h-6 text-blue-500" />
-              <h3 class="text-xl font-semibold text-gray-800 dark:text-white pb-1">
+              <LucideFolder class="w-6 h-6 text-blue-600" />
+              <h3 class="text-lg font-bold text-gray-800 dark:text-white">
                 {{ category }}
               </h3>
             </div>
@@ -396,7 +397,7 @@
                           → {{ formatLogDate(d.new) }}
                         </span>
                         <span v-else class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold"> → {{ d.new
-                        }}</span>
+                          }}</span>
                       </span>
                     </template>
                   </li>
@@ -496,7 +497,6 @@ import {
   LucideArrowUpRight,
   LucideCalculator,
   LucideFolder,
-  NotebookPen,
 } from "lucide-vue-next";
 
 

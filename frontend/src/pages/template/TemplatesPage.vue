@@ -165,8 +165,8 @@ function isValidTemplate(template) {
           class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
           <h2 class="font-semibold text-lg">Фильтр</h2>
           <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300">Название</label>
-            <input v-model="filters.name" class="qe-input w-full mt-2" type="text" placeholder="Название шаблона" />
+            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left">Название</label>
+            <input v-model="filters.name" class="qe-input w-full mt-1" type="text" placeholder="Название шаблона" />
           </div>
           <div class="flex gap-2 pt-2">
             <button @click="applyFilters" class="qe-btn w-full">Применить</button>
