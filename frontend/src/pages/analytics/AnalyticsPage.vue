@@ -140,11 +140,24 @@
                     </table>
                 </div>
             </div>
-            <!-- Топ услуг -->
-            <div>
-                <h3 class="text-lg font-semibold mb-2">Топ услуг</h3>
-                <div
-                    class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
+            <div class="flex pt-4 justify-end" ref="exportRef">
+                <button type="button" @click="showExport = !showExport" class="qe-btn-secondary flex items-center">
+                    <Download class="w-4 h-4 mr-1" />
+                    <span>Экспорт</span>
+                    <ChevronDown class="w-4 h-4 ml-1 transition-transform" :class="{ 'rotate-180': showExport }" />
+                </button>
+                <div v-if="showExport" class="absolute right-0 mt-2 w-36 bg-white dark:bg-qe-black3 rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-200 dark:border-gray-800 animate-fade-in z-50">
+                    <button class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800" @click="triggerExport('csv')">CSV</button>
+                    <button class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800" @click="triggerExport('excel')">Excel</button>
+                    <button class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800" @click="triggerExport('pdf')">PDF</button>
+                </div>
+import { onClickOutside } from '@vueuse/core'
+    Calendar,
+    Download,
+    ChevronDown
+const showExport = ref(false)
+const exportRef = ref(null)
+onClickOutside(exportRef, () => { showExport.value = false })
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 dark:bg-qe-black2">
                             <tr>
@@ -300,7 +313,8 @@ function resetFilters() {
     filters.vat_enabled = null
     filters.categories = ''
     filters.categories_arr = []
-    filters.start_date = ''
+async function triggerExport(format) {
+        showExport.value = false
     filters.end_date = ''
     filters.granularity = 'month'
     applyFilters()
