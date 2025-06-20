@@ -87,12 +87,10 @@ def prettify_value(value):
 
 
 def prettify_number(val):
-    # Если None — прочерк
     if val in [None, ""]:
         return "—"
     try:
         v = float(val)
-        # Если целое (например 1.0, 150.0) — передаем без точки
         if v.is_integer():
             return str(int(v))
         else:
@@ -143,232 +141,6 @@ async def create_estimate(
     return result.scalar_one()
 
 
-@router.get("/", response_model=Paginated[EstimateOut])
-async def list_estimates(
-    name: str = Query(None),
-    client: Optional[int] = Query(None),  # Change type to Optional[int]
-    date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None),
-    page: int = Query(1, ge=1),
-    limit: int = Query(5, ge=1),
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
-    favorite: Optional[bool] = Query(None),
-):
-    filters = [Estimate.user_id == user.id]
-
-    if name:
-        filters.append(Estimate.name.ilike(f"%{name}%"))
-    if client:
-        filters.append(Estimate.client_id == client)
-    if date_from:
-        try:
-            dt_from = datetime.fromisoformat(date_from)
-            filters.append(Estimate.date >= dt_from)
-        except ValueError:
-            pass
-
-    if date_to:
-        try:
-            dt_to = datetime.fromisoformat(date_to)
-            filters.append(Estimate.date < dt_to)
-        except ValueError:
-            pass
-
-    query = (
-        select(Estimate)
-        .options(selectinload(Estimate.items), selectinload(Estimate.client))
-        .where(*filters)
-    )
-    count_query = select(func.count()).select_from(Estimate).where(*filters)
-    if favorite:
-        query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
-        count_query = count_query.join(EstimateFavorite).where(
-            EstimateFavorite.user_id == user.id
-        )
-
-    total = await db.scalar(count_query)
-
-    result = await db.execute(
-        query.order_by(Estimate.id.desc()).offset((page - 1) * limit).limit(limit)
-    )
-
-    estimates = result.scalars().all()
-
-    # Получаем id всех избранных смет для текущего пользователя
-    fav_result = await db.execute(
-        select(EstimateFavorite.estimate_id).where(EstimateFavorite.user_id == user.id)
-    )
-    favorite_ids = set(fav_result.scalars().all())
-
-    for estimate in estimates:
-        estimate.is_favorite = estimate.id in favorite_ids
-
-    return {"items": estimates, "total": total}
-
-
-@router.get("/{estimate_id}", response_model=EstimateOut)
-async def get_estimate(
-    estimate_id: int,
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    result = await db.execute(
-        select(Estimate)
-        .options(selectinload(Estimate.items), selectinload(Estimate.client))
-        .where(Estimate.id == estimate_id)
-    )
-    estimate = result.scalar_one_or_none()
-    if not estimate:
-        raise HTTPException(status_code=404, detail="Смета не найдена")
-
-    if estimate.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
-
-    fav = await db.execute(
-        select(EstimateFavorite).where(
-            EstimateFavorite.user_id == user.id,
-            EstimateFavorite.estimate_id == estimate_id,
-        )
-    )
-    estimate.is_favorite = fav.scalar_one_or_none() is not None
-    return estimate
-
-
-@router.get("/{estimate_id}/logs", response_model=Paginated[ChangeLogOut])
-async def get_logs(
-    estimate_id: int,
-    page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1),
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    # Load the estimate and check access
-    result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
-    estimate = result.scalar_one_or_none()
-    if not estimate:
-        raise HTTPException(status_code=404, detail="Смета не найдена")
-
-    if estimate.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
-
-    # Fetch and return logs
-    count_q = (
-        select(func.count())
-        .select_from(EstimateChangeLog)
-        .where(EstimateChangeLog.estimate_id == estimate_id)
-    )
-    total = await db.scalar(count_q)
-
-    result = await db.execute(
-        select(EstimateChangeLog)
-        .options(selectinload(EstimateChangeLog.user))
-        .where(EstimateChangeLog.estimate_id == estimate_id)
-        .order_by(EstimateChangeLog.timestamp.asc())
-        .offset((page - 1) * limit)
-        .limit(limit)
-    )
-
-    items = [
-        ChangeLogOut(
-            id=log.id,
-            action=log.action,
-            description=log.description,
-            details=log.details,
-            timestamp=log.timestamp,
-            user_id=log.user_id,
-            user_name=log.user.name or log.user.login if log.user else None,
-        )
-        for log in result.scalars().all()
-    ]
-
-    return {"items": items, "total": total}
-
-
-@router.get("/{estimate_id}/export/pdf")
-async def export_estimate_pdf(
-    estimate_id: int,
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    result = await db.execute(
-        select(Estimate)
-        .options(
-            selectinload(Estimate.items),
-            selectinload(Estimate.client),
-            selectinload(Estimate.notes),
-        )
-        .where(Estimate.id == estimate_id)
-    )
-    estimate = result.scalar_one_or_none()
-    if not estimate or estimate.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
-
-    # --- Новые суммы ---
-    total_internal = sum(
-        (item.internal_price or 0) * (item.quantity or 0) for item in estimate.items
-    )
-    total_external = sum(
-        (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
-    )
-    total_diff = total_external - total_internal
-    vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
-    total_with_vat = total_external + vat
-
-    pdf_bytes = render_pdf(
-        "estimate_pdf.html",
-        {
-            "estimate": estimate,
-            "total_internal": total_internal,
-            "total_external": total_external,
-            "total_diff": total_diff,
-            "vat": vat,
-            "total_with_vat": total_with_vat,
-        },
-    )
-    return StreamingResponse(
-        iter([pdf_bytes]),
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"
-        },
-    )
-
-
-@router.get("/{estimate_id}/export/excel")
-async def export_estimate_excel(
-    estimate_id: int,
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    result = await db.execute(
-        select(Estimate)
-        .options(
-            selectinload(Estimate.items),
-            selectinload(Estimate.client),
-            selectinload(Estimate.notes),
-        )
-        .where(Estimate.id == estimate_id)
-    )
-    estimate = result.scalar_one_or_none()
-
-    if not estimate or estimate.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
-
-    filename = f"{estimate.name}.xlsx"
-    ascii_filename = re.sub(r"[^\x00-\x7F]+", "_", filename)
-    utf8_filename = quote(filename)
-
-    excel_file = generate_excel(estimate)
-    return StreamingResponse(
-        excel_file,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename={ascii_filename}; filename*=UTF-8''{utf8_filename}"
-        },
-    )
-
-
 @router.put("/{estimate_id}", response_model=EstimateOut)
 async def update_estimate(
     estimate_id: int,
@@ -415,10 +187,7 @@ async def update_estimate(
         )
     )
 
-    # ==== Новый блок сравнения ====
     details = []
-
-    # Логика для НДС
     if estimate.vat_enabled != updated_data.vat_enabled:
         details.append("Включен НДС" if updated_data.vat_enabled else "Выключен НДС")
     estimate.vat_enabled = updated_data.vat_enabled
@@ -433,9 +202,17 @@ async def update_estimate(
         )
     estimate.vat_rate = updated_data.vat_rate
 
-    # Простые поля (кроме items, vat_enabled, vat_rate)
+    if estimate.use_internal_price != updated_data.use_internal_price:
+        details.append(
+            "Включена внутренняя цена"
+            if updated_data.use_internal_price
+            else "Выключена внутренняя цена"
+        )
+    estimate.use_internal_price = updated_data.use_internal_price
+
+    # Простые поля (кроме items, vat_enabled, vat_rate, use_internal_price)
     for field, value in updated_data.dict(
-        exclude={"items", "vat_enabled", "vat_rate"}
+        exclude={"items", "vat_enabled", "vat_rate", "use_internal_price"}
     ).items():
         old_val = getattr(estimate, field)
         actions = FIELD_ACTIONS_RU.get(field)
@@ -567,7 +344,7 @@ async def update_estimate(
         EstimateChangeLog(
             estimate_id=estimate_id,
             user_id=user.id,
-            action="Обновление",
+            action="Обновление сметы",
             description="Смета обновлена",
             details=details if details else None,
             timestamp=now,
@@ -578,14 +355,15 @@ async def update_estimate(
         ClientChangeLog(
             client_id=estimate.client_id,
             user_id=user.id,
-            action="Изменение сметы",
+            action="Обновление сметы",
             description=f"Обновлена смета: {estimate.name}",
+            details=details if details else None,
+            timestamp=now,
         )
     )
 
     await db.commit()
 
-    # вернём обновлённую
     result = await db.execute(
         select(Estimate)
         .options(selectinload(Estimate.items), selectinload(Estimate.client))
@@ -657,3 +435,231 @@ async def remove_favorite(
         await db.delete(fav)
         await db.commit()
     return Response(status_code=204)
+
+
+@router.get("/", response_model=Paginated[EstimateOut])
+async def list_estimates(
+    name: str = Query(None),
+    client: Optional[int] = Query(None),  # Change type to Optional[int]
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(5, ge=1),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+    favorite: Optional[bool] = Query(None),
+):
+    filters = [Estimate.user_id == user.id]
+
+    if name:
+        filters.append(Estimate.name.ilike(f"%{name}%"))
+    if client:
+        filters.append(Estimate.client_id == client)
+    if date_from:
+        try:
+            dt_from = datetime.fromisoformat(date_from)
+            filters.append(Estimate.date >= dt_from)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            dt_to = datetime.fromisoformat(date_to)
+            filters.append(Estimate.date < dt_to)
+        except ValueError:
+            pass
+
+    query = (
+        select(Estimate)
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .where(*filters)
+    )
+    count_query = select(func.count()).select_from(Estimate).where(*filters)
+    if favorite:
+        query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
+        count_query = count_query.join(EstimateFavorite).where(
+            EstimateFavorite.user_id == user.id
+        )
+
+    total = await db.scalar(count_query)
+
+    result = await db.execute(
+        query.order_by(Estimate.id.desc()).offset((page - 1) * limit).limit(limit)
+    )
+
+    estimates = result.scalars().all()
+
+    # Получаем id всех избранных смет для текущего пользователя
+    fav_result = await db.execute(
+        select(EstimateFavorite.estimate_id).where(EstimateFavorite.user_id == user.id)
+    )
+    favorite_ids = set(fav_result.scalars().all())
+
+    for estimate in estimates:
+        estimate.is_favorite = estimate.id in favorite_ids
+
+    return {"items": estimates, "total": total}
+
+
+@router.get("/{estimate_id}", response_model=EstimateOut)
+async def get_estimate(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Estimate)
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .where(Estimate.id == estimate_id)
+    )
+    estimate = result.scalar_one_or_none()
+    if not estimate:
+        raise HTTPException(status_code=404, detail="Смета не найдена")
+
+    if estimate.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
+
+    fav = await db.execute(
+        select(EstimateFavorite).where(
+            EstimateFavorite.user_id == user.id,
+            EstimateFavorite.estimate_id == estimate_id,
+        )
+    )
+    estimate.is_favorite = fav.scalar_one_or_none() is not None
+    return estimate
+
+
+@router.get("/{estimate_id}/logs", response_model=Paginated[ChangeLogOut])
+async def get_logs(
+    estimate_id: int,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
+    estimate = result.scalar_one_or_none()
+    if not estimate:
+        raise HTTPException(status_code=404, detail="Смета не найдена")
+
+    if estimate.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
+
+    count_q = (
+        select(func.count())
+        .select_from(EstimateChangeLog)
+        .where(EstimateChangeLog.estimate_id == estimate_id)
+    )
+    total = await db.scalar(count_q)
+
+    result = await db.execute(
+        select(EstimateChangeLog)
+        .options(selectinload(EstimateChangeLog.user))
+        .where(EstimateChangeLog.estimate_id == estimate_id)
+        .order_by(EstimateChangeLog.timestamp.asc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+
+    items = [
+        ChangeLogOut(
+            id=log.id,
+            action=log.action,
+            description=log.description,
+            details=log.details,
+            timestamp=log.timestamp,
+            user_id=log.user_id,
+            user_name=log.user.name or log.user.login if log.user else None,
+        )
+        for log in result.scalars().all()
+    ]
+
+    return {"items": items, "total": total}
+
+
+@router.get("/{estimate_id}/export/pdf")
+async def export_estimate_pdf(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Estimate)
+        .options(
+            selectinload(Estimate.items),
+            selectinload(Estimate.client),
+            selectinload(Estimate.notes),
+        )
+        .where(Estimate.id == estimate_id)
+    )
+    estimate = result.scalar_one_or_none()
+    if not estimate or estimate.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
+
+    # --- Новые суммы ---
+    total_internal = (
+        sum(
+            (item.internal_price or 0) * (item.quantity or 0) for item in estimate.items
+        )
+        if estimate.use_internal_price
+        else 0
+    )
+    total_external = sum(
+        (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
+    )
+    total_diff = total_external - total_internal if estimate.use_internal_price else 0
+    vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
+    total_with_vat = total_external + vat
+
+    pdf_bytes = render_pdf(
+        "estimate_pdf.html",
+        {
+            "estimate": estimate,
+            "total_internal": total_internal,
+            "total_external": total_external,
+            "total_diff": total_diff,
+            "vat": vat,
+            "total_with_vat": total_with_vat,
+        },
+    )
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"
+        },
+    )
+
+
+@router.get("/{estimate_id}/export/excel")
+async def export_estimate_excel(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Estimate)
+        .options(
+            selectinload(Estimate.items),
+            selectinload(Estimate.client),
+            selectinload(Estimate.notes),
+        )
+        .where(Estimate.id == estimate_id)
+    )
+    estimate = result.scalar_one_or_none()
+
+    if not estimate or estimate.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
+
+    filename = f"{estimate.name}.xlsx"
+    ascii_filename = re.sub(r"[^\x00-\x7F]+", "_", filename)
+    utf8_filename = quote(filename)
+
+    excel_file = generate_excel(estimate)
+    return StreamingResponse(
+        excel_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename={ascii_filename}; filename*=UTF-8''{utf8_filename}"
+        },
+    )

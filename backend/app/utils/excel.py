@@ -87,37 +87,32 @@ def generate_excel(estimate: Estimate) -> BytesIO:
 
     row += 1  # Отступ перед услугами
 
-    # # Красивая область примечаний отдельным блоком
-    # if getattr(estimate, "notes", None) and estimate.notes:
-    #     ws[f"A{row}"] = "Примечания"
-    #     ws[f"A{row}"].font = bold_font
-    #     for n in estimate.notes:
-    #         row += 1
-    #         note_text = (
-    #             f"{n.text} — {n.user.name} ({n.created_at.strftime('%d.%m.%Y %H:%M')})"
-    #         )
-    #         cell = ws[f"B{row}"]
-    #         cell.value = note_text
-    #         cell.alignment = Alignment(wrap_text=True, vertical="top")
-    #     # выделить блок примечаний фоном, если нужно
-    #     # for r in range(first_row+1, row+1): ws[f"B{r}"].fill = PatternFill(...)
-    #     row += 1
-
     ws[f"A{row}"] = "Услуги"
     ws[f"A{row}"].font = Font(size=12, bold=True)
     row += 1
 
-    headers = [
-        "Категория",
-        "Название",
-        "Описание",
-        "Кол-во",
-        "Ед. изм.",
-        "Внутр. цена",
-        "Итог (вн.)",
-        "Внеш. цена",
-        "Итог (внеш.)",
-    ]
+    if estimate.use_internal_price:
+        headers = [
+            "Категория",
+            "Название",
+            "Описание",
+            "Кол-во",
+            "Ед. изм.",
+            "Внутр. цена",
+            "Итог (вн.)",
+            "Внеш. цена",
+            "Итог (внеш.)",
+        ]
+    else:
+        headers = [
+            "Категория",
+            "Название",
+            "Описание",
+            "Кол-во",
+            "Ед. изм.",
+            "Внеш. цена",
+            "Итог (внеш.)",
+        ]
     for col, header in enumerate(headers, start=1):
         cell = ws.cell(row=row, column=col, value=header)
         cell.font = bold_font
@@ -142,34 +137,55 @@ def generate_excel(estimate: Estimate) -> BytesIO:
         cat_external_rows = []
 
         for item in items:
-            values = [
-                category,
-                item.name,
-                item.description,
-                item.quantity,
-                item.unit,
-                item.internal_price,
-                None,  # Итог (вн.)
-                item.external_price,
-                None,  # Итог (внеш.)
-            ]
+            if estimate.use_internal_price:
+                values = [
+                    category,
+                    item.name,
+                    item.description,
+                    item.quantity,
+                    item.unit,
+                    item.internal_price,
+                    None,
+                    item.external_price,
+                    None,
+                ]
+            else:
+                values = [
+                    category,
+                    item.name,
+                    item.description,
+                    item.quantity,
+                    item.unit,
+                    item.external_price,
+                    None,
+                ]
+
             for col, val in enumerate(values, start=1):
                 cell = ws.cell(row=row, column=col, value=val)
                 cell.border = border
                 cell.alignment = center_align if col not in (2, 3) else left_align
-                if col == 6 or col == 8:
-                    cell.number_format = currency_format
-                if col == 7:
-                    cell.value = f"=F{row}*D{row}"
-                    cell.number_format = currency_format
-                    cat_internal_rows.append(row)
-                    internal_service_rows.append(row)
-                if col == 9:
-                    cell.value = f"=H{row}*D{row}"
-                    cell.number_format = currency_format
-                    cat_external_rows.append(row)
-                    external_service_rows.append(row)
-                # Для автоподбора
+                if estimate.use_internal_price:
+                    if col in (6, 8):
+                        cell.number_format = currency_format
+                    if col == 7:
+                        cell.value = f"=F{row}*D{row}"
+                        cell.number_format = currency_format
+                        cat_internal_rows.append(row)
+                        internal_service_rows.append(row)
+                    if col == 9:
+                        cell.value = f"=H{row}*D{row}"
+                        cell.number_format = currency_format
+                        cat_external_rows.append(row)
+                        external_service_rows.append(row)
+                else:
+                    if col == 6:
+                        cell.number_format = currency_format
+                    if col == 7:
+                        cell.value = f"=F{row}*D{row}"
+                        cell.number_format = currency_format
+                        cat_external_rows.append(row)
+                        external_service_rows.append(row)
+
                 s = str(val) if val is not None else ""
                 if col - 1 < len(all_col_values):
                     all_col_values[col - 1].append(s)
@@ -180,23 +196,34 @@ def generate_excel(estimate: Estimate) -> BytesIO:
             bold_font
         )
         ws.cell(row=row, column=1).fill = cat_total_fill
-        ws.cell(row=row, column=6, value="Внутр.").font = bold_font
-        ws.cell(
-            row=row,
-            column=7,
-            value=f"=SUM(G{cat_internal_rows[0]}:G{cat_internal_rows[-1]})",
-        ).font = bold_font
-        ws.cell(row=row, column=7).number_format = currency_format
-        ws.cell(row=row, column=7).fill = cat_total_fill
-        ws.cell(row=row, column=8, value="Внешн.").font = bold_font
-        ws.cell(
-            row=row,
-            column=9,
-            value=f"=SUM(I{cat_external_rows[0]}:I{cat_external_rows[-1]})",
-        ).font = bold_font
-        ws.cell(row=row, column=9).number_format = currency_format
-        ws.cell(row=row, column=9).fill = cat_total_fill
-        row += 2
+        if estimate.use_internal_price:
+            ws.cell(row=row, column=6, value="Внутр.").font = bold_font
+            ws.cell(
+                row=row,
+                column=7,
+                value=f"=SUM(G{cat_internal_rows[0]}:G{cat_internal_rows[-1]})",
+            ).font = bold_font
+            ws.cell(row=row, column=7).number_format = currency_format
+            ws.cell(row=row, column=7).fill = cat_total_fill
+            ws.cell(row=row, column=8, value="Внешн.").font = bold_font
+            ws.cell(
+                row=row,
+                column=9,
+                value=f"=SUM(I{cat_external_rows[0]}:I{cat_external_rows[-1]})",
+            ).font = bold_font
+            ws.cell(row=row, column=9).number_format = currency_format
+            ws.cell(row=row, column=9).fill = cat_total_fill
+            row += 2
+        else:
+            ws.cell(row=row, column=6, value="Итог").font = bold_font
+            ws.cell(
+                row=row,
+                column=7,
+                value=f"=SUM(G{cat_external_rows[0]}:G{cat_external_rows[-1]})",
+            ).font = bold_font
+            ws.cell(row=row, column=7).number_format = currency_format
+            ws.cell(row=row, column=7).fill = cat_total_fill
+            row += 2
         # Отступ после категории
         row += 1
 
@@ -206,62 +233,111 @@ def generate_excel(estimate: Estimate) -> BytesIO:
     ws[f"E{row}"].font = bold_font
     ws[f"E{row}"].fill = total_fill
     ws[f"E{row}"].alignment = Alignment(wrap_text=True, vertical="top")
-    ws[f"F{row}"] = "Внутр."
-    ws[f"G{row}"] = (
-        f"=SUM({','.join([f'G{r}' for r in internal_service_rows])})"
-        if internal_service_rows
-        else 0
-    )
-    ws[f"G{row}"].number_format = currency_format
-    ws[f"G{row}"].font = bold_font
-    ws[f"G{row}"].fill = total_fill
 
-    ws[f"H{row}"] = "Внешн."
-    ws[f"I{row}"] = (
-        f"=SUM({','.join([f'I{r}' for r in external_service_rows])})"
-        if external_service_rows
-        else 0
-    )
-    ws[f"I{row}"].number_format = currency_format
-    ws[f"I{row}"].font = bold_font
-    ws[f"I{row}"].fill = total_fill
+    internal_sum_cell = ""
+    external_sum_cell = ""
+    if estimate.use_internal_price:
+        ws[f"F{row}"] = "Себестоимость"
+        ws[f"G{row}"] = (
+            f"=SUM({','.join([f'G{r}' for r in internal_service_rows])})"
+            if internal_service_rows
+            else 0
+        )
+        ws[f"G{row}"].number_format = currency_format
+        ws[f"G{row}"].font = bold_font
+        ws[f"G{row}"].fill = total_fill
+        internal_sum_cell = f"G{row}"
 
-    # Маржа
-    row += 1
-    ws[f"E{row}"] = "Маржа:"
-    ws[f"E{row}"].font = bold_font
-    ws[f"E{row}"].fill = total_fill
-    ws[f"E{row}"].alignment = Alignment(wrap_text=True, vertical="top")
-    ws[f"I{row}"] = f"=I{row-1}-G{row-1}"
-    ws[f"I{row}"].number_format = currency_format
-    ws[f"I{row}"].font = bold_font
-    ws[f"I{row}"].fill = total_fill
+        ws[f"H{row}"] = "Продажная стоимость"
+        ws[f"I{row}"] = (
+            f"=SUM({','.join([f'I{r}' for r in external_service_rows])})"
+            if external_service_rows
+            else 0
+        )
+        ws[f"I{row}"].number_format = currency_format
+        ws[f"I{row}"].font = bold_font
+        ws[f"I{row}"].fill = total_fill
+        external_sum_cell = f"I{row}"
 
-    # НДС
-    if estimate.vat_enabled:
+        # Маржа
         row += 1
-        ws[f"E{row}"] = f"НДС ({estimate.vat_rate}%)"
+        ws[f"E{row}"] = "Маржа:"
         ws[f"E{row}"].font = bold_font
         ws[f"E{row}"].fill = total_fill
-        ws[f"E{row}"].alignment = Alignment(wrap_text=True, vertical="top")
-        ws[f"I{row}"] = f"=I{row-1}*{estimate.vat_rate/100}"
+        ws[f"I{row}"] = f"={external_sum_cell}-{internal_sum_cell}"
         ws[f"I{row}"].number_format = currency_format
         ws[f"I{row}"].font = bold_font
         ws[f"I{row}"].fill = total_fill
 
-    # Итог с НДС
-    row += 1
-    ws[f"E{row}"] = "Итого с НДС"
-    ws[f"E{row}"].font = bold_font
-    ws[f"E{row}"].fill = total_fill
-    ws[f"E{row}"].alignment = Alignment(wrap_text=True, vertical="top")
-    if estimate.vat_enabled:
-        ws[f"I{row}"] = f"=I{row-1}+I{row-2}"
+        # НДС и итоговая сумма
+        if estimate.vat_enabled:
+            row += 1
+            ws[f"E{row}"] = f"НДС ({estimate.vat_rate}%)"
+            ws[f"E{row}"].font = bold_font
+            ws[f"E{row}"].fill = total_fill
+            ws[f"I{row}"] = f"={external_sum_cell}*{estimate.vat_rate/100}"
+            ws[f"I{row}"].number_format = currency_format
+            ws[f"I{row}"].font = bold_font
+            ws[f"I{row}"].fill = total_fill
+
+            row += 1
+            ws[f"E{row}"] = "Итого с НДС"
+            ws[f"E{row}"].font = bold_font
+            ws[f"E{row}"].fill = total_fill
+            ws[f"I{row}"] = f"={external_sum_cell}+I{row-1}"
+            ws[f"I{row}"].number_format = currency_format
+            ws[f"I{row}"].font = bold_font
+            ws[f"I{row}"].fill = total_fill
+        else:
+            row += 1
+            ws[f"E{row}"] = "Итого"
+            ws[f"E{row}"].font = bold_font
+            ws[f"E{row}"].fill = total_fill
+            ws[f"I{row}"] = f"={external_sum_cell}"
+            ws[f"I{row}"].number_format = currency_format
+            ws[f"I{row}"].font = bold_font
+            ws[f"I{row}"].fill = total_fill
+
     else:
-        ws[f"I{row}"] = f"=I{row-1}"
-    ws[f"I{row}"].number_format = currency_format
-    ws[f"I{row}"].font = bold_font
-    ws[f"I{row}"].fill = total_fill
+        ws[f"F{row}"] = "Внешн."
+        ws[f"G{row}"] = (
+            f"=SUM({','.join([f'G{r}' for r in external_service_rows])})"
+            if external_service_rows
+            else 0
+        )
+        ws[f"G{row}"].number_format = currency_format
+        ws[f"G{row}"].font = bold_font
+        ws[f"G{row}"].fill = total_fill
+        external_sum_cell = f"G{row}"
+
+        # НДС и итоговая сумма
+        if estimate.vat_enabled:
+            row += 1
+            ws[f"E{row}"] = f"НДС ({estimate.vat_rate}%)"
+            ws[f"E{row}"].font = bold_font
+            ws[f"E{row}"].fill = total_fill
+            ws[f"G{row}"] = f"={external_sum_cell}*{estimate.vat_rate/100}"
+            ws[f"G{row}"].number_format = currency_format
+            ws[f"G{row}"].font = bold_font
+            ws[f"G{row}"].fill = total_fill
+
+            row += 1
+            ws[f"E{row}"] = "Итого с НДС"
+            ws[f"E{row}"].font = bold_font
+            ws[f"E{row}"].fill = total_fill
+            ws[f"G{row}"] = f"={external_sum_cell}+G{row-1}"
+            ws[f"G{row}"].number_format = currency_format
+            ws[f"G{row}"].font = bold_font
+            ws[f"G{row}"].fill = total_fill
+        else:
+            row += 1
+            ws[f"E{row}"] = "Итого"
+            ws[f"E{row}"].font = bold_font
+            ws[f"E{row}"].fill = total_fill
+            ws[f"G{row}"] = f"={external_sum_cell}"
+            ws[f"G{row}"].number_format = currency_format
+            ws[f"G{row}"].font = bold_font
+            ws[f"G{row}"].fill = total_fill
 
     # Автоподбор ширины по max длине текста по всему документу
     for col in ws.columns:

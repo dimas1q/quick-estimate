@@ -30,6 +30,7 @@ async def create_template(
     new_template = EstimateTemplate(
         name=template.name,
         description=template.description,
+        use_internal_price=template.use_internal_price,
         user_id=user.id,
     )
     db.add(new_template)
@@ -114,6 +115,7 @@ async def update_template(
     # Обновление основных полей
     template.name = updated_data.name
     template.description = updated_data.description
+    template.use_internal_price = updated_data.use_internal_price
 
     # Удаление старых услуг
     await db.execute(

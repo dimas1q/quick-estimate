@@ -65,7 +65,7 @@
                     {{ item.quantity }} {{ item.unit }}
                   </div>
                 </div>
-                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
+                <div v-if="template.use_internal_price" class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
                   <span>Внутр. цена за единицу:</span>
                   <span>{{ formatCurrency(item.internal_price) }}</span>
                 </div>
@@ -73,7 +73,7 @@
                   <span>Внешн. цена за единицу:</span>
                   <span>{{ formatCurrency(item.external_price) }}</span>
                 </div>
-                <div class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
+                <div v-if="template.use_internal_price" class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
                   <span>Итог (внутр.):</span>
                   <span>{{ formatCurrency(getItemInternal(item)) }}</span>
                 </div>
@@ -85,7 +85,7 @@
             </div>
             <!-- Итоги по категории -->
             <div class="flex gap-3 justify-center mt-5">
-              <div
+              <div v-if="template.use_internal_price"
                 class="flex items-center gap-1 bg-gray-50 dark:bg-qe-black2 rounded-xl px-3 py-1 shadow border border-gray-100 dark:border-qe-black2">
                 <LucidePiggyBank class="w-4 h-4 text-green-500" />
                 <span class="text-xs text-gray-600 dark:text-gray-300">Итог по категории
@@ -195,10 +195,12 @@ function getGroupExternal(group) {
   return group.reduce((sum, item) => sum + getItemExternal(item), 0)
 }
 
-const totalInternal = computed(() => template.value?.items?.reduce((sum, item) => sum + getItemInternal(item), 0) || 0)
+const totalInternal = computed(() =>
+  template.value?.use_internal_price ? template.value.items?.reduce((sum, item) => sum + getItemInternal(item), 0) || 0 : 0
+)
 const totalExternal = computed(() => template.value?.items?.reduce((sum, item) => sum + getItemExternal(item), 0) || 0)
 
-const totalDiff = computed(() => totalExternal.value - totalInternal.value)
+const totalDiff = computed(() => template.value?.use_internal_price ? totalExternal.value - totalInternal.value : 0)
 
 async function addNote(text) {
   const n = await notesStore.addTemplateNote(route.params.id, text)

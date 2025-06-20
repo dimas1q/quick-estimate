@@ -10,7 +10,7 @@ from typing import List, Optional, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -176,8 +176,11 @@ async def get_client_analytics(
     if total_estimates == 0:
         raise HTTPException(404, "Смет по данным фильтрам не найдено")
 
-    # total revenue
-    revenue_expr = EstimateItem.quantity * EstimateItem.internal_price
+    # total revenue: margin if internal price used, else external price
+    revenue_expr = EstimateItem.quantity * case(
+        (Estimate.use_internal_price, EstimateItem.external_price - EstimateItem.internal_price),
+        else_=EstimateItem.external_price,
+    )
     q_sum = (
         select(func.coalesce(func.sum(revenue_expr), 0.0))
         .select_from(Estimate)
@@ -322,8 +325,11 @@ async def get_global_analytics(
     if total_estimates == 0:
         raise HTTPException(404, "Смет по данным фильтрам не найдено")
 
-    # total revenue
-    revenue_expr = EstimateItem.quantity * EstimateItem.internal_price
+    # total revenue: margin if internal price used, else external price
+    revenue_expr = EstimateItem.quantity * case(
+        (Estimate.use_internal_price, EstimateItem.external_price - EstimateItem.internal_price),
+        else_=EstimateItem.external_price,
+    )
     q_sum = (
         select(func.coalesce(func.sum(revenue_expr), 0.0))
         .select_from(Estimate)

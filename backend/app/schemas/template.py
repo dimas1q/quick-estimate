@@ -25,6 +25,7 @@ class TemplateItemOut(TemplateItemBase):
 class EstimateTemplateBase(BaseModel):
     name: str
     description: Optional[str] = None
+    use_internal_price: bool = True
 
 
 class EstimateTemplateCreate(EstimateTemplateBase):
@@ -38,5 +39,6 @@ class EstimateTemplateUpdate(EstimateTemplateBase):
 class EstimateTemplateOut(EstimateTemplateBase):
     id: int
     items: List[TemplateItemOut]
+    use_internal_price: bool = True
 
     model_config = {"from_attributes": True}

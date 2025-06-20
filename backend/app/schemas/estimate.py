@@ -16,6 +16,7 @@ class EstimateBase(BaseModel):
     status: EstimateStatus = EstimateStatus.DRAFT
     vat_enabled: bool = True
     vat_rate: int = 20
+    use_internal_price: bool = True
 
 
 class EstimateCreate(EstimateBase):
@@ -58,6 +59,7 @@ class EstimateOut(EstimateBase):
     items: List[EstimateItemOut] = Field(..., min_items=1)
     vat_enabled: bool = True
     vat_rate: int
+    use_internal_price: bool = True
     user_id: int
     client: Optional[ClientOut]
     status: EstimateStatus
