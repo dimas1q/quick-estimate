@@ -56,19 +56,28 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
+                        <div class="flex flex-wrap gap-2">
+                            <button v-for="opt in statusOptions" :key="opt.value" type="button"
+                                @click="toggleStatus(opt.value)"
+                                :class="[
+                                    'px-3 py-1 rounded-lg text-sm border transition select-none',
+                                    filters.status.includes(opt.value)
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-gray-50 dark:bg-qe-black2 border-gray-200 dark:border-qe-black2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-qe-black3'
+                                ]">
+                                {{ opt.label }}
+                            </button>
                         </div>
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button @click="applyFilters" class="qe-btn">Применить</button>
                     <button @click="resetFilters" class="qe-btn-secondary">Сбросить</button>
+                    <div class="ml-auto flex gap-2">
+                        <button @click="downloadAnalytics('pdf')" class="qe-btn-secondary">PDF</button>
+                        <button @click="downloadAnalytics('excel')" class="qe-btn-secondary">Excel</button>
+                        <button @click="downloadAnalytics('csv')" class="qe-btn-secondary">CSV</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -284,6 +293,37 @@ async function applyFilters() {
             errorMessage.value = 'Ошибка при загрузке данных'
         }
     }
+}
+
+function buildParams(src) {
+    const params = new URLSearchParams()
+    params.append('granularity', src.granularity)
+    if (src.start_date) params.append('start_date', src.start_date)
+    if (src.end_date) params.append('end_date', src.end_date)
+    src.status.forEach(s => params.append('status', s))
+    if (src.vat_enabled !== null) params.append('vat_enabled', String(src.vat_enabled))
+    src.categories_arr.forEach(c => params.append('categories', c))
+    return params
+}
+
+function toggleStatus(val) {
+    const idx = filters.status.indexOf(val)
+    if (idx === -1) filters.status.push(val)
+    else filters.status.splice(idx, 1)
+}
+
+async function downloadAnalytics(format) {
+    const params = buildParams(appliedFilters)
+    const blob = await analyticsStore.downloadGlobal(format, params)
+    const ext = format === 'excel' ? 'xlsx' : format
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `analytics.${ext}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
 }
 
 function resetFilters() {

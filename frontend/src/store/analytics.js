@@ -20,6 +20,20 @@ export const useAnalyticsStore = defineStore('analytics', {
         },
 
         /**
+         * Скачивает файл с глобальной аналитикой в указанном формате.
+         * @param {'csv'|'pdf'|'excel'} format
+         * @param {URLSearchParams} params Параметры фильтрации
+         */
+        async downloadGlobal(format = 'csv', params = new URLSearchParams()) {
+            params.append('format', format)
+            const res = await axios.get('/analytics/export', {
+                params,
+                responseType: 'blob'
+            })
+            return res.data
+        },
+
+        /**
          * Загружает аналитику по конкретному клиенту.
          * @param {number} clientId ID клиента
          * @param {Object} params Параметры фильтрации (как в глобальной)
