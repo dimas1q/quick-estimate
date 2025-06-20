@@ -5,6 +5,7 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 from io import BytesIO
 from app.models.estimate import Estimate
+from app.schemas.analytics import GlobalAnalytics
 from collections import defaultdict
 
 
@@ -353,6 +354,48 @@ def generate_excel(estimate: Estimate) -> BytesIO:
                     longest = int(longest * 1.15)
                 max_length = max(max_length, longest)
         ws.column_dimensions[col_letter].width = max(min(max_length + 3, 33), 10)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def generate_analytics_excel(ga: GlobalAnalytics) -> BytesIO:
+    """Generate simple Excel workbook with analytics data."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Analytics"
+
+    row = 1
+    ws.append(["Метрика", "Значение"])
+    ws.append(["Всего смет", ga.total_estimates])
+    ws.append(["Общая сумма", ga.total_amount])
+    ws.append(["Средняя сумма", ga.average_amount])
+    ws.append(["Медиана по сметам", ga.median_amount])
+    ws.append(["ARPU", ga.arpu])
+    ws.append(["MoM рост (%)", ga.mom_growth or 0])
+    ws.append(["YoY рост (%)", ga.yoy_growth or 0])
+
+    ws.append([])
+    ws.append(["Период", "Сумма"])
+    for item in ga.timeseries:
+        ws.append([item.period, item.value])
+
+    ws.append([])
+    ws.append(["Top-10 клиентов", "Выручка"])
+    for cli in ga.top_clients:
+        ws.append([cli.name, cli.total_amount])
+
+    ws.append([])
+    ws.append(["Ответственный", "Число смет", "Выручка"])
+    for resp in ga.by_responsible:
+        ws.append([resp.name, resp.estimates_count, resp.total_amount])
+
+    ws.append([])
+    ws.append(["Top-10 услуг", "Выручка"])
+    for srv in ga.top_services:
+        ws.append([srv.name, srv.total_amount])
 
     output = BytesIO()
     wb.save(output)

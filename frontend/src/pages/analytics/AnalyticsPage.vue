@@ -56,14 +56,7 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
+                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" />
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -169,6 +162,13 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Экспорт -->
+            <div class="flex gap-2 pt-4 justify-end">
+                <button class="qe-btn-secondary" @click="download('csv')">CSV</button>
+                <button class="qe-btn-secondary" @click="download('excel')">Excel</button>
+                <button class="qe-btn-secondary" @click="download('pdf')">PDF</button>
+            </div>
         </section>
     </div>
 </template>
@@ -179,6 +179,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
+import QeMultiSelect from '@/components/QeMultiSelect.vue'
+import fileDownload from 'js-file-download'
 
 import {
     FileText,
@@ -214,6 +216,7 @@ const filters = reactive({
     clientId: null,
     status: [],
     vat_enabled: null,
+    categories: '',
     categories_arr: [],
     start_date: '',
     end_date: '',
@@ -224,6 +227,7 @@ const appliedFilters = reactive({
     clientId: null,
     status: [],
     vat_enabled: null,
+    categories: '',
     categories_arr: [],
     start_date: '',
     end_date: '',
@@ -264,6 +268,9 @@ async function applyFilters() {
     if (filters.end_date) params.append('end_date', filters.end_date)
     filters.status.forEach(s => params.append('status', s))
     if (filters.vat_enabled !== null) params.append('vat_enabled', String(filters.vat_enabled))
+    filters.categories_arr = filters.categories
+        ? filters.categories.split(',').map(c => c.trim()).filter(Boolean)
+        : []
     filters.categories_arr.forEach(c => params.append('categories', c))
     Object.assign(appliedFilters, JSON.parse(JSON.stringify(filters)))
     try {
@@ -290,6 +297,7 @@ function resetFilters() {
     filters.clientId = null
     filters.status = []
     filters.vat_enabled = null
+    filters.categories = ''
     filters.categories_arr = []
     filters.start_date = ''
     filters.end_date = ''
@@ -301,5 +309,29 @@ function formatCurrency(val) {
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency', currency: 'RUB', minimumFractionDigits: 0
     }).format(val)
+}
+
+function buildExportParams() {
+    const params = {}
+    params.granularity = filters.granularity
+    if (filters.start_date) params.start_date = filters.start_date
+    if (filters.end_date) params.end_date = filters.end_date
+    if (filters.vat_enabled !== null) params.vat_enabled = filters.vat_enabled
+    filters.status.forEach(s => (params.status = params.status ? [].concat(params.status, s) : [s]))
+    const cats = filters.categories
+        ? filters.categories.split(',').map(c => c.trim()).filter(Boolean)
+        : []
+    cats.forEach(c => (params.categories = params.categories ? [].concat(params.categories, c) : [c]))
+    return params
+}
+
+async function download(format) {
+    try {
+        const blob = await analyticsStore.downloadGlobal(format, buildExportParams())
+        const ext = format === 'excel' ? 'xlsx' : format
+        fileDownload(blob, `analytics.${ext}`)
+    } catch (e) {
+        console.error(e)
+    }
 }
 </script>

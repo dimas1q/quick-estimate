@@ -3,6 +3,8 @@
 import io
 import csv
 import subprocess
+import re
+from urllib.parse import quote
 
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
@@ -16,6 +18,7 @@ from sqlalchemy.future import select
 
 from app.core.database import get_db
 from app.utils.auth import get_current_user
+from app.utils.excel import generate_analytics_excel
 from app.models.client import Client
 from app.models.estimate import Estimate, EstimateStatus
 from app.models.item import EstimateItem
@@ -455,10 +458,10 @@ async def get_global_analytics(
     )
 
 
-@router.get("/export", summary="Экспорт глобальной аналитики в CSV или PDF")
+@router.get("/export", summary="Экспорт глобальной аналитики в CSV, PDF или Excel")
 async def export_analytics(
-    format: Literal["csv", "pdf"] = Query(
-        "csv", description="Формат экспорта: csv или pdf"
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, pdf или excel"
     ),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -527,6 +530,19 @@ async def export_analytics(
             iter_csv(),
             media_type="text/csv",
             headers={"Content-Disposition": 'attachment; filename="analytics.csv"'},
+        )
+
+    if format == "excel":
+        excel_file = generate_analytics_excel(ga)
+        filename = "analytics.xlsx"
+        ascii_filename = re.sub(r"[^\x00-\x7F]+", "_", filename)
+        utf8_filename = quote(filename)
+        return StreamingResponse(
+            excel_file,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename={ascii_filename}; filename*=UTF-8''{utf8_filename}"
+            },
         )
 
     # 3) PDF через wkhtmltopdf
