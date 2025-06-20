@@ -53,11 +53,12 @@
                             </option>
                         </select>
                     </div>
-                    <!-- Статусы -->
-                    <div>
-                        <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" />
-                    </div>
+                </div>
+                <!-- Статусы -->
+                <div>
+                    <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
+                    <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы"
+                        class="w-full" />
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button @click="applyFilters" class="qe-btn">Применить</button>
