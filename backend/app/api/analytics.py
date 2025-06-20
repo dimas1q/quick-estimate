@@ -3,6 +3,8 @@
 import io
 import csv
 import subprocess
+from io import BytesIO
+from openpyxl import Workbook
 
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
@@ -455,10 +457,10 @@ async def get_global_analytics(
     )
 
 
-@router.get("/export", summary="Экспорт глобальной аналитики в CSV или PDF")
+@router.get("/export", summary="Экспорт глобальной аналитики в CSV, PDF или Excel")
 async def export_analytics(
-    format: Literal["csv", "pdf"] = Query(
-        "csv", description="Формат экспорта: csv или pdf"
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, pdf или excel"
     ),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -529,7 +531,51 @@ async def export_analytics(
             headers={"Content-Disposition": 'attachment; filename="analytics.csv"'},
         )
 
-    # 3) PDF через wkhtmltopdf
+    # 3) Excel
+    if format == "excel":
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Analytics"
+
+        ws.append(["Метрика", "Значение"])
+        ws.append(["Всего смет", ga.total_estimates])
+        ws.append(["Общая сумма", ga.total_amount])
+        ws.append(["Средняя сумма", ga.average_amount])
+        ws.append(["Медиана по сметам", ga.median_amount])
+        ws.append(["ARPU", ga.arpu])
+        ws.append(["MoM рост (%)", ga.mom_growth or 0])
+        ws.append(["YoY рост (%)", ga.yoy_growth or 0])
+
+        ws.append([])
+        ws.append(["Период", "Сумма"])
+        for row in ga.timeseries:
+            ws.append([row.period, row.value])
+
+        ws.append([])
+        ws.append(["Top-10 клиентов", "Выручка"])
+        for cli in ga.top_clients:
+            ws.append([cli.name, cli.total_amount])
+
+        ws.append([])
+        ws.append(["Ответственный", "Число смет", "Выручка"])
+        for resp in ga.by_responsible:
+            ws.append([resp.name, resp.estimates_count, resp.total_amount])
+
+        ws.append([])
+        ws.append(["Top-10 услуг", "Выручка"])
+        for srv in ga.top_services:
+            ws.append([srv.name, srv.total_amount])
+
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        return StreamingResponse(
+            iter([buf.getvalue()]),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="analytics.xlsx"'},
+        )
+
+    # 4) PDF через wkhtmltopdf
     html = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
         "<style>table{border-collapse:collapse;}td,th{border:1px solid #333;padding:4px;}</style>",
