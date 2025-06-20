@@ -15,7 +15,8 @@
 
         <!-- Таблица услуг -->
         <div>
-          <div :class="['grid gap-5 text-gray-600 text-xs dark:text-white font-semibold mb-2 text-center', props.useInternalPrice ? 'grid-cols-9' : 'grid-cols-7']">
+          <div
+            :class="['grid gap-5 text-gray-600 text-xs dark:text-white font-semibold mb-2 text-center', props.useInternalPrice ? 'grid-cols-9' : 'grid-cols-7']">
             <div>Название</div>
             <div>Описание</div>
             <div>Кол-во</div>
@@ -32,7 +33,8 @@
           </div>
 
           <transition-group name="fade" tag="div">
-            <div v-for="(item, itemIdx) in cat.items" :key="itemIdx" :class="['grid items-center py-1 gap-4', props.useInternalPrice ? 'grid-cols-9' : 'grid-cols-7']">
+            <div v-for="(item, itemIdx) in cat.items" :key="itemIdx"
+              :class="['grid items-center py-1 gap-4', props.useInternalPrice ? 'grid-cols-9' : 'grid-cols-7']">
               <input v-model="item.name" class="qe-input-sm" placeholder="Название" />
               <input v-model="item.description" class="qe-input-sm" placeholder="Описание" />
               <input type="number" min="0" step="any" v-model.number="item.quantity" class="qe-input-sm"
@@ -40,8 +42,8 @@
               <select v-model="item.unit" class="qe-input-sm">
                 <option v-for="u in units" :key="u">{{ u }}</option>
               </select>
-              <input v-if="props.useInternalPrice" type="number" min="0" step="any" v-model.number="item.internal_price" class="qe-input-sm"
-                placeholder="Внутр. цена" />
+              <input v-if="props.useInternalPrice" type="number" min="0" step="any" v-model.number="item.internal_price"
+                class="qe-input-sm" placeholder="Внутр. цена" />
               <input type="number" min="0" step="any" v-model.number="item.external_price" class="qe-input-sm"
                 placeholder="Внеш. цена" />
               <div v-if="props.useInternalPrice" class="text-sm font-semibold text-center pr-2">
@@ -59,7 +61,8 @@
 
         <!-- Итоги по категории -->
         <div class="flex flex-col text-sm font-semibold mt-3 border-t dark:border-qe-black2 pt-2 items-end text-right">
-          <span v-if="props.useInternalPrice">Итог по категории (внутр.): {{ formatCurrency(getCategoryInternal(cat)) }}</span>
+          <span v-if="props.useInternalPrice">Итог по категории (внутр.): {{ formatCurrency(getCategoryInternal(cat))
+            }}</span>
           <span>Итог по категории (внешн.): {{ formatCurrency(getCategoryExternal(cat)) }}</span>
         </div>
 
@@ -100,17 +103,17 @@
     <div v-if="categories.some(cat => (cat.items && cat.items.length > 0)) && props.showSummary"
       class="pt-6 border-t dark:border-qe-black2">
       <p v-if="props.useInternalPrice" class="text-right font-semibold text-lg">
-        Общая сумма (внутр.): {{ formatCurrency(totalInternal) }}
+        Себестоимость: {{ formatCurrency(totalInternal) }}
       </p>
       <p class="text-right font-semibold text-lg">
-        Общая сумма (внешн.): {{ formatCurrency(totalExternal) }}
+        Продажная стоимость: {{ formatCurrency(totalExternal) }}
       </p>
       <p v-if="props.useInternalPrice" class="text-right font-semibold text-lg">
         Маржа: {{ formatCurrency(totalDiff) }}
       </p>
       <p class="text-right text-gray-700 dark:text-white" v-if="props.vatEnabled">
         НДС ({{ props.vatRate }}%): {{ formatCurrency(vat) }}<br />
-        Итог с НДС: {{ formatCurrency(totalWithVat) }}
+        Итого с НДС: {{ formatCurrency(totalWithVat) }}
       </p>
     </div>
   </div>

@@ -3,27 +3,42 @@
   <form @submit.prevent="submit"
     class="space-y-8 border bg-white dark:bg-qe-black3 dark:border-qe-black2 rounded-2xl shadow-md p-6">
     <!-- 1. Основные поля: название и описание -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Название шаблона</label>
         <input v-model="template.name" type="text" placeholder="Введите название" class="w-full qe-input" />
-  </div>
+      </div>
 
-    <div>
-      <label class="flex items-center gap-2 cursor-pointer select-none">
-        <input type="checkbox" v-model="template.use_internal_price" class="h-4 w-4 accent-blue-600 rounded border-gray-300" />
-        <span class="text-sm font-semibold text-gray-800 dark:text-white">Внутренняя цена</span>
-      </label>
-    </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Описание</label>
         <input v-model="template.description" placeholder="Краткое описание шаблона" class="w-full qe-input" />
+      </div>
+
+      <div class="md:col-span-2">
+        <div :class="[
+          'flex items-center gap-2 rounded-xl p-2 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
+          template.use_internal_price
+            ? 'bg-white-50  dark:bg-qe-black3 dark:border-blue-600'
+            : 'bg-white-50  dark:bg-qe-black3 dark:border-qe-black2'
+        ]">
+          <div class="flex">
+          </div>
+          <label for="internal_price" class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" v-model="template.use_internal_price" id="internal_price"
+              class="h-4 w-4 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
+            <span class="text-sm font-semibold text-gray-800 dark:text-white">Внутренняя цена</span>
+          </label>
+          <span class="ml-auto text-xs text-gray-400 dark:text-gray-500 font-normal" v-if="template.use_internal_price">
+            Внутренняя цена будет использоваться для расчёта маржи
+          </span>
+        </div>
       </div>
     </div>
 
     <!-- 2. Редактор услуг -->
     <div>
-      <EstimateItemsEditor v-model="template.items" :vat-enabled="false" :show-summary="false" :use-internal-price="template.use_internal_price" />
+      <EstimateItemsEditor v-model="template.items" :vat-enabled="false" :show-summary="false"
+        :use-internal-price="template.use_internal_price" />
     </div>
 
     <!-- 3. Кнопки -->

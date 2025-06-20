@@ -49,17 +49,38 @@
         <input v-model="estimate.event_place" type="text" placeholder="Адрес или площадка" class="w-full qe-input" />
       </div>
 
-
+      <!-- Использовать внутреннюю цену -->
+      <div class="md:col-span-2">
+        <div :class="[
+          'flex items-center gap-2 rounded-xl p-2 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
+          estimate.use_internal_price
+            ? 'bg-white-50  dark:bg-qe-black3 dark:border-blue-600'
+            : 'bg-white-50  dark:bg-qe-black3 dark:border-qe-black2'
+        ]">
+          <div class="flex">
+          </div>
+          <label for="internal_price" class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" v-model="estimate.use_internal_price" id="internal_price"
+              class="h-4 w-4 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
+            <span class="text-sm font-semibold text-gray-800 dark:text-white">Внутренняя цена</span>
+          </label>
+          <span class="ml-auto text-xs text-gray-400 dark:text-gray-500 font-normal" v-if="estimate.use_internal_price">
+            Внутренняя цена будет использоваться для расчёта маржи
+          </span>
+        </div>
+      </div>
 
 
       <!-- НДС: современный и компактный блок -->
       <div class="md:col-span-2">
         <div :class="[
-          'flex items-center gap-2 rounded-xl p-3 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
+          'flex items-center gap-2 rounded-xl p-2 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
           estimate.vat_enabled
             ? 'bg-white-50  dark:bg-qe-black3 dark:border-blue-600'
             : 'bg-white-50  dark:bg-qe-black3 dark:border-qe-black2'
         ]">
+          <div class="flex">
+          </div>
           <label for="vat" class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
               class="h-4 w-4 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
@@ -82,18 +103,14 @@
         </div>
       </div>
 
-      <div class="md:col-span-2">
-        <label class="flex items-center gap-2 cursor-pointer select-none">
-          <input type="checkbox" v-model="estimate.use_internal_price" class="h-4 w-4 accent-blue-600 rounded border-gray-300" />
-          <span class="text-sm font-semibold text-gray-800 dark:text-white">Внутренняя цена</span>
-        </label>
-      </div>
+
 
     </div>
 
     <!-- 2. Редактор услуг — растягивается на всю ширину -->
     <div>
-      <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" :vat-rate="estimate.vat_rate" :use-internal-price="estimate.use_internal_price" />
+      <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" :vat-rate="estimate.vat_rate"
+        :use-internal-price="estimate.use_internal_price" />
     </div>
 
     <!-- 3. Кнопки -->

@@ -162,12 +162,12 @@
                 <LucideCalendar class="w-5 h-5 text-yellow-500" />
                 <span><span class="font-semibold">Дата и время: </span><span>{{
                   new Date(estimate.event_datetime).toLocaleString()
-                    }}</span></span>
+                }}</span></span>
               </div>
               <div v-if="estimate.event_place" class="flex items-center gap-2">
                 <LucideMapPin class="w-5 h-5 text-pink-500" />
                 <span><span class="font-semibold">Место проведения: </span><span>{{ estimate.event_place
-                    }}</span></span>
+                }}</span></span>
               </div>
               <div class="flex items-center gap-2">
                 <LucidePercentCircle class="w-5 h-5 text-indigo-500" />
@@ -175,7 +175,7 @@
                   <span class="font-semibold">НДС:</span>
                   <span v-if="estimate.vat_enabled">
                     Включён ({{ estimate.vat_rate }}%)</span>
-                  <span v-else> Не включён</span>
+                  <span v-else> Выключен</span>
                 </span>
               </div>
               <div class="flex items-center gap-2">
@@ -193,53 +193,67 @@
 
           <!-- Общие суммы -->
           <div
-            class="bg-white dark:bg-qe-black3 0 rounded-2xl shadow-sm p-6 border dark:border-qe-black2 flex flex-col gap-4 justify-center h-full">
-            <div class="flex items-center gap-2">
+            class="bg-white dark:bg-qe-black3 rounded-2xl shadow-sm p-6 border dark:border-qe-black2 flex flex-col h-full">
+            <!-- Заголовок всегда сверху -->
+            <div class="flex items-center gap-2 mb-2">
               <LucideWallet class="w-6 h-6 text-blue-600" />
               <span class="text-lg font-bold">Суммы по смете</span>
             </div>
-            <div class="space-y-2 mt-2">
-              <div v-if="estimate.use_internal_price" class="flex justify-between items-center">
-                <div class="flex items-center gap-2 text-gray-500">
-                  <LucidePiggyBank class="w-5 h-5 text-green-600" />
-                  <span>Внутренняя:</span>
-                </div>
-                <span class="text-lg font-semibold text-green-700 dark:text-green-400">{{ formatCurrency(totalInternal)
+            <!-- Все остальное по центру блока -->
+            <div class="flex-1 flex flex-col justify-center">
+              <div class="space-y-2 mt-2">
+                <div v-if="estimate.use_internal_price" class="flex justify-between items-center">
+                  <div class="flex items-center gap-2 text-gray-500">
+                    <LucidePiggyBank class="w-5 h-5 text-green-600" />
+                    <span>Себестоимость:</span>
+                  </div>
+                  <span class="text-lg font-semibold text-green-700 dark:text-green-400">{{
+                    formatCurrency(totalInternal)
                   }}</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <div class="flex items-center gap-2 text-gray-500">
-                  <LucideReceipt class="w-5 h-5 text-blue-600" />
-                  <span>Внешняя:</span>
                 </div>
-                <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{ formatCurrency(totalExternal)
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-2 text-gray-500">
+                    <LucideReceipt class="w-5 h-5 text-blue-600" />
+                    <span>Продажная стоимость:</span>
+                  </div>
+                  <span class="text-lg font-semibold text-blue-700 dark:text-blue-400">{{ formatCurrency(totalExternal)
                   }}</span>
-              </div>
-              <div v-if="estimate.use_internal_price" class="flex justify-between items-center">
-                <div class="flex items-center gap-2 text-gray-500">
-                  <LucideArrowUpRight class="w-5 h-5 text-pink-600" />
-                  <span>Маржа:</span>
                 </div>
-                <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">{{ formatCurrency(totalDiff)
+                <div v-if="estimate.use_internal_price" class="flex justify-between items-center">
+                  <div class="flex items-center gap-2 text-gray-500">
+                    <LucideArrowUpRight class="w-5 h-5 text-pink-600" />
+                    <span>Маржа:</span>
+                  </div>
+                  <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">{{ formatCurrency(totalDiff)
                   }}</span>
-              </div>
-              <div v-if="estimate.vat_enabled" class="flex justify-between items-center">
-                <div class="flex items-center gap-2 text-gray-500">
-                  <LucidePercentCircle class="w-5 h-5 text-indigo-600" />
-                  <span>НДС ({{ estimate.vat_rate }}%):</span>
                 </div>
-                <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{ formatCurrency(vat)
+                <div v-if="estimate.vat_enabled" class="flex justify-between items-center">
+                  <div class="flex items-center gap-2 text-gray-500">
+                    <LucidePercentCircle class="w-5 h-5 text-indigo-600" />
+                    <span>НДС ({{ estimate.vat_rate }}%):</span>
+                  </div>
+                  <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{ formatCurrency(vat)
                   }}</span>
-              </div>
-              <div v-if="estimate.vat_enabled"
-                class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
-                <div class="flex items-center gap-2 text-gray-700 dark:text-white font-semibold">
-                  <LucideCalculator class="w-5 h-5" />
-                  <span>Итого с НДС:</span>
                 </div>
-                <span class="text-xl font-bold text-gray-800 dark:text-white">{{
-                  formatCurrency(totalWithVat)
+                <div v-if="estimate.vat_enabled"
+                  class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
+                  <div class="flex items-center gap-2 text-gray-700 dark:text-white font-semibold">
+                    <LucideCalculator class="w-5 h-5" />
+                    <span>Итого с НДС:</span>
+                  </div>
+                  <span class="text-xl font-bold text-gray-800 dark:text-white">{{
+                    formatCurrency(totalWithVat)
                   }}</span>
+                </div>
+                <div v-else class="flex justify-between items-center border-t pt-2 mt-2 dark:border-qe-black2">
+                  <div class="flex items-center gap-2 text-gray-700 dark:text-white font-semibold">
+                    <LucideCalculator class="w-5 h-5" />
+                    <span>Итого:</span>
+                  </div>
+                  <span class="text-xl font-bold text-gray-800 dark:text-white">{{
+                    formatCurrency(totalExternal)
+                  }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -275,7 +289,8 @@
                     {{ item.quantity }} {{ item.unit }}
                   </div>
                 </div>
-                <div v-if="estimate.use_internal_price" class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
+                <div v-if="estimate.use_internal_price"
+                  class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
                   <span>Внутр. цена за единицу:</span>
                   <span>{{ formatCurrency(item.internal_price) }}</span>
                 </div>
@@ -283,7 +298,8 @@
                   <span>Внешн. цена за единицу:</span>
                   <span>{{ formatCurrency(item.external_price) }}</span>
                 </div>
-                <div v-if="estimate.use_internal_price" class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
+                <div v-if="estimate.use_internal_price"
+                  class="flex justify-between font-semibold text-sm text-gray-900 dark:text-white">
                   <span>Итог (внутр.):</span>
                   <span>{{ formatCurrency(getItemInternal(item)) }}</span>
                 </div>
@@ -351,8 +367,8 @@
                 </div>
                 <!-- Важно: фиксированная ширина, text-right и truncate -->
                 <div class="w-[140px] shrink-0 text-right pr-4">
-                  <button v-if="log.details && log.details.length" @click="toggleDetails(log.id)"
-                    class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-blue-600 hover:bg-blue-50 transition -mr-6">
+                  <button :disabled="!log.details || !log.details.length" @click="toggleDetails(log.id)"
+                    class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-blue-600 hover:bg-blue-50 transition -mr-6 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span>{{ showDetails[log.id] ? 'Скрыть детали' : 'Детали' }}</span>
                     <svg :class="['w-4 h-4 transition-transform', showDetails[log.id] ? 'rotate-180' : '']" fill="none"
                       stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -397,7 +413,7 @@
                           → {{ formatLogDate(d.new) }}
                         </span>
                         <span v-else class="-mx-1 -mr-2 text-blue-700 dark:text-blue-400 font-semibold"> → {{ d.new
-                          }}</span>
+                        }}</span>
                       </span>
                     </template>
                   </li>
