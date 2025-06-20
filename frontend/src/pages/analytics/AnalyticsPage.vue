@@ -56,13 +56,17 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
+                        <div class="flex flex-wrap gap-2">
+                            <button v-for="opt in statusOptions" :key="opt.value" type="button"
+                                @click="toggleStatus(opt.value)"
+                                :class="[
+                                    'px-3 py-1 rounded-full text-sm border transition',
+                                    filters.status.includes(opt.value)
+                                        ? statusClass(opt.value)
+                                        : 'bg-gray-100 dark:bg-qe-black2 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-qe-black2'
+                                ]">
+                                {{ opt.label }}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -78,6 +82,17 @@
 
         <!-- Метрики: карточки -->
         <section v-if="data" class="space-y-8">
+            <div class="flex justify-end gap-2">
+                <button @click="exportFile('pdf')" class="qe-btn-secondary flex items-center">
+                    <Download class="w-4 h-4 mr-1" /> PDF
+                </button>
+                <button @click="exportFile('excel')" class="qe-btn-secondary flex items-center">
+                    <Download class="w-4 h-4 mr-1" /> Excel
+                </button>
+                <button @click="exportFile('csv')" class="qe-btn-secondary flex items-center">
+                    <Download class="w-4 h-4 mr-1" /> CSV
+                </button>
+            </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <MetricCard title="Всего смет" :value="data.total_estimates" :icon="FileText" />
                 <MetricCard title="Выручка" :value="data.total_amount" :icon="DollarSign" suffix=" ₽" />
@@ -176,6 +191,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
@@ -187,12 +203,15 @@ import {
     BarChart2,
     Users,
     TrendingUp,
-    Calendar
+    Calendar,
+    Download
 } from 'lucide-vue-next'
+import fileDownload from 'js-file-download'
 
 
 const clientsStore = useClientsStore()
 const analyticsStore = useAnalyticsStore()
+const toast = useToast()
 
 const clients = ref([])
 const statusOptions = [
@@ -301,5 +320,47 @@ function formatCurrency(val) {
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency', currency: 'RUB', minimumFractionDigits: 0
     }).format(val)
+}
+
+function toggleStatus(val) {
+    const idx = filters.status.indexOf(val)
+    if (idx === -1) filters.status.push(val)
+    else filters.status.splice(idx, 1)
+}
+
+function statusClass(val) {
+    const map = {
+        draft: 'bg-gray-200 text-gray-800 border-gray-300',
+        sent: 'bg-yellow-200 text-yellow-800 border-yellow-300',
+        approved: 'bg-green-200 text-green-800 border-green-300',
+        paid: 'bg-blue-200 text-blue-800 border-blue-300',
+        cancelled: 'bg-red-200 text-red-800 border-red-300'
+    }
+    return map[val] || 'bg-gray-200'
+}
+
+async function exportFile(format) {
+    const params = {}
+    params.granularity = appliedFilters.granularity
+    if (appliedFilters.start_date) params.start_date = appliedFilters.start_date
+    if (appliedFilters.end_date) params.end_date = appliedFilters.end_date
+    if (appliedFilters.status.length) params.status = appliedFilters.status
+    if (appliedFilters.vat_enabled !== null) params.vat_enabled = appliedFilters.vat_enabled
+    if (appliedFilters.categories_arr.length) params.categories = appliedFilters.categories_arr
+
+    try {
+        let blob
+        if (appliedFilters.clientId) {
+            blob = await analyticsStore.downloadClient(appliedFilters.clientId, format, params)
+        } else {
+            blob = await analyticsStore.downloadGlobal(format, params)
+        }
+        const ext = format === 'excel' ? 'xlsx' : format
+        fileDownload(blob, `analytics.${ext}`)
+        toast.success('Файл загружен')
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при экспорте')
+    }
 }
 </script>

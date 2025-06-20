@@ -455,10 +455,10 @@ async def get_global_analytics(
     )
 
 
-@router.get("/export", summary="Экспорт глобальной аналитики в CSV или PDF")
+@router.get("/export", summary="Экспорт глобальной аналитики")
 async def export_analytics(
-    format: Literal["csv", "pdf"] = Query(
-        "csv", description="Формат экспорта: csv или pdf"
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, pdf или excel"
     ),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -529,6 +529,53 @@ async def export_analytics(
             headers={"Content-Disposition": 'attachment; filename="analytics.csv"'},
         )
 
+    if format == "excel":
+        from openpyxl import Workbook
+        from io import BytesIO
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Analytics"
+
+        ws.append(["Метрика", "Значение"])
+        ws.append(["Всего смет", ga.total_estimates])
+        ws.append(["Общая сумма", ga.total_amount])
+        ws.append(["Средняя сумма", ga.average_amount])
+        ws.append(["Медиана по сметам", ga.median_amount])
+        ws.append(["ARPU", ga.arpu])
+        ws.append(["MoM рост (%)", ga.mom_growth or 0])
+        ws.append(["YoY рост (%)", ga.yoy_growth or 0])
+
+        ws.append([])
+        ws.append(["Период", "Сумма"])
+        for row in ga.timeseries:
+            ws.append([row.period, row.value])
+
+        ws.append([])
+        ws.append(["Top-10 клиентов", "Выручка"])
+        for cli in ga.top_clients:
+            ws.append([cli.name, cli.total_amount])
+
+        ws.append([])
+        ws.append(["Ответственный", "Число смет", "Выручка"])
+        for resp in ga.by_responsible:
+            ws.append([resp.name, resp.estimates_count, resp.total_amount])
+
+        ws.append([])
+        ws.append(["Top-10 услуг", "Выручка"])
+        for srv in ga.top_services:
+            ws.append([srv.name, srv.total_amount])
+
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        return Response(
+            content=buf.read(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="analytics.xlsx"'},
+        )
+
     # 3) PDF через wkhtmltopdf
     html = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
@@ -592,4 +639,162 @@ async def export_analytics(
         content=proc.stdout,
         media_type="application/pdf",
         headers={"Content-Disposition": 'attachment; filename="analytics.pdf"'},
+    )
+
+
+@router.get("/clients/{client_id}/export", summary="Экспорт аналитики по клиенту")
+async def export_client_analytics(
+    client_id: int,
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, pdf или excel"
+    ),
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    status: Optional[List[EstimateStatus]] = Query(None),
+    vat_enabled: Optional[bool] = Query(None),
+    granularity: GranularityEnum = Query(GranularityEnum.month),
+    categories: Optional[List[str]] = Query(None, description="Категории услуг"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    ca: ClientAnalytics = await get_client_analytics(
+        client_id=client_id,
+        start_date=start_date,
+        end_date=end_date,
+        status=status,
+        vat_enabled=vat_enabled,
+        granularity=granularity,
+        categories=categories,
+        user=user,
+        db=db,
+    )
+
+    if format == "csv":
+        def iter_csv():
+            buf = io.StringIO()
+            w = csv.writer(buf)
+
+            w.writerow(["Метрика", "Значение"])
+            w.writerow(["Всего смет", ca.total_estimates])
+            w.writerow(["Общая сумма", ca.total_amount])
+            w.writerow(["Средняя сумма", ca.average_amount])
+            w.writerow(["Медиана по сметам", ca.median_amount])
+            w.writerow(["MoM рост (%)", ca.mom_growth or 0])
+            w.writerow(["YoY рост (%)", ca.yoy_growth or 0])
+            w.writerow([])
+
+            w.writerow(["Период", "Сумма"])
+            for row in ca.timeseries:
+                w.writerow([row.period, row.value])
+            w.writerow([])
+
+            w.writerow(["Ответственный", "Число смет", "Выручка"])
+            for resp in ca.by_responsible:
+                w.writerow([resp.name, resp.estimates_count, resp.total_amount])
+            w.writerow([])
+
+            w.writerow(["Top-10 услуг", "Выручка"])
+            for srv in ca.top_services:
+                w.writerow([srv.name, srv.total_amount])
+
+            buf.seek(0)
+            yield buf.read()
+
+        return StreamingResponse(
+            iter_csv(),
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="client_analytics.csv"'},
+        )
+
+    if format == "excel":
+        from openpyxl import Workbook
+        from io import BytesIO
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Analytics"
+
+        ws.append(["Метрика", "Значение"])
+        ws.append(["Всего смет", ca.total_estimates])
+        ws.append(["Общая сумма", ca.total_amount])
+        ws.append(["Средняя сумма", ca.average_amount])
+        ws.append(["Медиана по сметам", ca.median_amount])
+        ws.append(["MoM рост (%)", ca.mom_growth or 0])
+        ws.append(["YoY рост (%)", ca.yoy_growth or 0])
+
+        ws.append([])
+        ws.append(["Период", "Сумма"])
+        for row in ca.timeseries:
+            ws.append([row.period, row.value])
+
+        ws.append([])
+        ws.append(["Ответственный", "Число смет", "Выручка"])
+        for resp in ca.by_responsible:
+            ws.append([resp.name, resp.estimates_count, resp.total_amount])
+
+        ws.append([])
+        ws.append(["Top-10 услуг", "Выручка"])
+        for srv in ca.top_services:
+            ws.append([srv.name, srv.total_amount])
+
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        return Response(
+            content=buf.read(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="client_analytics.xlsx"'},
+        )
+
+    # PDF generation
+    html = [
+        "<!DOCTYPE html><html><head><meta charset='utf-8'>",
+        "<style>table{border-collapse:collapse;}td,th{border:1px solid #333;padding:4px;}</style>",
+        f"<title>Аналитика по клиенту {client_id}</title></head><body>",
+        f"<h1>Аналитика клиента {client_id}</h1>",
+        "<h2>Ключевые метрики</h2><ul>",
+        f"<li>Всего смет: {ca.total_estimates}</li>",
+        f"<li>Общая сумма: {ca.total_amount}</li>",
+        f"<li>Средняя сумма: {ca.average_amount}</li>",
+        f"<li>Медиана: {ca.median_amount}</li>",
+        f"<li>MoM рост: {ca.mom_growth or 0:.2f}%</li>",
+        f"<li>YoY рост: {ca.yoy_growth or 0:.2f}%</li>",
+        "</ul>",
+        "<h2>Динамика по периодам</h2>",
+        "<table><tr><th>Период</th><th>Сумма</th></tr>",
+    ]
+    for row in ca.timeseries:
+        html.append(f"<tr><td>{row.period}</td><td>{row.value}</td></tr>")
+    html.append("</table>")
+
+    html.append("<h2>По ответственным</h2>")
+    html.append("<table><tr><th>Ответственный</th><th>Число смет</th><th>Выручка</th></tr>")
+    for resp in ca.by_responsible:
+        html.append(f"<tr><td>{resp.name}</td><td>{resp.estimates_count}</td><td>{resp.total_amount}</td></tr>")
+    html.append("</table>")
+
+    html.append("<h2>Top-10 услуг</h2>")
+    html.append("<table><tr><th>Услуга</th><th>Выручка</th></tr>")
+    for srv in ca.top_services:
+        html.append(f"<tr><td>{srv.name}</td><td>{srv.total_amount}</td></tr>")
+    html.append("</table>")
+    html.append("</body></html>")
+
+    html_str = "\n".join(html)
+    proc = subprocess.run(
+        ["wkhtmltopdf", "--encoding", "utf-8", "-", "-"],
+        input=html_str.encode("utf-8"),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if proc.returncode != 0:
+        raise HTTPException(
+            500, detail=f"PDF generation failed: {proc.stderr.decode('utf-8')}"
+        )
+
+    return Response(
+        content=proc.stdout,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="client_analytics.pdf"'},
     )

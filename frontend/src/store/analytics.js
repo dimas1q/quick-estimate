@@ -29,5 +29,21 @@ export const useAnalyticsStore = defineStore('analytics', {
             this.client = res.data
             return res.data
         },
+
+        async downloadGlobal(format, params = {}) {
+            const res = await axios.get('/analytics/export', {
+                params: { ...params, format },
+                responseType: 'blob'
+            })
+            return res.data
+        },
+
+        async downloadClient(clientId, format, params = {}) {
+            const res = await axios.get(`/analytics/clients/${clientId}/export`, {
+                params: { ...params, format },
+                responseType: 'blob'
+            })
+            return res.data
+        },
     },
 })
