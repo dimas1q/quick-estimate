@@ -11,6 +11,8 @@ from app.models.estimate import Estimate
 from app.models.client import Client
 from app.models.template import EstimateTemplate
 from app.models.user import User
+from app.models.changelog import EstimateChangeLog
+from app.models.client_changelog import ClientChangeLog
 from app.schemas.note import NoteCreate, NoteOut, NoteUpdate
 from app.utils.auth import get_current_user
 
@@ -62,6 +64,15 @@ async def create_estimate_note(
     await _get_entity(db, Estimate, estimate_id, user.id)
     note = Note(text=note_in.text, estimate_id=estimate_id, user_id=user.id)
     db.add(note)
+    db.add(
+        EstimateChangeLog(
+            estimate_id=estimate_id,
+            user_id=user.id,
+            action="Добавление примечания",
+            description="Добавлено примечание",
+            details=[note_in.text],
+        )
+    )
     await db.commit()
     await db.refresh(note)
     return NoteOut(
@@ -111,6 +122,15 @@ async def create_client_note(
     await _get_entity(db, Client, client_id, user.id)
     note = Note(text=note_in.text, client_id=client_id, user_id=user.id)
     db.add(note)
+    db.add(
+        ClientChangeLog(
+            client_id=client_id,
+            user_id=user.id,
+            action="Добавление примечания",
+            description="Добавлено примечание",
+            details=[note_in.text],
+        )
+    )
     await db.commit()
     await db.refresh(note)
     return NoteOut(
@@ -183,7 +203,28 @@ async def update_note(
     note = result.scalar_one_or_none()
     if not note or note.user_id != user.id:
         raise HTTPException(status_code=404, detail="Примечание не найдено")
+    old_text = note.text
     note.text = note_in.text
+    if note.estimate_id:
+        db.add(
+            EstimateChangeLog(
+                estimate_id=note.estimate_id,
+                user_id=user.id,
+                action="Редактирование примечания",
+                description="Примечание обновлено",
+                details=[{"label": "Текст", "old": old_text, "new": note_in.text}],
+            )
+        )
+    elif note.client_id:
+        db.add(
+            ClientChangeLog(
+                client_id=note.client_id,
+                user_id=user.id,
+                action="Редактирование примечания",
+                description="Примечание обновлено",
+                details=[{"label": "Текст", "old": old_text, "new": note_in.text}],
+            )
+        )
     await db.commit()
     await db.refresh(note)
     return NoteOut(
@@ -206,6 +247,26 @@ async def delete_note(
     note = result.scalar_one_or_none()
     if not note or note.user_id != user.id:
         raise HTTPException(status_code=404, detail="Примечание не найдено")
+    if note.estimate_id:
+        db.add(
+            EstimateChangeLog(
+                estimate_id=note.estimate_id,
+                user_id=user.id,
+                action="Удаление примечания",
+                description="Примечание удалено",
+                details=[note.text],
+            )
+        )
+    elif note.client_id:
+        db.add(
+            ClientChangeLog(
+                client_id=note.client_id,
+                user_id=user.id,
+                action="Удаление примечания",
+                description="Примечание удалено",
+                details=[note.text],
+            )
+        )
     await db.delete(note)
     await db.commit()
     return None
