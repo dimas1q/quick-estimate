@@ -56,14 +56,7 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
+                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все" />
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -169,6 +162,11 @@
                     </table>
                 </div>
             </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button class="qe-btn-secondary" @click="downloadFile('csv')">CSV</button>
+                <button class="qe-btn-secondary" @click="downloadFile('excel')">Excel</button>
+                <button class="qe-btn-secondary" @click="downloadFile('pdf')">PDF</button>
+            </div>
         </section>
     </div>
 </template>
@@ -179,6 +177,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
+import QeMultiSelect from '@/components/QeMultiSelect.vue'
+import fileDownload from 'js-file-download'
 
 import {
     FileText,
@@ -234,6 +234,18 @@ const data = ref(null)
 const errorMessage = ref('')
 const filtersOpen = ref(true)
 
+function buildParams(src) {
+    const params = new URLSearchParams()
+    params.append('granularity', src.granularity)
+    if (src.start_date) params.append('start_date', src.start_date)
+    if (src.end_date) params.append('end_date', src.end_date)
+    src.status.forEach(s => params.append('status', s))
+    if (src.vat_enabled !== null) params.append('vat_enabled', String(src.vat_enabled))
+    src.categories_arr.forEach(c => params.append('categories', c))
+    if (src.clientId) params.append('client_id', src.clientId)
+    return params
+}
+
 /* ApexCharts */
 const chartOptionsWithTitles = ref({
     chart: { id: 'analytics-chart', toolbar: { show: false } },
@@ -258,13 +270,7 @@ onMounted(async () => {
 
 async function applyFilters() {
     errorMessage.value = ''
-    const params = new URLSearchParams()
-    params.append('granularity', filters.granularity)
-    if (filters.start_date) params.append('start_date', filters.start_date)
-    if (filters.end_date) params.append('end_date', filters.end_date)
-    filters.status.forEach(s => params.append('status', s))
-    if (filters.vat_enabled !== null) params.append('vat_enabled', String(filters.vat_enabled))
-    filters.categories_arr.forEach(c => params.append('categories', c))
+    const params = buildParams(filters)
     Object.assign(appliedFilters, JSON.parse(JSON.stringify(filters)))
     try {
         if (filters.clientId) {
@@ -295,6 +301,17 @@ function resetFilters() {
     filters.end_date = ''
     filters.granularity = 'month'
     applyFilters()
+}
+
+async function downloadFile(fmt) {
+    try {
+        const params = buildParams(appliedFilters)
+        const blob = await analyticsStore.download(Object.fromEntries(params), fmt)
+        const ext = fmt === 'excel' ? 'xlsx' : fmt
+        fileDownload(blob, `analytics.${ext}`)
+    } catch (err) {
+        console.error(err)
+    }
 }
 
 function formatCurrency(val) {
