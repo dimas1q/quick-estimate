@@ -54,17 +54,7 @@
                         </select>
                     </div>
                     <!-- Статусы -->
-                    <div>
-                        <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
-                    </div>
+                    <QeMultiSelect v-model="filters.status" :options="statusOptions" label="Статусы" placeholder="Все" />
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button @click="applyFilters" class="qe-btn">Применить</button>
@@ -170,6 +160,11 @@
                 </div>
             </div>
         </section>
+        <div v-if="data" class="flex justify-end gap-2">
+            <button @click="exportCsv" class="qe-btn-secondary">CSV</button>
+            <button @click="exportExcel" class="qe-btn-secondary">Excel</button>
+            <button @click="exportPdf" class="qe-btn">PDF</button>
+        </div>
     </div>
 </template>
 
@@ -179,6 +174,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
+import QeMultiSelect from '@/components/QeMultiSelect.vue'
 
 import {
     FileText,
@@ -301,5 +297,42 @@ function formatCurrency(val) {
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency', currency: 'RUB', minimumFractionDigits: 0
     }).format(val)
+}
+
+function buildParams() {
+    const params = {}
+    params.granularity = appliedFilters.granularity
+    if (appliedFilters.start_date) params.start_date = appliedFilters.start_date
+    if (appliedFilters.end_date) params.end_date = appliedFilters.end_date
+    if (appliedFilters.status.length) params.status = appliedFilters.status
+    if (appliedFilters.vat_enabled !== null) params.vat_enabled = appliedFilters.vat_enabled
+    if (appliedFilters.categories_arr.length) params.categories = appliedFilters.categories_arr
+    return params
+}
+
+async function exportCsv() {
+    const blob = await analyticsStore.download('csv', buildParams())
+    triggerDownload(blob, 'analytics.csv')
+}
+
+async function exportExcel() {
+    const blob = await analyticsStore.download('excel', buildParams())
+    triggerDownload(blob, 'analytics.xlsx')
+}
+
+async function exportPdf() {
+    const blob = await analyticsStore.download('pdf', buildParams())
+    triggerDownload(blob, 'analytics.pdf')
+}
+
+function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
 }
 </script>
