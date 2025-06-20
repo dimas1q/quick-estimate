@@ -5,12 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
+from datetime import datetime, timezone
+
 from app.core.database import get_db
 from app.models.note import Note
 from app.models.estimate import Estimate
 from app.models.client import Client
 from app.models.template import EstimateTemplate
 from app.models.user import User
+from app.models.changelog import EstimateChangeLog
+from app.models.client_changelog import ClientChangeLog
 from app.schemas.note import NoteCreate, NoteOut, NoteUpdate
 from app.utils.auth import get_current_user
 
@@ -59,9 +63,34 @@ async def create_estimate_note(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    await _get_entity(db, Estimate, estimate_id, user.id)
+    estimate = await _get_entity(db, Estimate, estimate_id, user.id)
     note = Note(text=note_in.text, estimate_id=estimate_id, user_id=user.id)
     db.add(note)
+
+    now = datetime.now(timezone.utc)
+    log_details = [{"label": "Примечание", "new": note_in.text}]
+    db.add(
+        EstimateChangeLog(
+            estimate_id=estimate_id,
+            user_id=user.id,
+            action="Добавление примечания",
+            description="Добавлено примечание",
+            details=log_details,
+            timestamp=now,
+        )
+    )
+    if estimate.client_id:
+        db.add(
+            ClientChangeLog(
+                client_id=estimate.client_id,
+                user_id=user.id,
+                action="Добавление примечания",
+                description=f"Добавлено примечание в смете: {estimate.name}",
+                details=log_details,
+                timestamp=now,
+            )
+        )
+
     await db.commit()
     await db.refresh(note)
     return NoteOut(
@@ -111,6 +140,20 @@ async def create_client_note(
     await _get_entity(db, Client, client_id, user.id)
     note = Note(text=note_in.text, client_id=client_id, user_id=user.id)
     db.add(note)
+
+    now = datetime.now(timezone.utc)
+    log_details = [{"label": "Примечание", "new": note_in.text}]
+    db.add(
+        ClientChangeLog(
+            client_id=client_id,
+            user_id=user.id,
+            action="Добавление примечания",
+            description="Добавлено примечание",
+            details=log_details,
+            timestamp=now,
+        )
+    )
+
     await db.commit()
     await db.refresh(note)
     return NoteOut(
@@ -179,11 +222,59 @@ async def update_note(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Note).options(selectinload(Note.user)).where(Note.id == note_id))
+    result = await db.execute(
+        select(Note)
+        .options(
+            selectinload(Note.user),
+            selectinload(Note.estimate),
+            selectinload(Note.client),
+        )
+        .where(Note.id == note_id)
+    )
     note = result.scalar_one_or_none()
     if not note or note.user_id != user.id:
         raise HTTPException(status_code=404, detail="Примечание не найдено")
+
+    old_text = note.text
     note.text = note_in.text
+
+    now = datetime.now(timezone.utc)
+    log_details = [{"label": "Примечание", "old": old_text, "new": note_in.text}]
+
+    if note.estimate_id:
+        db.add(
+            EstimateChangeLog(
+                estimate_id=note.estimate_id,
+                user_id=user.id,
+                action="Редактирование примечания",
+                description="Примечание изменено",
+                details=log_details,
+                timestamp=now,
+            )
+        )
+        if note.estimate and note.estimate.client_id:
+            db.add(
+                ClientChangeLog(
+                    client_id=note.estimate.client_id,
+                    user_id=user.id,
+                    action="Редактирование примечания",
+                    description=f"Изменено примечание в смете: {note.estimate.name}",
+                    details=log_details,
+                    timestamp=now,
+                )
+            )
+    elif note.client_id:
+        db.add(
+            ClientChangeLog(
+                client_id=note.client_id,
+                user_id=user.id,
+                action="Редактирование примечания",
+                description="Примечание изменено",
+                details=log_details,
+                timestamp=now,
+            )
+        )
+
     await db.commit()
     await db.refresh(note)
     return NoteOut(
@@ -202,10 +293,53 @@ async def delete_note(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Note).where(Note.id == note_id))
+    result = await db.execute(
+        select(Note)
+        .options(selectinload(Note.estimate), selectinload(Note.client))
+        .where(Note.id == note_id)
+    )
     note = result.scalar_one_or_none()
     if not note or note.user_id != user.id:
         raise HTTPException(status_code=404, detail="Примечание не найдено")
+
+    old_text = note.text
+    now = datetime.now(timezone.utc)
+    log_details = [{"label": "Примечание", "old": old_text}]
+
+    if note.estimate_id:
+        db.add(
+            EstimateChangeLog(
+                estimate_id=note.estimate_id,
+                user_id=user.id,
+                action="Удаление примечания",
+                description="Примечание удалено",
+                details=log_details,
+                timestamp=now,
+            )
+        )
+        if note.estimate and note.estimate.client_id:
+            db.add(
+                ClientChangeLog(
+                    client_id=note.estimate.client_id,
+                    user_id=user.id,
+                    action="Удаление примечания",
+                    description=f"Удалено примечание в смете: {note.estimate.name}",
+                    details=log_details,
+                    timestamp=now,
+                )
+            )
+    elif note.client_id:
+        db.add(
+            ClientChangeLog(
+                client_id=note.client_id,
+                user_id=user.id,
+                action="Удаление примечания",
+                description="Примечание удалено",
+                details=log_details,
+                timestamp=now,
+            )
+        )
+
     await db.delete(note)
     await db.commit()
     return None

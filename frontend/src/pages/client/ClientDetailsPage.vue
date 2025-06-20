@@ -373,17 +373,26 @@ async function changeLogPage(p) {
 async function addNote(text) {
   const n = await notesStore.addClientNote(route.params.id, text)
   notes.value.unshift(n)
+  const res = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 })
+  logs.value = res.items
+  logTotal.value = res.total
 }
 
 async function updateNote(payload) {
   const n = await notesStore.updateNote(payload.id, payload.text)
   const idx = notes.value.findIndex(n => n.id === payload.id)
   if (idx !== -1) notes.value[idx] = n
+  const res = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 })
+  logs.value = res.items
+  logTotal.value = res.total
 }
 
 async function deleteNote(id) {
   await notesStore.deleteNote(id)
   notes.value = notes.value.filter(n => n.id !== id)
+  const res = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 })
+  logs.value = res.items
+  logTotal.value = res.total
 }
 
 async function deleteClient() {
