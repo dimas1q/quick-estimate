@@ -56,14 +56,7 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
+                        <MultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" />
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -169,6 +162,17 @@
                     </table>
                 </div>
             </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button @click="exportAnalytics('csv')" class="qe-btn-success flex items-center">
+                    <Download class="w-4 h-4 mr-1" /> CSV
+                </button>
+                <button @click="exportAnalytics('excel')" class="qe-btn-success flex items-center">
+                    <Download class="w-4 h-4 mr-1" /> Excel
+                </button>
+                <button @click="exportAnalytics('pdf')" class="qe-btn-success flex items-center">
+                    <Download class="w-4 h-4 mr-1" /> PDF
+                </button>
+            </div>
         </section>
     </div>
 </template>
@@ -179,6 +183,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
+import MultiSelect from '@/components/MultiSelect.vue'
+import fileDownload from 'js-file-download'
+import { useToast } from 'vue-toastification'
 
 import {
     FileText,
@@ -187,12 +194,14 @@ import {
     BarChart2,
     Users,
     TrendingUp,
-    Calendar
+    Calendar,
+    Download
 } from 'lucide-vue-next'
 
 
 const clientsStore = useClientsStore()
 const analyticsStore = useAnalyticsStore()
+const toast = useToast()
 
 const clients = ref([])
 const statusOptions = [
@@ -301,5 +310,29 @@ function formatCurrency(val) {
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency', currency: 'RUB', minimumFractionDigits: 0
     }).format(val)
+}
+
+function buildParams(src) {
+    const params = new URLSearchParams()
+    params.append('granularity', src.granularity)
+    if (src.start_date) params.append('start_date', src.start_date)
+    if (src.end_date) params.append('end_date', src.end_date)
+    src.status.forEach(s => params.append('status', s))
+    if (src.vat_enabled !== null) params.append('vat_enabled', String(src.vat_enabled))
+    src.categories_arr.forEach(c => params.append('categories', c))
+    return params
+}
+
+async function exportAnalytics(format) {
+    try {
+        const params = buildParams(appliedFilters)
+        const blob = await analyticsStore.downloadGlobal(format, params)
+        const ext = format === 'excel' ? 'xlsx' : format
+        fileDownload(blob, `analytics.${ext}`)
+        toast.success('Файл успешно загружен')
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при экспорте')
+    }
 }
 </script>
