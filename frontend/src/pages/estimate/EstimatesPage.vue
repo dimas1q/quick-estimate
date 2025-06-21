@@ -27,7 +27,8 @@ const filters = ref({
   name: '',
   client: '',
   date_from: '',
-  date_to: ''
+  date_to: '',
+  status: ''
 })
 
 const estimatesStore = useEstimatesStore()
@@ -70,7 +71,8 @@ async function applyFilters() {
     name: filters.value.name,
     client: filters.value.client ? Number(filters.value.client) : undefined,
     date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : undefined,
-    date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : undefined
+    date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : undefined,
+    status: filters.value.status || undefined
   }
   currentFilters.value = query
   currentPage.value = 1
@@ -84,7 +86,8 @@ async function resetFilters() {
     name: '',
     client: '',
     date_from: '',
-    date_to: ''
+    date_to: '',
+    status: ''
   }
   currentFilters.value = {}
   currentPage.value = 1
@@ -270,13 +273,24 @@ function changePage(p) {
           </div>
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Клиент</label>
-            <select v-model="filters.client" class="qe-input w-full mt-1">
-              <option :value="''">Все клиенты</option>
-              <option v-for="c in clients" :key="c.id" :value="c.id">
-                {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
-              </option>
-            </select>
-          </div>
+          <select v-model="filters.client" class="qe-input w-full mt-1">
+            <option :value="''">Все клиенты</option>
+            <option v-for="c in clients" :key="c.id" :value="c.id">
+              {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 dark:text-gray-300 block text-left">Статус</label>
+          <select v-model="filters.status" class="qe-input w-full mt-1">
+            <option :value="''">Все статусы</option>
+            <option value="draft">Черновик</option>
+            <option value="sent">Отправлена</option>
+            <option value="approved">Согласована</option>
+            <option value="paid">Оплачена</option>
+            <option value="cancelled">Отменена</option>
+          </select>
+        </div>
 
           <div>
             <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата с</label>
