@@ -3,11 +3,22 @@
     <div class="relative">
       <ListboxButton class="qe-input w-full text-left flex justify-between items-center">
         <span class="truncate">
-          <template v-if="props.modelValue.length">
-            {{ selectedLabels.join(', ') }}
-          </template>
-          <span v-else class="text-gray-400">{{ placeholder }}</span>
-        </span>
+          <ListboxOption
+            v-for="opt in options"
+            :key="opt.value"
+            :value="opt.value"
+            as="template"
+            v-slot="{ active, selected }"
+          >
+            <li
+              class="cursor-pointer select-none relative py-2 pl-8 pr-4 text-gray-700 dark:text-gray-200"
+              :class="{ 'bg-gray-100 dark:bg-qe-black2': active }"
+            >
+              {{ opt.label }}
+              <span v-if="selected" class="absolute left-2 inset-y-0 flex items-center">
+                <Check class="w-4 h-4" />
+              </span>
+            </li>
         <ChevronDown class="w-4 h-4 ml-2 text-gray-500" />
       </ListboxButton>
       <Transition enter="transition duration-100" enter-from="opacity-0" enter-to="opacity-100"

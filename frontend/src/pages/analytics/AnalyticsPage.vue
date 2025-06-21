@@ -207,16 +207,21 @@ const statusOptions = [
 ]
 const granularityOptions = [
     { value: 'day', label: 'День' },
-    { value: 'week', label: 'Неделя' },
-    { value: 'month', label: 'Месяц' },
-    { value: 'quarter', label: 'Квартал' },
-    { value: 'year', label: 'Год' },
-]
+function buildParams(src) {
+    const p = new URLSearchParams()
+    p.append('granularity', src.granularity)
+    if (src.start_date) p.append('start_date', src.start_date)
+    if (src.end_date) p.append('end_date', src.end_date)
+    src.status.forEach(s => p.append('status', s))
+    if (src.vat_enabled !== null) p.append('vat_enabled', String(src.vat_enabled))
+    src.categories_arr.forEach(c => p.append('categories', c))
+    return p
+}
 
-const filters = reactive({
-    clientId: null,
-    status: [],
-    vat_enabled: null,
+    const params = buildParams(filters)
+        const blob = await analyticsStore.downloadGlobal('csv', buildParams(appliedFilters))
+        const blob = await analyticsStore.downloadGlobal('excel', buildParams(appliedFilters))
+        const blob = await analyticsStore.downloadGlobal('pdf', buildParams(appliedFilters))
     categories_arr: [],
     start_date: '',
     end_date: '',
