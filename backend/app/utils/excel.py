@@ -5,6 +5,7 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 from io import BytesIO
 from app.models.estimate import Estimate
+from app.schemas.analytics import GlobalAnalytics
 from collections import defaultdict
 
 
@@ -353,6 +354,46 @@ def generate_excel(estimate: Estimate) -> BytesIO:
                     longest = int(longest * 1.15)
                 max_length = max(max_length, longest)
         ws.column_dimensions[col_letter].width = max(min(max_length + 3, 33), 10)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+def generate_analytics_excel(ga: GlobalAnalytics) -> BytesIO:
+    """Generate Excel file for global analytics."""
+    wb = Workbook()
+
+    ws_summary = wb.active
+    ws_summary.title = "Summary"
+    ws_summary.append(["Метрика", "Значение"])
+    ws_summary.append(["Всего смет", ga.total_estimates])
+    ws_summary.append(["Общая сумма", ga.total_amount])
+    ws_summary.append(["Средняя сумма", ga.average_amount])
+    ws_summary.append(["Медиана", ga.median_amount])
+    ws_summary.append(["ARPU", ga.arpu])
+    ws_summary.append(["MoM рост (%)", ga.mom_growth or 0])
+    ws_summary.append(["YoY рост (%)", ga.yoy_growth or 0])
+
+    ws_ts = wb.create_sheet("Timeseries")
+    ws_ts.append(["Период", "Сумма"])
+    for row in ga.timeseries:
+        ws_ts.append([row.period, row.value])
+
+    ws_clients = wb.create_sheet("Top Clients")
+    ws_clients.append(["Клиент", "Выручка"])
+    for c in ga.top_clients:
+        ws_clients.append([c.name, c.total_amount])
+
+    ws_resp = wb.create_sheet("Responsibles")
+    ws_resp.append(["Ответственный", "Смет", "Выручка"])
+    for r in ga.by_responsible:
+        ws_resp.append([r.name, r.estimates_count, r.total_amount])
+
+    ws_services = wb.create_sheet("Top Services")
+    ws_services.append(["Услуга", "Выручка"])
+    for s in ga.top_services:
+        ws_services.append([s.name, s.total_amount])
 
     output = BytesIO()
     wb.save(output)

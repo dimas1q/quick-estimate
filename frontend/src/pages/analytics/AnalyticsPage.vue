@@ -56,14 +56,11 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
+                        <select v-model="filters.status" multiple class="qe-input w-full h-28">
+                            <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
+                                {{ opt.label }}
+                            </option>
+                        </select>
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -169,6 +166,20 @@
                     </table>
                 </div>
             </div>
+            <!-- Экспорт -->
+            <div class="pt-4 flex justify-end relative" ref="exportMenuRef">
+                <button @click="showExport = !showExport" class="qe-btn">
+                    Выгрузить
+                    <svg class="w-4 h-4 ml-1 transition-transform" :class="{ 'rotate-180': showExport }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div v-if="showExport" class="absolute right-0 mt-2 bg-white dark:bg-qe-black3 border border-gray-200 dark:border-gray-800 shadow rounded-xl p-2 flex gap-2 z-50">
+                    <button @click="downloadFile('csv')" class="qe-btn-secondary">CSV</button>
+                    <button @click="downloadFile('excel')" class="qe-btn-secondary">Excel</button>
+                    <button @click="downloadFile('pdf')" class="qe-btn-secondary">PDF</button>
+                </div>
+            </div>
         </section>
     </div>
 </template>
@@ -176,6 +187,9 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { onClickOutside } from '@vueuse/core'
+import { useToast } from 'vue-toastification'
+import fileDownload from 'js-file-download'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
@@ -214,7 +228,7 @@ const filters = reactive({
     clientId: null,
     status: [],
     vat_enabled: null,
-    categories_arr: [],
+    categories: '',
     start_date: '',
     end_date: '',
     granularity: 'month',
@@ -224,7 +238,7 @@ const appliedFilters = reactive({
     clientId: null,
     status: [],
     vat_enabled: null,
-    categories_arr: [],
+    categories: '',
     start_date: '',
     end_date: '',
     granularity: 'month',
@@ -233,6 +247,9 @@ const appliedFilters = reactive({
 const data = ref(null)
 const errorMessage = ref('')
 const filtersOpen = ref(true)
+const showExport = ref(false)
+const exportMenuRef = ref(null)
+const toast = useToast()
 
 /* ApexCharts */
 const chartOptionsWithTitles = ref({
@@ -256,6 +273,10 @@ onMounted(async () => {
     await applyFilters()
 })
 
+onClickOutside(exportMenuRef, () => {
+    showExport.value = false
+})
+
 async function applyFilters() {
     errorMessage.value = ''
     const params = new URLSearchParams()
@@ -264,7 +285,7 @@ async function applyFilters() {
     if (filters.end_date) params.append('end_date', filters.end_date)
     filters.status.forEach(s => params.append('status', s))
     if (filters.vat_enabled !== null) params.append('vat_enabled', String(filters.vat_enabled))
-    filters.categories_arr.forEach(c => params.append('categories', c))
+    filters.categories.split(',').map(c => c.trim()).filter(Boolean).forEach(c => params.append('categories', c))
     Object.assign(appliedFilters, JSON.parse(JSON.stringify(filters)))
     try {
         if (filters.clientId) {
@@ -290,7 +311,7 @@ function resetFilters() {
     filters.clientId = null
     filters.status = []
     filters.vat_enabled = null
-    filters.categories_arr = []
+    filters.categories = ''
     filters.start_date = ''
     filters.end_date = ''
     filters.granularity = 'month'
@@ -301,5 +322,23 @@ function formatCurrency(val) {
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency', currency: 'RUB', minimumFractionDigits: 0
     }).format(val)
+}
+
+async function downloadFile(format) {
+    try {
+        const params = new URLSearchParams()
+        params.append('granularity', appliedFilters.granularity)
+        if (appliedFilters.start_date) params.append('start_date', appliedFilters.start_date)
+        if (appliedFilters.end_date) params.append('end_date', appliedFilters.end_date)
+        appliedFilters.status.forEach(s => params.append('status', s))
+        if (appliedFilters.vat_enabled !== null) params.append('vat_enabled', String(appliedFilters.vat_enabled))
+        appliedFilters.categories.split(',').map(c => c.trim()).filter(Boolean).forEach(c => params.append('categories', c))
+        const blob = await analyticsStore.exportGlobal(format, params)
+        fileDownload(blob, `analytics.${format === 'excel' ? 'xlsx' : format}`)
+        toast.success(`${format.toUpperCase()} успешно загружен`)
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при выгрузке')
+    }
 }
 </script>
