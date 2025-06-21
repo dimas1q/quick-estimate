@@ -56,14 +56,25 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
+                        <Listbox v-model="filters.status" multiple class="w-full">
+                            <div class="relative">
+                                <ListboxButton class="qe-input w-full flex flex-wrap min-h-[40px] gap-1 items-center">
+                                    <template v-if="filters.status.length">
+                                        <span v-for="val in filters.status" :key="val" class="bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs mr-1 mb-1">
+                                            {{ statusMap[val] }}
+                                        </span>
+                                    </template>
+                                    <span v-else class="text-gray-400 text-sm">Выберите статус</span>
+                                </ListboxButton>
+                                <Transition name="fade">
+                                    <ListboxOptions class="absolute z-10 mt-1 w-full bg-white dark:bg-qe-black3 border border-gray-200 dark:border-gray-800 rounded-xl shadow text-sm">
+                                        <ListboxOption v-for="opt in statusOptions" :key="opt.value" :value="opt.value" class="cursor-pointer select-none px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
+                                            {{ opt.label }}
+                                        </ListboxOption>
+                                    </ListboxOptions>
+                                </Transition>
+                            </div>
+                        </Listbox>
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -169,13 +180,28 @@
                     </table>
                 </div>
             </div>
+            <div class="relative flex justify-end pt-4" ref="exportRef">
+                <button @click="showExport = !showExport" class="qe-btn-success flex items-center">
+                    <Download class="w-4 h-4 mr-1" />
+                    <span>Выгрузить</span>
+                </button>
+                <Transition name="fade">
+                    <div v-if="showExport" class="absolute right-0 mt-2 bg-white dark:bg-qe-black3 border border-gray-200 dark:border-gray-800 rounded-xl shadow flex" >
+                        <button @click="downloadCsv" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">CSV</button>
+                        <button @click="downloadExcel" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Excel</button>
+                        <button @click="downloadPdf" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">PDF</button>
+                    </div>
+                </Transition>
+            </div>
         </section>
     </div>
 </template>
 
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue'
+import { onClickOutside } from '@vueuse/core'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
@@ -187,7 +213,8 @@ import {
     BarChart2,
     Users,
     TrendingUp,
-    Calendar
+    Calendar,
+    Download
 } from 'lucide-vue-next'
 
 
@@ -202,6 +229,7 @@ const statusOptions = [
     { value: 'paid', label: 'Оплачена' },
     { value: 'cancelled', label: 'Отменена' },
 ]
+const statusMap = statusOptions.reduce((acc, cur) => { acc[cur.value] = cur.label; return acc }, {})
 const granularityOptions = [
     { value: 'day', label: 'День' },
     { value: 'week', label: 'Неделя' },
@@ -233,6 +261,8 @@ const appliedFilters = reactive({
 const data = ref(null)
 const errorMessage = ref('')
 const filtersOpen = ref(true)
+const showExport = ref(false)
+const exportRef = ref(null)
 
 /* ApexCharts */
 const chartOptionsWithTitles = ref({
@@ -254,6 +284,9 @@ onMounted(async () => {
     await clientsStore.fetchClients()
     clients.value = clientsStore.clients
     await applyFilters()
+})
+onClickOutside(exportRef, () => {
+    showExport.value = false
 })
 
 async function applyFilters() {
@@ -301,5 +334,45 @@ function formatCurrency(val) {
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency', currency: 'RUB', minimumFractionDigits: 0
     }).format(val)
+}
+
+async function downloadCsv() {
+    const params = buildParams()
+    const blob = await analyticsStore.downloadGlobalCsv(params)
+    triggerDownload(blob, 'analytics.csv')
+}
+
+async function downloadExcel() {
+    const params = buildParams()
+    const blob = await analyticsStore.downloadGlobalExcel(params)
+    triggerDownload(blob, 'analytics.xlsx')
+}
+
+async function downloadPdf() {
+    const params = buildParams()
+    const blob = await analyticsStore.downloadGlobalPdf(params)
+    triggerDownload(blob, 'analytics.pdf')
+}
+
+function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+}
+
+function buildParams() {
+    const params = new URLSearchParams()
+    params.append('granularity', appliedFilters.granularity)
+    if (appliedFilters.start_date) params.append('start_date', appliedFilters.start_date)
+    if (appliedFilters.end_date) params.append('end_date', appliedFilters.end_date)
+    appliedFilters.status.forEach(s => params.append('status', s))
+    if (appliedFilters.vat_enabled !== null) params.append('vat_enabled', String(appliedFilters.vat_enabled))
+    appliedFilters.categories_arr.forEach(c => params.append('categories', c))
+    return params
 }
 </script>

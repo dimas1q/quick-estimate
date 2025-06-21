@@ -5,6 +5,7 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 from io import BytesIO
 from app.models.estimate import Estimate
+from app.schemas.analytics import GlobalAnalytics
 from collections import defaultdict
 
 
@@ -353,6 +354,78 @@ def generate_excel(estimate: Estimate) -> BytesIO:
                     longest = int(longest * 1.15)
                 max_length = max(max_length, longest)
         ws.column_dimensions[col_letter].width = max(min(max_length + 3, 33), 10)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def generate_analytics_excel(ga: GlobalAnalytics) -> BytesIO:
+    """Generate Excel workbook with aggregated analytics."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Analytics"
+
+    bold = Font(bold=True)
+
+    # Key metrics
+    ws.append(["Метрика", "Значение"])
+    key_metrics = [
+        ("Всего смет", ga.total_estimates),
+        ("Общая сумма", ga.total_amount),
+        ("Средняя сумма", ga.average_amount),
+        ("Медиана по сметам", ga.median_amount),
+        ("ARPU", ga.arpu),
+        ("MoM рост (%)", ga.mom_growth or 0),
+        ("YoY рост (%)", ga.yoy_growth or 0),
+    ]
+    for label, value in key_metrics:
+        ws.append([label, value])
+
+    ws.append([])
+
+    # Timeseries
+    ws.append(["Период", "Сумма"])
+    for row in ga.timeseries:
+        ws.append([row.period, row.value])
+
+    ws.append([])
+
+    # Top clients
+    ws.append(["Top-10 клиентов", "Выручка"])
+    for c in ga.top_clients:
+        ws.append([c.name, c.total_amount])
+
+    ws.append([])
+
+    # By responsible
+    ws.append(["Ответственный", "Число смет", "Выручка"])
+    for r in ga.by_responsible:
+        ws.append([r.name, r.estimates_count, r.total_amount])
+
+    ws.append([])
+
+    # Top services
+    ws.append(["Top-10 услуг", "Выручка"])
+    for s in ga.top_services:
+        ws.append([s.name, s.total_amount])
+
+    # Style header rows bold
+    for row in [1, len(key_metrics) + 3, len(key_metrics) + len(ga.timeseries) + 5,
+                len(key_metrics) + len(ga.timeseries) + len(ga.top_clients) + 7,
+                len(key_metrics) + len(ga.timeseries) + len(ga.top_clients) + len(ga.by_responsible) + 9]:
+        for cell in ws[row]:
+            cell.font = bold
+
+    # Autosize columns
+    for col in ws.columns:
+        max_length = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = max(min(max_length + 3, 40), 10)
 
     output = BytesIO()
     wb.save(output)

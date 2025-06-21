@@ -10,6 +10,7 @@ from typing import List, Optional, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
+from app.utils.excel import generate_analytics_excel
 from sqlalchemy import func, desc, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -455,10 +456,10 @@ async def get_global_analytics(
     )
 
 
-@router.get("/export", summary="Экспорт глобальной аналитики в CSV или PDF")
+@router.get("/export", summary="Экспорт глобальной аналитики в CSV, Excel или PDF")
 async def export_analytics(
-    format: Literal["csv", "pdf"] = Query(
-        "csv", description="Формат экспорта: csv или pdf"
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, excel или pdf"
     ),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -527,6 +528,14 @@ async def export_analytics(
             iter_csv(),
             media_type="text/csv",
             headers={"Content-Disposition": 'attachment; filename="analytics.csv"'},
+        )
+
+    if format == "excel":
+        excel_file = generate_analytics_excel(ga)
+        return Response(
+            content=excel_file.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="analytics.xlsx"'},
         )
 
     # 3) PDF через wkhtmltopdf

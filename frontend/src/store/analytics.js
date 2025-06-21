@@ -29,5 +29,29 @@ export const useAnalyticsStore = defineStore('analytics', {
             this.client = res.data
             return res.data
         },
+
+        async downloadGlobalCsv(params = {}) {
+            const res = await axios.get('/analytics/export', {
+                params: { ...params, format: 'csv' },
+                responseType: 'blob'
+            })
+            return res.data
+        },
+
+        async downloadGlobalExcel(params = {}) {
+            const res = await axios.get('/analytics/export', {
+                params: { ...params, format: 'excel' },
+                responseType: 'blob'
+            })
+            return res.data
+        },
+
+        async downloadGlobalPdf(params = {}) {
+            const res = await axios.get('/analytics/export', {
+                params: { ...params, format: 'pdf' },
+                responseType: 'blob'
+            })
+            return res.data
+        },
     },
 })
