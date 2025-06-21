@@ -54,9 +54,10 @@
                         </select>
                     </div>
                     <!-- Статусы -->
-                    <div>
+                    <div class="sm:col-span-2 lg:col-span-3">
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" />
+                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы"
+                            class="w-full" />
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
