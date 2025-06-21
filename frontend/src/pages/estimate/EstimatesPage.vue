@@ -8,6 +8,7 @@ import { Star } from 'lucide-vue-next'
 
 import QeDatePicker from '@/components/QeDatePicker.vue'
 import QePagination from '@/components/QePagination.vue'
+import QeMultiSelect from '@/components/QeMultiSelect.vue'
 
 function formatDateToYYYYMMDD(date) {
   if (!date) return ''
@@ -23,9 +24,17 @@ const toast = useToast()
 const isLoading = ref(true)
 const viewMode = ref('my')
 const fileInput = ref(null)
+const statusOptions = [
+  { value: 'draft', label: 'Черновик' },
+  { value: 'sent', label: 'Отправлена' },
+  { value: 'approved', label: 'Согласована' },
+  { value: 'paid', label: 'Оплачена' },
+  { value: 'cancelled', label: 'Отменена' }
+]
 const filters = ref({
   name: '',
   client: '',
+  status: [],
   date_from: '',
   date_to: ''
 })
@@ -66,15 +75,23 @@ const format = (date) => {
 
 async function applyFilters() {
   isLoading.value = true
-  const query = {
+  const params = new URLSearchParams()
+  if (filters.value.name) params.append('name', filters.value.name)
+  if (filters.value.client) params.append('client', filters.value.client)
+  if (filters.value.date_from) params.append('date_from', formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z')
+  if (filters.value.date_to) params.append('date_to', formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z')
+  filters.value.status.forEach(s => params.append('status', s))
+  currentFilters.value = {
     name: filters.value.name,
-    client: filters.value.client ? Number(filters.value.client) : undefined,
-    date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : undefined,
-    date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : undefined
+    client: filters.value.client,
+    date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : '',
+    date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : '',
+    status: [...filters.value.status]
   }
-  currentFilters.value = query
   currentPage.value = 1
-  await estimatesStore.fetchEstimates({ ...query, page: currentPage.value, limit: perPage })
+  params.append('page', currentPage.value)
+  params.append('limit', perPage)
+  await estimatesStore.fetchEstimates(params)
   isLoading.value = false
 }
 
@@ -83,6 +100,7 @@ async function resetFilters() {
   filters.value = {
     name: '',
     client: '',
+    status: [],
     date_from: '',
     date_to: ''
   }
@@ -156,11 +174,15 @@ function isValidEstimate(estimate) {
 
 async function fetchEstimatesPage() {
   isLoading.value = true
-  const params = {
-    page: currentPage.value,
-    limit: perPage,
-  }
-  if (viewMode.value === 'fav') params.favorite = true
+  const params = new URLSearchParams()
+  params.append('page', currentPage.value)
+  params.append('limit', perPage)
+  if (viewMode.value === 'fav') params.append('favorite', 'true')
+  if (currentFilters.value.name) params.append('name', currentFilters.value.name)
+  if (currentFilters.value.client) params.append('client', currentFilters.value.client)
+  if (currentFilters.value.date_from) params.append('date_from', currentFilters.value.date_from)
+  if (currentFilters.value.date_to) params.append('date_to', currentFilters.value.date_to)
+  currentFilters.value.status?.forEach(s => params.append('status', s))
   await estimatesStore.fetchEstimates(params)
   isLoading.value = false
 }
@@ -276,6 +298,10 @@ function changePage(p) {
                 {{ c.name }}<span v-if="c.company"> ({{ c.company }})</span>
               </option>
             </select>
+          </div>
+          <div>
+            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Статус</label>
+            <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" class="mt-1" />
           </div>
 
           <div>

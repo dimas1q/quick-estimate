@@ -1,7 +1,7 @@
 # backend/app/api/estimates.py
 # Implementation of the estimates API endpoints
 import re
-from typing import Optional
+from typing import Optional, List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -15,7 +15,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
 from app.models.client_changelog import ClientChangeLog
-from app.models.estimate import Estimate
+from app.models.estimate import Estimate, EstimateStatus
 from app.models.estimate_favorite import EstimateFavorite
 from app.models.item import EstimateItem
 from app.models.user import User
@@ -443,6 +443,7 @@ async def list_estimates(
     client: Optional[int] = Query(None),  # Change type to Optional[int]
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    status: Optional[List[EstimateStatus]] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
@@ -468,6 +469,9 @@ async def list_estimates(
             filters.append(Estimate.date < dt_to)
         except ValueError:
             pass
+
+    if status:
+        filters.append(Estimate.status.in_(status))
 
     query = (
         select(Estimate)
