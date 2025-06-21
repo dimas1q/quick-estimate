@@ -56,14 +56,7 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
+                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" />
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -170,6 +163,11 @@
                 </div>
             </div>
         </section>
+        <div v-if="data" class="flex justify-end gap-2">
+            <button @click="downloadCsv" class="qe-btn-secondary">CSV</button>
+            <button @click="downloadExcel" class="qe-btn-secondary">Excel</button>
+            <button @click="downloadPdf" class="qe-btn-secondary">PDF</button>
+        </div>
     </div>
 </template>
 
@@ -179,6 +177,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
+import QeMultiSelect from '@/components/QeMultiSelect.vue'
+import fileDownload from 'js-file-download'
+import { useToast } from 'vue-toastification'
 
 import {
     FileText,
@@ -193,6 +194,7 @@ import {
 
 const clientsStore = useClientsStore()
 const analyticsStore = useAnalyticsStore()
+const toast = useToast()
 
 const clients = ref([])
 const statusOptions = [
@@ -301,5 +303,38 @@ function formatCurrency(val) {
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency', currency: 'RUB', minimumFractionDigits: 0
     }).format(val)
+}
+
+async function downloadCsv() {
+    try {
+        const blob = await analyticsStore.downloadGlobal('csv', appliedFilters)
+        fileDownload(blob, 'analytics.csv')
+        toast.success('CSV успешно загружен')
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при загрузке CSV')
+    }
+}
+
+async function downloadExcel() {
+    try {
+        const blob = await analyticsStore.downloadGlobal('excel', appliedFilters)
+        fileDownload(blob, 'analytics.xlsx')
+        toast.success('Excel успешно загружен')
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при загрузке Excel')
+    }
+}
+
+async function downloadPdf() {
+    try {
+        const blob = await analyticsStore.downloadGlobal('pdf', appliedFilters)
+        fileDownload(blob, 'analytics.pdf')
+        toast.success('PDF успешно загружен')
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при загрузке PDF')
+    }
 }
 </script>

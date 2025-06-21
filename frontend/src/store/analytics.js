@@ -29,5 +29,18 @@ export const useAnalyticsStore = defineStore('analytics', {
             this.client = res.data
             return res.data
         },
+
+        /**
+         * Скачивает глобальную аналитику в указанном формате
+         * @param {String} format csv | pdf | excel
+         * @param {Object} params Параметры фильтрации как в fetchGlobal
+         */
+        async downloadGlobal(format = 'csv', params = {}) {
+            const res = await axios.get('/analytics/export', {
+                params: { format, ...params },
+                responseType: 'blob'
+            })
+            return res.data
+        },
     },
 })

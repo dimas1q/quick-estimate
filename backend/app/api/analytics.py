@@ -3,12 +3,14 @@
 import io
 import csv
 import subprocess
+from io import BytesIO
 
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 from typing import List, Optional, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from openpyxl import Workbook
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, desc, case
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -455,10 +457,10 @@ async def get_global_analytics(
     )
 
 
-@router.get("/export", summary="Экспорт глобальной аналитики в CSV или PDF")
+@router.get("/export", summary="Экспорт глобальной аналитики в CSV/PDF/Excel")
 async def export_analytics(
-    format: Literal["csv", "pdf"] = Query(
-        "csv", description="Формат экспорта: csv или pdf"
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, pdf или excel"
     ),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -529,7 +531,57 @@ async def export_analytics(
             headers={"Content-Disposition": 'attachment; filename="analytics.csv"'},
         )
 
-    # 3) PDF через wkhtmltopdf
+    # 3) Excel
+    if format == "excel":
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Analytics"
+
+        row = 1
+        ws.append(["Метрика", "Значение"])
+        metrics = [
+            ("Всего смет", ga.total_estimates),
+            ("Общая сумма", ga.total_amount),
+            ("Средняя сумма", ga.average_amount),
+            ("Медиана по сметам", ga.median_amount),
+            ("ARPU", ga.arpu),
+            ("MoM рост (%)", ga.mom_growth or 0),
+            ("YoY рост (%)", ga.yoy_growth or 0),
+        ]
+        for m in metrics:
+            ws.append(list(m))
+        row = ws.max_row + 2
+
+        ws.append(["Период", "Сумма"])
+        for item in ga.timeseries:
+            ws.append([item.period, item.value])
+        row = ws.max_row + 2
+
+        ws.append(["Top-10 клиентов", "Выручка"])
+        for cli in ga.top_clients:
+            ws.append([cli.name, cli.total_amount])
+        row = ws.max_row + 2
+
+        ws.append(["Ответственный", "Число смет", "Выручка"])
+        for resp in ga.by_responsible:
+            ws.append([resp.name, resp.estimates_count, resp.total_amount])
+        row = ws.max_row + 2
+
+        ws.append(["Top-10 услуг", "Выручка"])
+        for srv in ga.top_services:
+            ws.append([srv.name, srv.total_amount])
+
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+
+        return Response(
+            content=bio.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="analytics.xlsx"'},
+        )
+
+    # 4) PDF через wkhtmltopdf
     html = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
         "<style>table{border-collapse:collapse;}td,th{border:1px solid #333;padding:4px;}</style>",
