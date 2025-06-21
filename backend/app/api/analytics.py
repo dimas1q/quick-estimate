@@ -28,6 +28,7 @@ from app.schemas.analytics import (
     ResponsibleMetric,
     GranularityEnum,
 )
+from app.utils.analytics_excel import generate_analytics_excel
 
 router = APIRouter(tags=["analytics"], dependencies=[Depends(get_current_user)])
 
@@ -146,8 +147,7 @@ async def get_client_analytics(
     db: AsyncSession = Depends(get_db),
 ):
     # составляем общий фильтр
-    filters = [Estimate.client_id == client_id,
-               Estimate.user_id == user.id]
+    filters = [Estimate.client_id == client_id, Estimate.user_id == user.id]
     if start_date:
         filters.append(Estimate.date >= start_date)
     if end_date:
@@ -178,7 +178,10 @@ async def get_client_analytics(
 
     # total revenue: margin if internal price used, else external price
     revenue_expr = EstimateItem.quantity * case(
-        (Estimate.use_internal_price, EstimateItem.external_price - EstimateItem.internal_price),
+        (
+            Estimate.use_internal_price,
+            EstimateItem.external_price - EstimateItem.internal_price,
+        ),
         else_=EstimateItem.external_price,
     )
     q_sum = (
@@ -327,7 +330,10 @@ async def get_global_analytics(
 
     # total revenue: margin if internal price used, else external price
     revenue_expr = EstimateItem.quantity * case(
-        (Estimate.use_internal_price, EstimateItem.external_price - EstimateItem.internal_price),
+        (
+            Estimate.use_internal_price,
+            EstimateItem.external_price - EstimateItem.internal_price,
+        ),
         else_=EstimateItem.external_price,
     )
     q_sum = (
@@ -455,10 +461,10 @@ async def get_global_analytics(
     )
 
 
-@router.get("/export", summary="Экспорт глобальной аналитики в CSV или PDF")
+@router.get("/export", summary="Экспорт глобальной аналитики")
 async def export_analytics(
-    format: Literal["csv", "pdf"] = Query(
-        "csv", description="Формат экспорта: csv или pdf"
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, pdf или excel"
     ),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -467,6 +473,7 @@ async def export_analytics(
     granularity: GranularityEnum = Query(GranularityEnum.month),
     categories: Optional[List[str]] = Query(None, description="Категории услуг"),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     # 1) получаем те же данные, что и в /api/analytics/
     ga: GlobalAnalytics = await get_global_analytics(
@@ -476,6 +483,7 @@ async def export_analytics(
         vat_enabled=vat_enabled,
         granularity=granularity,
         categories=categories,
+        user=user,
         db=db,
     )
 
@@ -527,6 +535,14 @@ async def export_analytics(
             iter_csv(),
             media_type="text/csv",
             headers={"Content-Disposition": 'attachment; filename="analytics.csv"'},
+        )
+
+    if format == "excel":
+        excel_file = generate_analytics_excel(ga)
+        return StreamingResponse(
+            excel_file,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="analytics.xlsx"'},
         )
 
     # 3) PDF через wkhtmltopdf
