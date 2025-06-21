@@ -29,5 +29,19 @@ export const useAnalyticsStore = defineStore('analytics', {
             this.client = res.data
             return res.data
         },
+
+        /**
+         * Скачивает аналитику в заданном формате.
+         * @param {Object} params Параметры фильтрации
+         *  (client_id, start_date, end_date, status[], vat_enabled, categories[], granularity, format)
+         * @returns {Blob}
+         */
+        async download(params = {}) {
+            const res = await axios.get('/analytics/export', {
+                params,
+                responseType: 'blob'
+            })
+            return res.data
+        },
     },
 })

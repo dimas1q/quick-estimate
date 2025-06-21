@@ -3,6 +3,7 @@
 import io
 import csv
 import subprocess
+from openpyxl import Workbook
 
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
@@ -455,11 +456,12 @@ async def get_global_analytics(
     )
 
 
-@router.get("/export", summary="Экспорт глобальной аналитики в CSV или PDF")
+@router.get("/export", summary="Экспорт аналитики в CSV, PDF или Excel")
 async def export_analytics(
-    format: Literal["csv", "pdf"] = Query(
-        "csv", description="Формат экспорта: csv или pdf"
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, pdf или excel"
     ),
+    client_id: Optional[int] = Query(None, description="ID клиента"),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     status: Optional[List[EstimateStatus]] = Query(None),
@@ -468,16 +470,28 @@ async def export_analytics(
     categories: Optional[List[str]] = Query(None, description="Категории услуг"),
     db: AsyncSession = Depends(get_db),
 ):
-    # 1) получаем те же данные, что и в /api/analytics/
-    ga: GlobalAnalytics = await get_global_analytics(
-        start_date=start_date,
-        end_date=end_date,
-        status=status,
-        vat_enabled=vat_enabled,
-        granularity=granularity,
-        categories=categories,
-        db=db,
-    )
+    # 1) получаем данные для экспорта
+    if client_id:
+        ga = await get_client_analytics(
+            client_id=client_id,
+            start_date=start_date,
+            end_date=end_date,
+            status=status,
+            vat_enabled=vat_enabled,
+            granularity=granularity,
+            categories=categories,
+            db=db,
+        )
+    else:
+        ga = await get_global_analytics(
+            start_date=start_date,
+            end_date=end_date,
+            status=status,
+            vat_enabled=vat_enabled,
+            granularity=granularity,
+            categories=categories,
+            db=db,
+        )
 
     # 2) CSV
     if format == "csv":
@@ -527,6 +541,52 @@ async def export_analytics(
             iter_csv(),
             media_type="text/csv",
             headers={"Content-Disposition": 'attachment; filename="analytics.csv"'},
+        )
+
+    if format == "excel":
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Analytics"
+
+        ws.append(["Метрика", "Значение"])
+        ws.append(["Всего смет", ga.total_estimates])
+        ws.append(["Общая сумма", ga.total_amount])
+        ws.append(["Средняя сумма", ga.average_amount])
+        if hasattr(ga, "arpu"):
+            ws.append(["ARPU", getattr(ga, "arpu")])
+        ws.append(["Медиана", ga.median_amount])
+        ws.append(["MoM рост (%)", ga.mom_growth or 0])
+        ws.append(["YoY рост (%)", ga.yoy_growth or 0])
+        ws.append([])
+
+        ws.append(["Период", "Сумма"])
+        for row in ga.timeseries:
+            ws.append([row.period, row.value])
+        ws.append([])
+
+        if hasattr(ga, "top_clients"):
+            ws.append(["Top-10 клиентов", "Выручка"])
+            for cli in ga.top_clients:
+                ws.append([cli.name, cli.total_amount])
+            ws.append([])
+
+        ws.append(["Ответственный", "Число смет", "Выручка"])
+        for resp in ga.by_responsible:
+            ws.append([resp.name, resp.estimates_count, resp.total_amount])
+        ws.append([])
+
+        ws.append(["Top-10 услуг", "Выручка"])
+        for srv in ga.top_services:
+            ws.append([srv.name, srv.total_amount])
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="analytics.xlsx"'},
         )
 
     # 3) PDF через wkhtmltopdf
