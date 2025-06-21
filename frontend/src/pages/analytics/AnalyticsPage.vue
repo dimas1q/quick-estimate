@@ -56,14 +56,7 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
+                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" />
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -169,6 +162,20 @@
                     </table>
                 </div>
             </div>
+            <div class="pt-4 flex justify-end">
+                <div class="relative" ref="exportRef">
+                    <button @click="showExport = !showExport" class="qe-btn-success flex items-center">
+                        <Download class="w-4 h-4 mr-1" />
+                        <span>Выгрузить</span>
+                        <ChevronDown class="w-4 h-4 ml-1 transition-transform" :class="{ 'rotate-180': showExport }" />
+                    </button>
+                    <div v-if="showExport" class="absolute right-0 mt-2 flex bg-white dark:bg-qe-black3 border border-gray-200 dark:border-gray-800 rounded-xl shadow z-50">
+                        <button @click="downloadCsv" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-l-xl">CSV</button>
+                        <button @click="downloadExcel" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Excel</button>
+                        <button @click="downloadPdf" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-r-xl">PDF</button>
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
 </template>
@@ -176,9 +183,12 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { onClickOutside } from '@vueuse/core'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
+import QeMultiSelect from '@/components/QeMultiSelect.vue'
+import fileDownload from 'js-file-download'
 
 import {
     FileText,
@@ -187,7 +197,9 @@ import {
     BarChart2,
     Users,
     TrendingUp,
-    Calendar
+    Calendar,
+    Download,
+    ChevronDown
 } from 'lucide-vue-next'
 
 
@@ -233,6 +245,11 @@ const appliedFilters = reactive({
 const data = ref(null)
 const errorMessage = ref('')
 const filtersOpen = ref(true)
+const showExport = ref(false)
+const exportRef = ref(null)
+onClickOutside(exportRef, () => {
+    showExport.value = false
+})
 
 /* ApexCharts */
 const chartOptionsWithTitles = ref({
@@ -295,6 +312,38 @@ function resetFilters() {
     filters.end_date = ''
     filters.granularity = 'month'
     applyFilters()
+}
+
+function buildParams(obj) {
+    const p = new URLSearchParams()
+    p.append('granularity', obj.granularity)
+    if (obj.start_date) p.append('start_date', obj.start_date)
+    if (obj.end_date) p.append('end_date', obj.end_date)
+    obj.status.forEach(s => p.append('status', s))
+    if (obj.vat_enabled !== null) p.append('vat_enabled', String(obj.vat_enabled))
+    obj.categories_arr.forEach(c => p.append('categories', c))
+    return p
+}
+
+async function downloadCsv() {
+    const params = buildParams(appliedFilters)
+    params.append('format', 'csv')
+    const blob = await analyticsStore.downloadGlobalCsv(params)
+    fileDownload(blob, 'analytics.csv')
+}
+
+async function downloadExcel() {
+    const params = buildParams(appliedFilters)
+    params.append('format', 'excel')
+    const blob = await analyticsStore.downloadGlobalExcel(params)
+    fileDownload(blob, 'analytics.xlsx')
+}
+
+async function downloadPdf() {
+    const params = buildParams(appliedFilters)
+    params.append('format', 'pdf')
+    const blob = await analyticsStore.downloadGlobalPdf(params)
+    fileDownload(blob, 'analytics.pdf')
 }
 
 function formatCurrency(val) {
