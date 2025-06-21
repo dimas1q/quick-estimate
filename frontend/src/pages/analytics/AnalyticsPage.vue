@@ -56,13 +56,17 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
+                        <div class="flex flex-wrap gap-2 w-full">
+                            <button v-for="opt in statusOptions" :key="opt.value" type="button"
+                                @click="toggleStatus(opt.value)"
+                                :class="[
+                                    'px-3 py-1 rounded-full text-sm border transition',
+                                    filters.status.includes(opt.value)
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-gray-100 dark:bg-qe-black2 border-gray-200 dark:border-qe-black2 text-gray-700 dark:text-gray-200'
+                                ]">
+                                {{ opt.label }}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -169,6 +173,22 @@
                     </table>
                 </div>
             </div>
+            <div class="relative mt-4 ml-auto" ref="menuRef">
+                <button @click="showExport = !showExport" class="qe-btn flex items-center">
+                    <Download class="w-4 h-4 mr-1" />
+                    <span>Экспорт</span>
+                    <svg class="w-4 h-4 ml-2 transition-transform duration-200" :class="{ 'rotate-180': showExport }"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div v-if="showExport"
+                    class="absolute right-0 mt-2 bg-white dark:bg-qe-black3 border border-gray-100 dark:border-qe-black2 rounded-xl shadow-xl flex gap-2 px-4 py-2 animate-fade-in z-50">
+                    <button @click="download('csv')" class="qe-btn-secondary px-3 py-1">CSV</button>
+                    <button @click="download('excel')" class="qe-btn-secondary px-3 py-1">Excel</button>
+                    <button @click="download('pdf')" class="qe-btn-secondary px-3 py-1">PDF</button>
+                </div>
+            </div>
         </section>
     </div>
 </template>
@@ -176,6 +196,8 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { onClickOutside } from '@vueuse/core'
+import fileDownload from 'js-file-download'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
@@ -186,6 +208,7 @@ import {
     Sliders,
     BarChart2,
     Users,
+    Download,
     TrendingUp,
     Calendar
 } from 'lucide-vue-next'
@@ -233,6 +256,8 @@ const appliedFilters = reactive({
 const data = ref(null)
 const errorMessage = ref('')
 const filtersOpen = ref(true)
+const showExport = ref(false)
+const menuRef = ref(null)
 
 /* ApexCharts */
 const chartOptionsWithTitles = ref({
@@ -254,6 +279,10 @@ onMounted(async () => {
     await clientsStore.fetchClients()
     clients.value = clientsStore.clients
     await applyFilters()
+})
+
+onClickOutside(menuRef, () => {
+    showExport.value = false
 })
 
 async function applyFilters() {
@@ -295,6 +324,27 @@ function resetFilters() {
     filters.end_date = ''
     filters.granularity = 'month'
     applyFilters()
+}
+
+function toggleStatus(val) {
+    const idx = filters.status.indexOf(val)
+    if (idx === -1) filters.status.push(val)
+    else filters.status.splice(idx, 1)
+}
+
+async function download(format) {
+    const params = new URLSearchParams()
+    params.append('granularity', appliedFilters.granularity)
+    if (appliedFilters.start_date) params.append('start_date', appliedFilters.start_date)
+    if (appliedFilters.end_date) params.append('end_date', appliedFilters.end_date)
+    appliedFilters.status.forEach(s => params.append('status', s))
+    if (appliedFilters.vat_enabled !== null) params.append('vat_enabled', String(appliedFilters.vat_enabled))
+    appliedFilters.categories_arr.forEach(c => params.append('categories', c))
+
+    const blob = await analyticsStore.downloadGlobal(format, params)
+    const ext = format === 'excel' ? 'xlsx' : format
+    fileDownload(blob, `analytics.${ext}`)
+    showExport.value = false
 }
 
 function formatCurrency(val) {

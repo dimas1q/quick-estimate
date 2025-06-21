@@ -16,6 +16,7 @@ from sqlalchemy.future import select
 
 from app.core.database import get_db
 from app.utils.auth import get_current_user
+from app.utils.analytics_excel import generate_analytics_excel
 from app.models.client import Client
 from app.models.estimate import Estimate, EstimateStatus
 from app.models.item import EstimateItem
@@ -455,10 +456,10 @@ async def get_global_analytics(
     )
 
 
-@router.get("/export", summary="Экспорт глобальной аналитики в CSV или PDF")
+@router.get("/export", summary="Экспорт глобальной аналитики")
 async def export_analytics(
-    format: Literal["csv", "pdf"] = Query(
-        "csv", description="Формат экспорта: csv или pdf"
+    format: Literal["csv", "pdf", "excel"] = Query(
+        "csv", description="Формат экспорта: csv, pdf или excel"
     ),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -529,8 +530,17 @@ async def export_analytics(
             headers={"Content-Disposition": 'attachment; filename="analytics.csv"'},
         )
 
-    # 3) PDF через wkhtmltopdf
-    html = [
+    if format == "excel":
+        excel_file = generate_analytics_excel(ga)
+        return StreamingResponse(
+            excel_file,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="analytics.xlsx"'},
+        )
+
+    if format == "pdf":
+        # 3) PDF через wkhtmltopdf
+        html = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
         "<style>table{border-collapse:collapse;}td,th{border:1px solid #333;padding:4px;}</style>",
         f"<title>Аналитика {granularity.value}</title></head><body>",
@@ -576,20 +586,22 @@ async def export_analytics(
     html.append("</body></html>")
     html_str = "\n".join(html)
 
-    # wkhtmltopdf: HTML → PDF
-    proc = subprocess.run(
-        ["wkhtmltopdf", "--encoding", "utf-8", "-", "-"],
-        input=html_str.encode("utf-8"),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    if proc.returncode != 0:
-        raise HTTPException(
-            500, detail=f"PDF generation failed: {proc.stderr.decode('utf-8')}"
+        # wkhtmltopdf: HTML → PDF
+        proc = subprocess.run(
+            ["wkhtmltopdf", "--encoding", "utf-8", "-", "-"],
+            input=html_str.encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if proc.returncode != 0:
+            raise HTTPException(
+                500, detail=f"PDF generation failed: {proc.stderr.decode('utf-8')}"
+            )
+
+        return Response(
+            content=proc.stdout,
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'attachment; filename="analytics.pdf"'},
         )
 
-    return Response(
-        content=proc.stdout,
-        media_type="application/pdf",
-        headers={"Content-Disposition": 'attachment; filename="analytics.pdf"'},
-    )
+    raise HTTPException(400, "Unsupported export format")
