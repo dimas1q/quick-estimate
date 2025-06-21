@@ -33,8 +33,9 @@
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Категории (через
                             запятую)</label>
-                        <input v-model="filters.categories" type="text" class="qe-input w-full"
-                            placeholder="Оборудование, Свет" />
+                        <input :value="filters.categories_arr.join(', ')"
+                            @input="filters.categories_arr = $event.target.value.split(',').map(s => s.trim()).filter(Boolean)"
+                            type="text" class="qe-input w-full" placeholder="Оборудование, Свет" />
                     </div>
                     <!-- НДС -->
                     <div>
@@ -54,9 +55,10 @@
                         </select>
                     </div>
                     <!-- Статусы -->
-                    <div>
+                    <div class="sm:col-span-2 lg:col-span-3">
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" />
+                        <QeMultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы"
+                            class="w-full" />
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -162,21 +164,25 @@
                     </table>
                 </div>
             </div>
-            <div class="pt-4 flex justify-end">
-                <div class="relative" ref="exportRef">
-                    <button @click="showExport = !showExport" class="qe-btn-success flex items-center">
-                        <Download class="w-4 h-4 mr-1" />
-                        <span>Выгрузить</span>
-                        <ChevronDown class="w-4 h-4 ml-1 transition-transform" :class="{ 'rotate-180': showExport }" />
-                    </button>
-                    <div v-if="showExport" class="absolute right-0 mt-2 flex bg-white dark:bg-qe-black3 border border-gray-200 dark:border-gray-800 rounded-xl shadow z-50">
-                        <button @click="downloadCsv" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-l-xl">CSV</button>
-                        <button @click="downloadExcel" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Excel</button>
-                        <button @click="downloadPdf" class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-r-xl">PDF</button>
-                    </div>
+        </section>
+        <div class="pb-12 flex justify-end">
+            <div class="relative" ref="exportRef">
+                <button @click="showExport = !showExport" class="qe-btn-success flex items-center">
+                    <Download class="w-4 h-4 mr-1" />
+                    <span>Экспорт</span>
+                    <ChevronDown class="w-4 h-4 ml-1 transition-transform" :class="{ 'rotate-180': showExport }" />
+                </button>
+                <div v-if="showExport"
+                    class="absolute right-0 mt-2 flex bg-white dark:bg-qe-black3 border border-gray-200 dark:border-gray-800 rounded-xl shadow z-50">
+                    <button @click="downloadCsv"
+                        class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-l-xl">CSV</button>
+                    <button @click="downloadExcel"
+                        class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Excel</button>
+                    <button @click="downloadPdf"
+                        class="px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 rounded-r-xl">PDF</button>
                 </div>
             </div>
-        </section>
+        </div>
     </div>
 </template>
 
@@ -210,7 +216,7 @@ const clients = ref([])
 const statusOptions = [
     { value: 'draft', label: 'Черновик' },
     { value: 'sent', label: 'Отправлена' },
-    { value: 'approved', label: 'Одобрена' },
+    { value: 'approved', label: 'Согласована' },
     { value: 'paid', label: 'Оплачена' },
     { value: 'cancelled', label: 'Отменена' },
 ]

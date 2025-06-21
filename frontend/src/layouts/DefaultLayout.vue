@@ -50,7 +50,7 @@ onClickOutside(menuRef, () => {
     <!-- HEADER -->
     <header
       class="bg-white/80 dark:bg-qe-black3 border-b border-gray-200 dark:border-qe-black2 shadow-sm px-5 py-2 flex justify-between items-center">
-      <div class="flex items-center  -ml-3">
+      <div class="flex items-center -ml-3">
         <img src="/logo.svg" class="w-10 h-10" alt="Quick Estimate" />
         <RouterLink to="/" class="flex items-center gap-2 text-xl font-extrabold text-blue-600 dark:text-blue-600">
           QuickEstimate

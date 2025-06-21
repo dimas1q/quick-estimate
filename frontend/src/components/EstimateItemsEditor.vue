@@ -2,6 +2,27 @@
 <template>
   <div class="space-y-8">
     <!-- Категории -->
+
+    <div class="flex flex-wrap items-center gap-4 min-h-[40px] justify-end">
+      <button type="button" @click="addCategory" class="qe-btn-secondary">
+        Добавить категорию
+      </button>
+
+      <button type="button" class="qe-btn-secondary" @click="showTemplateSelect = !showTemplateSelect">
+        Добавить из шаблона
+      </button>
+
+      <transition name="fade">
+        <select v-if="showTemplateSelect" v-model="selectedTemplateId" @change="applyTemplate" class="qe-input"
+          style="margin-left: 0">
+          <option :value="null" disabled selected>Выберите шаблон</option>
+          <option v-for="t in templatesStore.templates" :key="t.id" :value="t.id">
+            {{ t.name }}
+          </option>
+        </select>
+      </transition>
+    </div>
+
     <transition-group name="fade" tag="div" class="space-y-8">
       <div v-for="(cat, idx) in categories" :key="cat.id"
         class="rounded-2xl border bg-white dark:bg-qe-black3 dark:border-qe-black2 shadow-md p-4 space-y-4">
@@ -12,6 +33,8 @@
           <button @click="removeCategory(idx)" type="button" class="text-sm text-red-600 hover:underline">Удалить
             категорию</button>
         </div>
+
+
 
         <!-- Таблица услуг -->
         <div>
@@ -59,6 +82,12 @@
           </transition-group>
         </div>
 
+        <div class="flex justify-end">
+          <button type="button" class="qe-btn-secondary" @click="addItem(idx)">
+            + Добавить услугу
+          </button>
+        </div>
+
         <!-- Итоги по категории -->
         <div class="flex flex-col text-sm font-semibold mt-3 border-t dark:border-qe-black2 pt-2 items-end text-right">
           <span v-if="props.useInternalPrice">Итог по категории (внутр.): {{ formatCurrency(getCategoryInternal(cat))
@@ -67,36 +96,12 @@
         </div>
 
         <!-- Кнопка добавления услуги внутри категории -->
-        <div class="flex justify-end">
-          <button type="button" class="qe-btn-secondary" @click="addItem(idx)">
-            + Добавить услугу
-          </button>
-        </div>
+
       </div>
     </transition-group>
 
     <!-- Использовать шаблон -->
-    <div class="flex flex-wrap items-center gap-4 min-h-[40px]">
-      <button type="button" @click="addCategory" class="qe-btn-secondary">
-        Добавить категорию
-      </button>
 
-      <button type="button" class="qe-btn-secondary" @click="showTemplateSelect = !showTemplateSelect">
-        Добавить из шаблона
-      </button>
-
-      <transition name="fade">
-        <select v-if="showTemplateSelect" v-model="selectedTemplateId" @change="applyTemplate" class="qe-input "
-          style="margin-left: 0">
-          <option :value="null" disabled selected>Выберите шаблон</option>
-          <option v-for="t in templatesStore.templates" :key="t.id" :value="t.id">
-            {{ t.name }}
-          </option>
-        </select>
-      </transition>
-
-
-    </div>
 
 
     <!-- Итоги по всем категориям -->
@@ -189,10 +194,19 @@ watch(categories, () => {
 
 // Категории/услуги
 function addCategory() {
-  categories.value.push({
+  categories.value.unshift({
     id: 'cat_' + Date.now() + Math.random(),
     name: '',
-    items: [],
+    items: [
+      {
+        name: '',
+        description: '',
+        quantity: 1,
+        unit: 'шт',
+        internal_price: 0,
+        external_price: 0,
+      }
+    ],
   })
 }
 function removeCategory(idx) {
@@ -256,7 +270,7 @@ function applyTemplate() {
           name: tplCat.name,
           items: [],
         }
-        categories.value.push(cat)
+        categories.value.unshift(cat)
       }
       cat.items.push(...tplCat.items.map(item => {
         const { id, ...rest } = item

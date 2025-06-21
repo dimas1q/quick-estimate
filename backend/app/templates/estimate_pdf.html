@@ -76,7 +76,7 @@
     <p><strong>Контакт клиента:</strong> {{ estimate.client.email }}</p>
     {% endif %}
     {% set labels =
-    {'draft':'Черновик','sent':'Отправлена','approved':'Одобрена','paid':'Оплачена','cancelled':'Отменена'}
+    {'draft':'Черновик','sent':'Отправлена','approved':'Согласована','paid':'Оплачена','cancelled':'Отменена'}
     %}
     <p><strong>Статус:</strong> {{ labels[estimate.status.value] }}</p>
     <p><strong>Ответственный:</strong> {{ estimate.responsible }}</p>

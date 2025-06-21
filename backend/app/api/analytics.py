@@ -147,8 +147,7 @@ async def get_client_analytics(
     db: AsyncSession = Depends(get_db),
 ):
     # составляем общий фильтр
-    filters = [Estimate.client_id == client_id,
-               Estimate.user_id == user.id]
+    filters = [Estimate.client_id == client_id, Estimate.user_id == user.id]
     if start_date:
         filters.append(Estimate.date >= start_date)
     if end_date:
@@ -179,7 +178,10 @@ async def get_client_analytics(
 
     # total revenue: margin if internal price used, else external price
     revenue_expr = EstimateItem.quantity * case(
-        (Estimate.use_internal_price, EstimateItem.external_price - EstimateItem.internal_price),
+        (
+            Estimate.use_internal_price,
+            EstimateItem.external_price - EstimateItem.internal_price,
+        ),
         else_=EstimateItem.external_price,
     )
     q_sum = (
@@ -328,7 +330,10 @@ async def get_global_analytics(
 
     # total revenue: margin if internal price used, else external price
     revenue_expr = EstimateItem.quantity * case(
-        (Estimate.use_internal_price, EstimateItem.external_price - EstimateItem.internal_price),
+        (
+            Estimate.use_internal_price,
+            EstimateItem.external_price - EstimateItem.internal_price,
+        ),
         else_=EstimateItem.external_price,
     )
     q_sum = (
@@ -468,6 +473,7 @@ async def export_analytics(
     granularity: GranularityEnum = Query(GranularityEnum.month),
     categories: Optional[List[str]] = Query(None, description="Категории услуг"),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     # 1) получаем те же данные, что и в /api/analytics/
     ga: GlobalAnalytics = await get_global_analytics(
@@ -477,6 +483,7 @@ async def export_analytics(
         vat_enabled=vat_enabled,
         granularity=granularity,
         categories=categories,
+        user=user,
         db=db,
     )
 

@@ -16,7 +16,7 @@ def generate_excel(estimate: Estimate) -> BytesIO:
     status_map = {
         "draft": "Черновик",
         "sent": "Отправлена",
-        "approved": "Одобрена",
+        "approved": "Согласована",
         "paid": "Оплачена",
         "cancelled": "Отменена",
     }
