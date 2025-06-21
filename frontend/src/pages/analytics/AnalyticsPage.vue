@@ -56,14 +56,7 @@
                     <!-- Статусы -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Статусы</label>
-                        <div class="flex flex-col gap-1 text-sm">
-                            <label v-for="opt in statusOptions" :key="opt.value"
-                                class="inline-flex items-center space-x-1">
-                                <input type="checkbox" :value="opt.value" v-model="filters.status"
-                                    class="accent-blue-500 dark:accent-blue-400" />
-                                <span class="">{{ opt.label }}</span>
-                            </label>
-                        </div>
+                        <MultiSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" />
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
@@ -169,16 +162,25 @@
                     </table>
                 </div>
             </div>
+            <!-- Экспорт -->
+            <div class="flex justify-end gap-2 pt-4">
+                <button @click="exportData('csv')" class="qe-btn-secondary">CSV</button>
+                <button @click="exportData('excel')" class="qe-btn-secondary">Excel</button>
+                <button @click="exportData('pdf')" class="qe-btn-secondary">PDF</button>
+            </div>
         </section>
     </div>
 </template>
 
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
 import MetricCard from '@/components/MetricCard.vue'
+import MultiSelect from '@/components/MultiSelect.vue'
+import fileDownload from 'js-file-download'
+import { useToast } from 'vue-toastification'
 
 import {
     FileText,
@@ -193,6 +195,7 @@ import {
 
 const clientsStore = useClientsStore()
 const analyticsStore = useAnalyticsStore()
+const toast = useToast()
 
 const clients = ref([])
 const statusOptions = [
@@ -214,6 +217,7 @@ const filters = reactive({
     clientId: null,
     status: [],
     vat_enabled: null,
+    categories: '',
     categories_arr: [],
     start_date: '',
     end_date: '',
@@ -224,6 +228,7 @@ const appliedFilters = reactive({
     clientId: null,
     status: [],
     vat_enabled: null,
+    categories: '',
     categories_arr: [],
     start_date: '',
     end_date: '',
@@ -256,6 +261,12 @@ onMounted(async () => {
     await applyFilters()
 })
 
+watch(() => filters.categories, val => {
+    filters.categories_arr = val
+        ? val.split(',').map(v => v.trim()).filter(v => v)
+        : []
+})
+
 async function applyFilters() {
     errorMessage.value = ''
     const params = new URLSearchParams()
@@ -286,10 +297,32 @@ async function applyFilters() {
     }
 }
 
+async function exportData(format) {
+    const params = {
+        granularity: appliedFilters.granularity,
+    }
+    if (appliedFilters.start_date) params.start_date = appliedFilters.start_date
+    if (appliedFilters.end_date) params.end_date = appliedFilters.end_date
+    if (appliedFilters.status.length) params.status = appliedFilters.status
+    if (appliedFilters.vat_enabled !== null) params.vat_enabled = appliedFilters.vat_enabled
+    if (appliedFilters.categories_arr.length) params.categories = appliedFilters.categories_arr
+
+    try {
+        const blob = await analyticsStore.downloadAnalytics(appliedFilters.clientId, params, format)
+        const ext = format === 'excel' ? 'xlsx' : format
+        const name = appliedFilters.clientId ? `client_${appliedFilters.clientId}_analytics.${ext}` : `analytics.${ext}`
+        fileDownload(blob, name)
+    } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при выгрузке данных')
+    }
+}
+
 function resetFilters() {
     filters.clientId = null
     filters.status = []
     filters.vat_enabled = null
+    filters.categories = ''
     filters.categories_arr = []
     filters.start_date = ''
     filters.end_date = ''
