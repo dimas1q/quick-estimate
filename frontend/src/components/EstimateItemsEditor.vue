@@ -1,6 +1,10 @@
 # frontend/src/components/EstimateItemsEditor.vue
 <template>
   <div class="space-y-8">
+    <!-- Пустое состояние -->
+    <div v-if="!categories.length" class="text-center text-gray-500 text-sm">
+      Нет услуг. Добавьте категорию или используйте шаблон ниже.
+    </div>
     <!-- Категории -->
     <transition-group name="fade" tag="div" class="space-y-8">
       <div v-for="(cat, idx) in categories" :key="cat.id"

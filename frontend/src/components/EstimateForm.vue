@@ -2,118 +2,109 @@
 <template>
   <form @submit.prevent="submit"
     class="space-y-8 border dark:border-qe-black2 bg-white dark:bg-qe-black3 rounded-2xl shadow-md p-6">
-    <!-- 1. Основные поля в две колонки -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Название -->
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Название сметы</label>
-        <input v-model="estimate.name" type="text" placeholder="Введите название" class="w-full qe-input" />
-      </div>
-      <!-- Клиент -->
-      <div>
-        <label class="block text-sm font-semibold dark:text-white text-gray-700 mb-1">Клиент</label>
-        <select v-model="estimate.client_id" class="w-full qe-input">
-          <option :value="null">Без клиента</option>
-          <option v-for="c in clients" :key="c.id" :value="c.id">
-            {{ c.name }} <span v-if="c.company">({{ c.company }})</span>
-          </option>
-        </select>
-      </div>
-      <!-- Ответственный (на всю ширину) -->
-      <div>
-        <label class="block text-sm font-semibold dark:text-white text-gray-700 mb-1">Ответственный</label>
-        <input v-model="estimate.responsible" type="text" placeholder="Кто отвечает за выполнение"
-          class="w-full qe-input" />
-      </div>
-      <!-- Статус -->
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Статус</label>
-        <select v-model="estimate.status" class="w-full qe-input">
-          <option value="draft">Черновик</option>
-          <option value="sent">Отправлена</option>
-          <option value="approved">Согласована</option>
-          <option value="paid">Оплачена</option>
-          <option value="cancelled">Отменена</option>
-        </select>
-      </div>
 
-      <!-- Дата и место проведения -->
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Дата и время мероприятия</label>
-        <QeDatePicker v-model="estimate.event_datetime" label="Дата и время мероприятия"
-          placeholder="Дата и время мероприятия" :format="format" enableTimePicker=true />
-      </div>
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Место проведения
-          мероприятия</label>
-        <input v-model="estimate.event_place" type="text" placeholder="Адрес или площадка" class="w-full qe-input" />
-      </div>
-
-      <!-- Использовать внутреннюю цену -->
-      <div class="md:col-span-2">
-        <div :class="[
-          'flex items-center gap-2 rounded-xl p-2 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
-          estimate.use_internal_price
-            ? 'bg-white-50  dark:bg-qe-black3 dark:border-blue-600'
-            : 'bg-white-50  dark:bg-qe-black3 dark:border-qe-black2'
-        ]">
-          <div class="flex">
-          </div>
-          <label for="internal_price" class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" v-model="estimate.use_internal_price" id="internal_price"
-              class="h-4 w-4 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
-            <span class="text-sm font-semibold text-gray-800 dark:text-white">Внутренняя цена</span>
-          </label>
-          <span class="ml-auto text-xs text-gray-400 dark:text-gray-500 font-normal" v-if="estimate.use_internal_price">
-            Внутренняя цена будет использоваться для расчёта маржи
-          </span>
+    <!-- Основная информация -->
+    <section>
+      <h2 class="text-lg font-bold mb-4 text-gray-800 dark:text-white">Основная информация</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Название сметы</label>
+          <input v-model="estimate.name" type="text" placeholder="Введите название" class="w-full qe-input" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold dark:text-white text-gray-700 mb-1">Клиент</label>
+          <select v-model="estimate.client_id" class="w-full qe-input">
+            <option :value="null">Без клиента</option>
+            <option v-for="c in clients" :key="c.id" :value="c.id">
+              {{ c.name }} <span v-if="c.company">({{ c.company }})</span>
+            </option>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold dark:text-white text-gray-700 mb-1">Ответственный</label>
+          <input v-model="estimate.responsible" type="text" placeholder="Кто отвечает за выполнение"
+            class="w-full qe-input" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Статус</label>
+          <select v-model="estimate.status" class="w-full qe-input">
+            <option value="draft">Черновик</option>
+            <option value="sent">Отправлена</option>
+            <option value="approved">Согласована</option>
+            <option value="paid">Оплачена</option>
+            <option value="cancelled">Отменена</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Дата и время мероприятия</label>
+          <QeDatePicker v-model="estimate.event_datetime" label="Дата и время мероприятия"
+            placeholder="Дата и время мероприятия" :format="format" enableTimePicker=true />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Место проведения
+            мероприятия</label>
+          <input v-model="estimate.event_place" type="text" placeholder="Адрес или площадка" class="w-full qe-input" />
         </div>
       </div>
+    </section>
 
-
-      <!-- НДС: современный и компактный блок -->
-      <div class="md:col-span-2">
-        <div :class="[
-          'flex items-center gap-2 rounded-xl p-2 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
-          estimate.vat_enabled
-            ? 'bg-white-50  dark:bg-qe-black3 dark:border-blue-600'
-            : 'bg-white-50  dark:bg-qe-black3 dark:border-qe-black2'
-        ]">
-          <div class="flex">
+    <!-- Настройки -->
+    <section>
+      <h2 class="text-lg font-bold mb-4 text-gray-800 dark:text-white">Настройки</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div :class="[
+            'flex items-center gap-2 rounded-xl p-2 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
+            estimate.use_internal_price
+              ? 'bg-white dark:bg-qe-black3 dark:border-blue-600'
+              : 'bg-white dark:bg-qe-black3 dark:border-qe-black2'
+          ]">
+            <label for="internal_price" class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" v-model="estimate.use_internal_price" id="internal_price"
+                class="h-4 w-4 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
+              <span class="text-sm font-semibold text-gray-800 dark:text-white">Внутренняя цена</span>
+            </label>
+            <span class="ml-auto text-xs text-gray-400 dark:text-gray-500 font-normal"
+              v-if="estimate.use_internal_price">Использовать для расчёта маржи</span>
           </div>
-          <label for="vat" class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
-              class="h-4 w-4 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
-            <span class="text-sm font-semibold text-gray-800 dark:text-white">НДС</span>
-          </label>
+        </div>
+        <div>
+          <div :class="[
+            'flex items-center gap-2 rounded-xl p-2 border dark:border-qe-black2 shadow-sm transition min-h-[64px]',
+            estimate.vat_enabled
+              ? 'bg-white dark:bg-qe-black3 dark:border-blue-600'
+              : 'bg-white dark:bg-qe-black3 dark:border-qe-black2'
+          ]">
+            <label for="vat" class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" v-model="estimate.vat_enabled" id="vat"
+                class="h-4 w-4 accent-blue-600 rounded border-gray-300 transition focus:ring-blue-500" />
+              <span class="text-sm font-semibold text-gray-800 dark:text-white">НДС</span>
+            </label>
 
-          <transition name="fade">
-            <div v-if="estimate.vat_enabled" class="flex items-center">
-              <div class="relative">
-                <input maxlength="2" v-model.number="estimate.vat_rate"
-                  class="w-16 pl-3 py-1.5 border rounded-lg text-sm  focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white dark:bg-qe-black3 dark:border-qe-black2 dark:text-white dark:border-blue-800"
-                  @input="checkVatRate" />
-                <span
-                  class="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-700 font-semibold dark:text-white pointer-events-none">%</span>
+            <transition name="fade">
+              <div v-if="estimate.vat_enabled" class="flex items-center ml-2">
+                <div class="relative">
+                  <input maxlength="2" v-model.number="estimate.vat_rate"
+                    class="w-16 pl-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white dark:bg-qe-black3 dark:border-qe-black2 dark:text-white"
+                    @input="checkVatRate" />
+                  <span
+                    class="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-700 font-semibold dark:text-white pointer-events-none">%</span>
+                </div>
               </div>
-            </div>
-          </transition>
-          <span class="ml-auto text-xs text-gray-400 dark:text-gray-500 font-normal" v-if="estimate.vat_enabled">НДС
-            будет включён в итоговую сумму</span>
+            </transition>
+            <span class="ml-auto text-xs text-gray-400 dark:text-gray-500 font-normal" v-if="estimate.vat_enabled">Включается в итог</span>
+          </div>
         </div>
       </div>
+    </section>
 
-
-
-    </div>
-
-    <!-- 2. Редактор услуг — растягивается на всю ширину -->
-    <div>
+    <!-- Услуги -->
+    <section>
+      <h2 class="text-lg font-bold mb-4 text-gray-800 dark:text-white">Услуги</h2>
       <EstimateItemsEditor v-model="estimate.items" :vat-enabled="estimate.vat_enabled" :vat-rate="estimate.vat_rate"
         :use-internal-price="estimate.use_internal_price" />
-    </div>
+    </section>
 
-    <!-- 3. Кнопки -->
     <div class="flex justify-end space-x-2">
       <button type="button" @click="cancel" class="qe-btn-secondary">
         Отмена
