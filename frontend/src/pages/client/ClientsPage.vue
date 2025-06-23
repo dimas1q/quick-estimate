@@ -88,7 +88,7 @@ async function changePage(p) {
       </div>
 
       <!-- Правая панель: добавление и фильтры -->
-      <div class="w-72 space-y-4">
+      <div class="space-y-4" style="width: 320px;">
         <router-link to="/clients/create" class="qe-btn block w-full text-center">
           Добавить клиента
         </router-link>
@@ -104,7 +104,7 @@ async function changePage(p) {
             <input v-model="filters.company" class="qe-input w-full mt-1" type="text" placeholder="Поиск по компании" />
           </div>
           <div class="flex gap-2 pt-2">
-            <button @click="applyFilters" class="qe-btn w-full block text-left ">Применить</button>
+            <button @click="applyFilters" class="qe-btn w-full ">Применить</button>
             <button @click="resetFilters" class="qe-btn-secondary w-full">Сбросить</button>
           </div>
         </div>

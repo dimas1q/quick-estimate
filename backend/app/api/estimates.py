@@ -443,7 +443,7 @@ async def list_estimates(
     client: Optional[int] = Query(None),  # Change type to Optional[int]
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    status: Optional[List[EstimateStatus]] = Query(None),
+    status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
@@ -471,7 +471,7 @@ async def list_estimates(
             pass
 
     if status:
-        filters.append(Estimate.status.in_(status))
+        filters.append(Estimate.status == status)
 
     query = (
         select(Estimate)
