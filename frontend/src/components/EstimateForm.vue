@@ -12,12 +12,8 @@
       <!-- Клиент -->
       <div>
         <label class="block text-sm font-semibold dark:text-white text-gray-700 mb-1">Клиент</label>
-        <select v-model="estimate.client_id" class="w-full qe-input">
-          <option :value="null">Без клиента</option>
-          <option v-for="c in clients" :key="c.id" :value="c.id">
-            {{ c.name }} <span v-if="c.company">({{ c.company }})</span>
-          </option>
-        </select>
+        <QeSingleSelect v-model="estimate.client_id" :options="clientOptions" placeholder="Без клиента"
+          class="w-full mt-1" />
       </div>
       <!-- Ответственный (на всю ширину) -->
       <div>
@@ -28,13 +24,7 @@
       <!-- Статус -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 dark:text-white mb-1">Статус</label>
-        <select v-model="estimate.status" class="w-full qe-input">
-          <option value="draft">Черновик</option>
-          <option value="sent">Отправлена</option>
-          <option value="approved">Согласована</option>
-          <option value="paid">Оплачена</option>
-          <option value="cancelled">Отменена</option>
-        </select>
+        <QeSingleSelect v-model="estimate.status" :options="statusOptions" placeholder="Черновик" class="w-full mt-1" />
       </div>
 
       <!-- Дата и место проведения -->
@@ -133,6 +123,8 @@ import { useClientsStore } from '@/store/clients'
 import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
 import QeDatePicker from '@/components/QeDatePicker.vue'
+import QeSingleSelect from '@/components/QeSingleSelect.vue'
+
 
 const props = defineProps({
   initial: Object,
@@ -162,6 +154,22 @@ const estimate = reactive({
 })
 
 const clients = computed(() => clientsStore.clients)
+
+const clientOptions = computed(() => [
+  { value: null, label: 'Без клиента' },
+  ...clients.value.map(c => ({
+    value: c.id,
+    label: c.company ? `${c.name} (${c.company})` : c.name
+  }))
+])
+
+const statusOptions = [
+  { value: 'draft', label: 'Черновик' },
+  { value: 'sent', label: 'Отправлена' },
+  { value: 'approved', label: 'Согласована' },
+  { value: 'paid', label: 'Оплачена' },
+  { value: 'cancelled', label: 'Отменена' }
+]
 
 onMounted(async () => {
   await clientsStore.fetchClients()

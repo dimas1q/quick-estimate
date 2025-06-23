@@ -5,6 +5,8 @@ import { useToast } from 'vue-toastification'
 import { useTemplatesStore } from '@/store/templates'
 import QePagination from '@/components/QePagination.vue'
 
+import { FileDown, Plus } from 'lucide-vue-next'
+
 const fileInput = ref(null)
 const router = useRouter()
 const toast = useToast()
@@ -154,13 +156,15 @@ function isValidTemplate(template) {
         </template>
       </div>
       <!-- Правая панель: кнопки и фильтры -->
-      <div class="w-68 space-y-4">
-        <router-link to="/templates/create" class="qe-btn block w-full text-center">
-          Создать шаблон
-        </router-link>
-        <button type="button" class="qe-btn block w-full text-center" @click="triggerFileInput">
-          Импорт шаблона
-        </button>
+      <div class="space-y-4" style="width: 320px;">
+        <div class="flex gap-2">
+          <router-link to="/templates/create" class="qe-btn flex items-center justify-center w-full">
+            Создать шаблон
+          </router-link>
+          <button @click="triggerFileInput" class="qe-btn flex items-center justify-center w-full">
+            Импорт шаблона
+          </button>
+        </div>
         <div
           class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
           <h2 class="font-semibold text-lg">Фильтр</h2>

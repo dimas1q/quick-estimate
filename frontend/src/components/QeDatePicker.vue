@@ -15,7 +15,6 @@ onMounted(() => {
 
 const props = defineProps({
     modelValue: null,                 // v-model
-    label: { type: String, default: '' },
     placeholder: { type: String, default: '' },
     format: { type: [Function, String], default: undefined }, // Можно прокинуть свою функцию форматирования
     locale: { type: [Object, String], default: 'ru' },
@@ -33,6 +32,7 @@ const innerValue = computed({
 <template>
     <div>
         <Datepicker v-model="innerValue" :locale="locale" :format="format" :dark="isDark" cancelText="Отмена"
-            selectText="Выбрать" :placeholder="placeholder" :enable-time-picker="enableTimePicker" style="width:100%;" />
+            selectText="Выбрать" :placeholder="placeholder" :enable-time-picker="enableTimePicker"
+            style="width:100%;" />
     </div>
 </template>

@@ -135,8 +135,8 @@ def compute_growth(
 )
 async def get_client_analytics(
     client_id: int,
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
     status: Optional[List[EstimateStatus]] = Query(None),
     vat_enabled: Optional[bool] = Query(None),
     granularity: GranularityEnum = Query(GranularityEnum.month),
@@ -287,8 +287,8 @@ async def get_client_analytics(
     summary="Глобальная аналитика по всем клиентам",
 )
 async def get_global_analytics(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
     status: Optional[List[EstimateStatus]] = Query(None),
     vat_enabled: Optional[bool] = Query(None),
     granularity: GranularityEnum = Query(GranularityEnum.month),

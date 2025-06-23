@@ -23,11 +23,13 @@
                     <!-- Даты -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Дата от</label>
-                        <input v-model="filters.start_date" type="date" class="qe-input w-full" />
+                        <QeDatePicker v-model="filters.start_date" placeholder="Выберите дату от" :format="format"
+                            class="mt-1" />
                     </div>
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Дата до</label>
-                        <input v-model="filters.end_date" type="date" class="qe-input w-full" />
+                        <QeDatePicker v-model="filters.end_date" placeholder="Выберите дату по" :format="format"
+                            class="mt-1" />
                     </div>
                     <!-- Категории -->
                     <div>
@@ -192,6 +194,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
+import QeDatePicker from '@/components/QeDatePicker.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import QeMultiSelect from '@/components/QeMultiSelect.vue'
 import fileDownload from 'js-file-download'
@@ -248,6 +251,22 @@ const appliedFilters = reactive({
     granularity: 'month',
 })
 
+const format = (date) => {
+    if (!date) return ''
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}.${month}.${year}`
+}
+
+function formatDateToYYYYMMDD(date) {
+    if (!date) return ''
+    const d = new Date(date)
+    const month = `${d.getMonth() + 1}`.padStart(2, '0')
+    const day = `${d.getDate()}`.padStart(2, '0')
+    return `${d.getFullYear()}-${month}-${day}`
+}
+
 const data = ref(null)
 const errorMessage = ref('')
 const filtersOpen = ref(true)
@@ -283,8 +302,8 @@ async function applyFilters() {
     errorMessage.value = ''
     const params = new URLSearchParams()
     params.append('granularity', filters.granularity)
-    if (filters.start_date) params.append('start_date', filters.start_date)
-    if (filters.end_date) params.append('end_date', filters.end_date)
+    if (filters.start_date) params.append('start_date', formatDateToYYYYMMDD(filters.start_date) + 'T00:00:00Z')
+    if (filters.end_date) params.append('end_date', formatDateToYYYYMMDD(filters.end_date) + 'T23:59:59Z')
     filters.status.forEach(s => params.append('status', s))
     if (filters.vat_enabled !== null) params.append('vat_enabled', String(filters.vat_enabled))
     filters.categories_arr.forEach(c => params.append('categories', c))
