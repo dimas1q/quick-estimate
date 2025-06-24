@@ -51,14 +51,15 @@ async function changePage(p) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Клиенты</h1>
-      <!-- Можно добавить импорт/экспорт позже -->
-    </div>
-    <div class="flex gap-6 items-start">
-      <!-- Список клиентов -->
-      <div class="flex-1 space-y-4">
+  <div class="px-6 py-8 min-h-screen flex justify-center">
+    <div class="space-y-6">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Клиенты</h1>
+        <!-- Можно добавить импорт/экспорт позже -->
+      </div>
+      <div class="flex gap-6 items-start">
+        <!-- Список клиентов -->
+        <div class="space-y-4 w-full max-w-xl">
         <div v-if="isLoading" class="flex flex-col gap-5">
           <div v-for="n in 3" :key="n"
             class="border rounded-xl shadow-sm p-5 bg-white dark:bg-gray-900 animate-pulse flex flex-col gap-3 relative">
@@ -111,4 +112,5 @@ async function changePage(p) {
       </div>
     </div>
   </div>
+</div>
 </template>
