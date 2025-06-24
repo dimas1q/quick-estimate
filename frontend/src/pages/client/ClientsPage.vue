@@ -51,22 +51,23 @@ async function changePage(p) {
 </script>
 
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Клиенты</h1>
-      <!-- Можно добавить импорт/экспорт позже -->
-    </div>
-    <div class="flex gap-6 items-start">
-      <!-- Список клиентов -->
-      <div class="flex-1 space-y-4">
-        <div v-if="isLoading" class="flex flex-col gap-5">
-          <div v-for="n in 3" :key="n"
-            class="border rounded-xl shadow-sm p-5 bg-white dark:bg-gray-900 animate-pulse flex flex-col gap-3 relative">
-            <div class="h-6 bg-gray-200 dark:bg-gray-800 rounded w-2/3 mb-2"></div>
-            <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-            <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/2"></div>
+  <div class="px-6 py-8 min-h-screen flex justify-center">
+    <div class="space-y-6 w-full max-w-6xl">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Клиенты</h1>
+        <!-- Можно добавить импорт/экспорт позже -->
+      </div>
+      <div class="flex gap-6 items-start justify-center">
+        <!-- Список клиентов -->
+        <div class="space-y-4 w-full max-w-3xl">
+          <div v-if="isLoading" class="flex flex-col gap-5">
+            <div v-for="n in 3" :key="n"
+              class="border rounded-xl shadow-sm p-5 bg-white dark:bg-gray-900 animate-pulse flex flex-col gap-3 relative">
+              <div class="h-6 bg-gray-200 dark:bg-gray-800 rounded w-2/3 mb-2"></div>
+              <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
+              <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/2"></div>
+            </div>
           </div>
-        </div>
         <template v-else>
           <div v-for="c in store.clients" :key="c.id"
             class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col ">
@@ -82,8 +83,13 @@ async function changePage(p) {
             class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
             Клиенты отсутствуют.
           </div>
-          <QePagination :total="totalClients" :per-page="perPage" :page="currentPage" @update:page="changePage"
-            class="mt-4" />
+          <QePagination
+            :total="totalClients"
+            :per-page="perPage"
+            :page="currentPage"
+            @update:page="changePage"
+            class="mt-4"
+          />
         </template>
       </div>
 
@@ -110,5 +116,6 @@ async function changePage(p) {
         </div>
       </div>
     </div>
+  </div>
   </div>
 </template>
