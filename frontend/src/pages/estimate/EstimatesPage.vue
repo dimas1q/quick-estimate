@@ -1,21 +1,23 @@
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
-    <!-- Навигационный переключатель -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
-        <button
-          :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'my' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
-          @click="setViewMode('my')">Мои сметы</button>
-        <button
-          :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'fav' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
-          @click="setViewMode('fav')">Избранное</button>
-      </div>
-    </div>
+  <div class="px-6 py-8">
+    <div class="max-w-7xl mx-auto flex gap-6 items-start">
+      <div class="flex-1">
+        <div class="space-y-6 max-w-4xl mx-auto">
+          <!-- Навигационный переключатель -->
+          <div class="flex justify-center">
+            <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
+              <button
+                :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'my' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+                @click="setViewMode('my')">Мои сметы</button>
+              <button
+                :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'fav' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+                @click="setViewMode('fav')">Избранное</button>
+            </div>
+          </div>
 
-    <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
+          <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
 
-    <div class="flex gap-6 items-start">
-      <div class="flex-1 space-y-4">
+          <div class="flex-1 space-y-4">
         <!-- Скелетон-карточки -->
         <div v-if="isLoading" class="flex flex-col gap-5">
           <div v-for="n in 3" :key="n"
@@ -58,10 +60,12 @@
           <QePagination :total="totalEstimates" :per-page="perPage" :page="currentPage" @update:page="changePage"
             class="mt-4" />
         </template>
+        </div>
+      </div>
       </div>
 
       <!-- Боковая панель с фильтрами и импортом -->
-      <div class="space-y-4" style="width: 320px;">
+      <div class="space-y-4 w-80 ml-auto">
         <div class="flex gap-2">
           <router-link to="/estimates/create" class="qe-btn flex items-center justify-center w-full">
             <span>Создать смету</span>
