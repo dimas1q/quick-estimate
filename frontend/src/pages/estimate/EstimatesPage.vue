@@ -1,21 +1,21 @@
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
-    <!-- Навигационный переключатель -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
-        <button
-          :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'my' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
-          @click="setViewMode('my')">Мои сметы</button>
-        <button
-          :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'fav' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
-          @click="setViewMode('fav')">Избранное</button>
+  <div class="relative px-6 py-8">
+    <div class="space-y-6 max-w-4xl mx-auto">
+      <!-- Навигационный переключатель -->
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
+          <button
+            :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'my' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+            @click="setViewMode('my')">Мои сметы</button>
+          <button
+            :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'fav' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+            @click="setViewMode('fav')">Избранное</button>
+        </div>
       </div>
-    </div>
 
-    <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
+      <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
 
-    <div class="flex gap-6 items-start">
-      <div class="flex-1 space-y-4">
+      <div class="space-y-4">
         <!-- Скелетон-карточки -->
         <div v-if="isLoading" class="flex flex-col gap-5">
           <div v-for="n in 3" :key="n"
@@ -60,45 +60,46 @@
         </template>
       </div>
 
+</div>
+
       <!-- Боковая панель с фильтрами и импортом -->
-      <div class="space-y-4" style="width: 320px;">
-        <div class="flex gap-2">
-          <router-link to="/estimates/create" class="qe-btn flex items-center justify-center w-full">
-            <span>Создать смету</span>
-          </router-link>
-          <button @click="triggerFileInput" class="qe-btn flex items-center justify-center w-full">
-            <span>Импорт сметы</span>
-          </button>
+    <div class="absolute right-6 top-8 space-y-4 w-80">
+      <div class="flex gap-2">
+        <router-link to="/estimates/create" class="qe-btn flex items-center justify-center w-full">
+          <span>Создать смету</span>
+        </router-link>
+        <button @click="triggerFileInput" class="qe-btn flex items-center justify-center w-full">
+          <span>Импорт сметы</span>
+        </button>
+      </div>
+      <div
+        class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
+        <h2 class="font-semibold text-lg">Фильтры</h2>
+        <div>
+          <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Название</label>
+          <input v-model="filters.name" class="qe-input w-full mt-1" type="text" placeholder="Название сметы" />
         </div>
-        <div
-          class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
-          <h2 class="font-semibold text-lg">Фильтры</h2>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Название</label>
-            <input v-model="filters.name" class="qe-input w-full mt-1" type="text" placeholder="Название сметы" />
-          </div>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Клиент</label>
-            <QeSingleSelect v-model="filters.client" :options="clientOptions" placeholder="Все клиенты" class="mt-1" />
-          </div>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Статус</label>
-            <QeSingleSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" class="mt-1" />
-          </div>
+        <div>
+          <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Клиент</label>
+          <QeSingleSelect v-model="filters.client" :options="clientOptions" placeholder="Все клиенты" class="mt-1" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Статус</label>
+          <QeSingleSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" class="mt-1" />
+        </div>
 
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата с</label>
-            <QeDatePicker v-model="filters.date_from" placeholder="Выберите дату от" :format="format" class="mt-1" />
-          </div>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата по</label>
-            <QeDatePicker v-model="filters.date_to" placeholder="Выберите дату по" :format="format" class="mt-1" />
-          </div>
+        <div>
+          <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата с</label>
+          <QeDatePicker v-model="filters.date_from" placeholder="Выберите дату от" :format="format" class="mt-1" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата по</label>
+          <QeDatePicker v-model="filters.date_to" placeholder="Выберите дату по" :format="format" class="mt-1" />
+        </div>
 
-          <div class="flex gap-2 pt-2">
-            <button @click="applyFilters" class="qe-btn w-full">Применить</button>
-            <button @click="resetFilters" class="qe-btn-secondary w-full ">Сбросить</button>
-          </div>
+        <div class="flex gap-2 pt-2">
+          <button @click="applyFilters" class="qe-btn w-full">Применить</button>
+          <button @click="resetFilters" class="qe-btn-secondary w-full ">Сбросить</button>
         </div>
       </div>
     </div>
