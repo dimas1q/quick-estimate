@@ -1,5 +1,7 @@
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
+  <div class="relative px-6 py-8">
+    <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
+    <div class="max-w-4xl mx-auto space-y-6">
     <!-- Навигационный переключатель -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
@@ -12,10 +14,7 @@
       </div>
     </div>
 
-    <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
-
-    <div class="flex gap-6 items-start">
-      <div class="flex-1 space-y-4">
+    <div class="space-y-4">
         <!-- Скелетон-карточки -->
         <div v-if="isLoading" class="flex flex-col gap-5">
           <div v-for="n in 3" :key="n"
@@ -61,7 +60,7 @@
       </div>
 
       <!-- Боковая панель с фильтрами и импортом -->
-      <div class="space-y-4" style="width: 320px;">
+      <div class="space-y-4 mt-6 lg:mt-0 lg:absolute lg:right-6 lg:top-8 lg:w-[320px]">
         <div class="flex gap-2">
           <router-link to="/estimates/create" class="qe-btn flex items-center justify-center w-full">
             <span>Создать смету</span>
@@ -97,7 +96,7 @@
 
           <div class="flex gap-2 pt-2">
             <button @click="applyFilters" class="qe-btn w-full">Применить</button>
-            <button @click="resetFilters" class="qe-btn-secondary w-full ">Сбросить</button>
+            <button @click="resetFilters" class="qe-btn-secondary w-full">Сбросить</button>
           </div>
         </div>
       </div>
