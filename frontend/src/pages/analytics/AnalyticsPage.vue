@@ -1,5 +1,5 @@
 <template>
-    <div class="py-4 max-w-5xl mx-auto space-y-8">
+    <div class="py-10 max-w-5xl mx-auto space-y-8">
         <h1 class="text-2xl font-bold">Аналитика</h1>
 
         <!-- Фильтры (аккордеон) -->
@@ -15,10 +15,8 @@
                     <!-- Клиент -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Клиент</label>
-                        <select v-model="filters.clientId" class="qe-input w-full">
-                            <option :value="null">Все клиенты</option>
-                            <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
-                        </select>
+                        <QeSingleSelect v-model="filters.clientId" :options="clientOptions" placeholder="Все клиенты"
+                            class="w-full" />
                     </div>
                     <!-- Даты -->
                     <div>
@@ -42,19 +40,14 @@
                     <!-- НДС -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">НДС включён</label>
-                        <select v-model="filters.vat_enabled" class="qe-input w-full">
-                            <option :value="null">Все</option>
-                            <option :value="true">Да</option>
-                            <option :value="false">Нет</option>
-                        </select>
+                        <QeSingleSelect v-model="filters.vat_enabled" :options="vatOptions" placeholder="Все"
+                            class="w-full" />
                     </div>
                     <!-- Гранулярность -->
                     <div>
                         <label class="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Гранулярность</label>
-                        <select v-model="filters.granularity" class="qe-input w-full">
-                            <option v-for="g in granularityOptions" :key="g.value" :value="g.value">{{ g.label }}
-                            </option>
-                        </select>
+                        <QeSingleSelect v-model="filters.granularity" :options="granularityOptions"
+                            placeholder="Гранулярность" class="w-full" />
                     </div>
                     <!-- Статусы -->
                     <div class="sm:col-span-2 lg:col-span-3">
@@ -167,7 +160,7 @@
                 </div>
             </div>
         </section>
-        <div class="pb-12 flex justify-end">
+        <div v-if="!errorMessage && data" class="pb-10 flex justify-end">
             <div class="relative" ref="exportRef">
                 <button @click="showExport = !showExport" class="qe-btn-success flex items-center">
                     <Download class="w-4 h-4 mr-1" />
@@ -190,10 +183,12 @@
 
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
+
+import QeSingleSelect from '@/components/QeSingleSelect.vue'
 import QeDatePicker from '@/components/QeDatePicker.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import QeMultiSelect from '@/components/QeMultiSelect.vue'
@@ -215,7 +210,22 @@ import {
 const clientsStore = useClientsStore()
 const analyticsStore = useAnalyticsStore()
 
-const clients = ref([])
+const clients = ref([]) 
+
+const clientOptions = computed(() => [
+    { value: null, label: 'Все клиенты' },
+    ...clients.value.map(c => ({
+        value: c.id,
+        label: c.company ? `${c.name} (${c.company})` : c.name
+    }))
+])
+
+const vatOptions = [
+    { value: null, label: 'Все' },
+    { value: true, label: 'Да' },
+    { value: false, label: 'Нет' },
+]
+
 const statusOptions = [
     { value: 'draft', label: 'Черновик' },
     { value: 'sent', label: 'Отправлена' },
@@ -223,6 +233,8 @@ const statusOptions = [
     { value: 'paid', label: 'Оплачена' },
     { value: 'cancelled', label: 'Отменена' },
 ]
+
+
 const granularityOptions = [
     { value: 'day', label: 'День' },
     { value: 'week', label: 'Неделя' },

@@ -112,14 +112,10 @@ export const useEstimatesStore = defineStore('estimates', {
     },
     async addFavorite(id) {
       await axios.post(`/estimates/${id}/favorite/`)
-      // Не обязательно перезапрашивать список — можешь обновить поле is_favorite локально,
-      // но для простоты можно так:
-      await this.fetchEstimates()
     },
 
     async removeFavorite(id) {
       await axios.delete(`/estimates/${id}/favorite/`)
-      await this.fetchEstimates()
     }
     
   }

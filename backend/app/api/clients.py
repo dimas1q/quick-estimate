@@ -101,6 +101,7 @@ async def create_client(
 async def list_clients(
     name: Optional[str] = Query(None),
     company: Optional[str] = Query(None),
+    email: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
@@ -111,6 +112,8 @@ async def list_clients(
         filters.append(Client.name.ilike(f"%{name}%"))
     if company:
         filters.append(Client.company.ilike(f"%{company}%"))
+    if email:
+        filters.append(Client.email.ilike(f"%{email}%"))
 
     count_q = select(func.count()).select_from(Client).where(*filters)
     total = await db.scalar(count_q)

@@ -53,7 +53,7 @@ onClickOutside(menuRef, () => {
       <div class="flex items-center -ml-3">
         <img src="/logo.svg" class="w-10 h-10" alt="Quick Estimate" />
         <RouterLink to="/" class="flex items-center gap-2 text-xl font-extrabold text-blue-600 dark:text-blue-600">
-          QuickEstimate
+          Quick Estimate
         </RouterLink>
       </div>
 
@@ -105,7 +105,7 @@ onClickOutside(menuRef, () => {
       <Sidebar v-if="auth.user && showSidebar" />
 
       <!-- MAIN -->
-      <main class="flex-1 overflow-y-auto dark:bg-qe-black3 bg-gray-50 p-4">
+      <main class="flex-1 overflow-y-auto dark:bg-qe-black3 bg-gray-50">
         <slot />
       </main>
     </div>

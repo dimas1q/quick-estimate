@@ -1,13 +1,69 @@
+<template>
+  <div class="flex flex-col items-center from-gray-50 via-white to-gray-100 py-10">
+    <!-- Хедер и бар фильтров -->
+    <div class="w-full max-w-5xl flex flex-col gap-4 mb-8">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-2xl font-bold">Клиенты</h2>
+        <router-link to="/clients/create" class="qe-btn px-4">Добавить клиента</router-link>
+      </div>
+      <div class="flex gap-2">
+        <input v-model="filters.name" class="qe-input flex-1" type="text" autocomplete="off"
+          placeholder="Контактное лицо" />
+        <input v-model="filters.company" class="qe-input flex-1" type="text" autocomplete="off"
+          placeholder="Компания" />
+        <input v-model="filters.email" class="qe-input flex-1" type="text" autocomplete="off" placeholder="Email" />
+        <button @click="applyFilters" class="qe-btn min-w-[100px]">Найти</button>
+        <button @click="resetFilters" class="qe-btn-secondary min-w-[100px]">Сброс</button>
+      </div>
+    </div>
+
+    <!-- Список клиентов -->
+    <div class="w-full max-w-5xl">
+      <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div v-for="n in 5" :key="n" class="rounded-2xl bg-white/60 shadow animate-pulse p-6 h-24" />
+      </div>
+      <template v-else>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div v-for="c in store.clients" :key="c.id"
+            class="flex items-center gap-5 bg-white rounded-2xl shadow-sm hover:shadow-lg border border-gray-200 p-5 transition-all border border-gray-100 dark:bg-qe-black3 dark:border-qe-black2">
+            <div
+              class="flex-shrink-0 w-12 h-12 rounded-full dark:bg-qe-black2 bg-gray-100 flex items-center justify-center text-xl font-bold text-gray-500">
+              <!-- Lucide icon: user -->
+              <LucideUser class="w-7 h-7" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <router-link :to="`/clients/${c.id}`" class="text-lg font-semibold truncate hover:text-blue-600">{{ c.name
+                }}
+              </router-link>
+              <div class="text-gray-500 text-sm truncate">{{ c.company || '—' }}</div>
+              <div class="text-gray-400 text-xs truncate">{{ c.email || c.phone || '—' }}</div>
+            </div>
+          </div>
+        </div>
+        <div v-if="store.clients.length === 0"
+          class="text-center text-gray-400 border border-gray-100 p-6 rounded-2xl bg-white/70 mt-4">
+          Клиенты отсутствуют.
+        </div>
+        <QePagination :total="totalClients" :per-page="perPage" :page="currentPage" @update:page="changePage"
+          class="mt-6" />
+      </template>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useClientsStore } from '@/store/clients'
 import QePagination from '@/components/QePagination.vue'
 
+import { LucideUser } from 'lucide-vue-next'
+
 const store = useClientsStore()
 const isLoading = ref(true)
 const filters = ref({
   name: '',
-  company: ''
+  company: '',
+  email: ''
 })
 
 const perPage = 5
@@ -26,7 +82,8 @@ async function applyFilters() {
   isLoading.value = true
   const query = {
     name: filters.value.name,
-    company: filters.value.company
+    company: filters.value.company,
+    email: filters.value.email
   }
   currentFilters.value = query
   currentPage.value = 1
@@ -49,66 +106,3 @@ async function changePage(p) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
-
-<template>
-  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Клиенты</h1>
-      <!-- Можно добавить импорт/экспорт позже -->
-    </div>
-    <div class="flex gap-6 items-start">
-      <!-- Список клиентов -->
-      <div class="flex-1 space-y-4">
-        <div v-if="isLoading" class="flex flex-col gap-5">
-          <div v-for="n in 3" :key="n"
-            class="border rounded-xl shadow-sm p-5 bg-white dark:bg-gray-900 animate-pulse flex flex-col gap-3 relative">
-            <div class="h-6 bg-gray-200 dark:bg-gray-800 rounded w-2/3 mb-2"></div>
-            <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-            <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/2"></div>
-          </div>
-        </div>
-        <template v-else>
-          <div v-for="c in store.clients" :key="c.id"
-            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col ">
-            <div class="font-semibold text-lg">{{ c.name }}</div>
-            <div class="text-sm  dark:text-gray-400">Компания: {{ c.company || '—' }}</div>
-            <div class="text-sm  dark:text-gray-400">Контакт: {{ c.email || c.phone || '—' }}</div>
-            <router-link :to="`/clients/${c.id}`"
-              class="text-blue-600 dark:text-blue-400 text-sm hover:underline mt-2 inline-block">
-              Подробнее →
-            </router-link>
-          </div>
-          <div v-if="store.clients.length === 0"
-            class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
-            Клиенты отсутствуют.
-          </div>
-          <QePagination :total="totalClients" :per-page="perPage" :page="currentPage" @update:page="changePage"
-            class="mt-4" />
-        </template>
-      </div>
-
-      <!-- Правая панель: добавление и фильтры -->
-      <div class="space-y-4" style="width: 320px;">
-        <router-link to="/clients/create" class="qe-btn block w-full text-center">
-          Добавить клиента
-        </router-link>
-        <div
-          class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
-          <h2 class="font-semibold text-lg">Фильтры</h2>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left">Имя</label>
-            <input v-model="filters.name" class="qe-input w-full mt-1" type="text" placeholder="Поиск по имени" />
-          </div>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left">Компания</label>
-            <input v-model="filters.company" class="qe-input w-full mt-1" type="text" placeholder="Поиск по компании" />
-          </div>
-          <div class="flex gap-2 pt-2">
-            <button @click="applyFilters" class="qe-btn w-full ">Применить</button>
-            <button @click="resetFilters" class="qe-btn-secondary w-full">Сбросить</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>

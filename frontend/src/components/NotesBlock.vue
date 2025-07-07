@@ -5,7 +5,7 @@
         <NotebookPen class="w-6 h-6 text-blue-600" />
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white select-none">Примечания</h3>
       </div>
-      <button v-if="!adding" @click="startAdd" class="qe-btn font-medium shadow-sm transition-all">Добавить</button>
+      <button v-if="!adding" @click="startAdd" class="qe-btn shadow-sm transition-all">Добавить</button>
     </div>
     <!-- Добавление примечания -->
     <Transition name="note-fade">

@@ -4,7 +4,7 @@
       <li>
         <button
           class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors duration-150"
-          :class="page === 1 ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'text-blue-600 bg-white hover:bg-blue-50 dark:bg-qe-black1 dark:hover:bg-qe-black2'"
+          :class="page === 1 ? 'text-gray-400 bg-gray-100 cursor-not-allowed dark:bg-qe-black2' : 'text-blue-600 bg-white hover:bg-blue-50 dark:bg-qe-black2'"
           :disabled="page === 1" @click="$emit('update:page', page - 1)">
           ←
         </button>
@@ -14,7 +14,7 @@
           class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors duration-150"
           :class="p === page
             ? 'bg-blue-600 text-white shadow'
-            : 'text-gray-700 dark:text-gray-300 bg-white hover:bg-blue-50 dark:bg-qe-black1 dark:hover:bg-qe-black2'"
+  : 'text-gray-700 dark:text-gray-300 bg-white hover:bg-blue-50 dark:bg-qe-black2'"
           @click="$emit('update:page', p)">
           {{ p }}
         </button>
@@ -22,7 +22,7 @@
       <li>
         <button
           class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors duration-150"
-          :class="page === totalPages ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'text-blue-600 bg-white hover:bg-blue-50 dark:bg-qe-black1 dark:hover:bg-qe-black2'"
+          :class="page === totalPages ? 'text-gray-400 dark:bg-qe-black2 bg-gray-100 cursor-not-allowed' : 'text-blue-600 bg-white hover:bg-blue-50 dark:bg-qe-black2'"
           :disabled="page === totalPages" @click="$emit('update:page', page + 1)">
           →
         </button>

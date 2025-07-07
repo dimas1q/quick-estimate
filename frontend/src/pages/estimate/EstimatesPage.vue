@@ -1,38 +1,50 @@
+
 <template>
-  <div class="space-y-6 px-6 py-8 max-w-4xl mx-auto">
-    <!-- Навигационный переключатель -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
-        <button
-          :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'my' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
-          @click="setViewMode('my')">Мои сметы</button>
-        <button
-          :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'fav' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
-          @click="setViewMode('fav')">Избранное</button>
+  <div class="flex flex-col items-center from-gray-50 via-white to-gray-100 px-2 py-10">
+    <!-- Хедер и бар управления -->
+    <div class="w-full max-w-5xl flex flex-col gap-4 mb-8">
+      <!-- Навигационный переключатель -->
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
+          <button
+            :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'my' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+            @click="setViewMode('my')">Мои сметы</button>
+          <button
+            :class="['px-5 py-2 rounded-lg text-sm font-semibold transition', viewMode === 'fav' ? 'bg-white dark:bg-gray-900 text-blue-600 shadow' : 'text-gray-500 hover:text-blue-600']"
+            @click="setViewMode('fav')">Избранное</button>
+        </div>
+        <div class="flex gap-2">
+          <router-link to="/estimates/create" class="qe-btn px-4">
+            Создать смету
+          </router-link>
+          <button @click="triggerFileInput" class="qe-btn px-4">
+            Импорт сметы
+          </button>
+          <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
+        </div>
+      </div>
+      <!-- Бар фильтров -->
+      <div class="flex gap-2">
+        <input v-model="filters.name" class="qe-input flex-1" type="text" autocomplete="off"
+          placeholder="Название сметы" />
+        <QeSingleSelect v-model="filters.client" :options="clientOptions" placeholder="Все клиенты" class="flex-1" />
+        <QeSingleSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" class="flex-1" />
+        <QeDatePicker v-model="filters.date_from" placeholder="Дата с" :format="format" class="flex-1" />
+        <QeDatePicker v-model="filters.date_to" placeholder="Дата по" :format="format" class="flex-1" />
+        <button @click="applyFilters" class="qe-btn px-4 min-w-[100px]">Найти</button>
+        <button @click="resetFilters" class="qe-btn-secondary px-4 min-w-[100px]">Сброс</button>
       </div>
     </div>
 
-    <input type="file" ref="fileInput" accept="application/json" @change="handleFile" class="hidden" />
-
-    <div class="flex gap-6 items-start">
-      <div class="flex-1 space-y-4">
-        <!-- Скелетон-карточки -->
-        <div v-if="isLoading" class="flex flex-col gap-5">
-          <div v-for="n in 3" :key="n"
-            class="border rounded-xl shadow-sm p-5 bg-white dark:bg-gray-900 animate-pulse flex flex-col gap-3 relative">
-            <div class="h-6 bg-gray-200 dark:bg-gray-800 rounded w-2/3 mb-2"></div>
-            <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-            <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-            <div class="h-3 bg-gray-100 dark:bg-gray-700 rounded w-1/4"></div>
-          </div>
-        </div>
-
-        <!-- Список смет -->
-        <template v-else>
-
+    <!-- Список смет -->
+    <div class="w-full max-w-5xl space-y-5">
+      <div v-if="isLoading" class="space-y-3">
+        <div v-for="n in 3" :key="n" class="rounded-2xl bg-white/60 shadow animate-pulse p-6 h-24" />
+      </div>
+      <div v-else>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div v-for="e in filteredEstimates" :key="e.id"
-            class="border border-gray-200 dark:border-qe-black2 rounded-xl shadow-sm p-5 bg-white dark:bg-qe-black3 transition hover:shadow-md flex flex-col  relative ">
-            <!-- Звезда -->
+            class="border border-gray-200 dark:border-qe-black2 rounded-2xl shadow-sm hover:shadow-lg p-5 bg-white dark:bg-qe-black3 transition flex flex-col relative">
             <button
               class="absolute top-2 right-2 rounded-full bg-transparent p-1 transition flex items-center justify-center"
               style="width: 44px; height: 44px; overflow: visible;"
@@ -40,71 +52,27 @@
               <Star v-if="e.is_favorite" class="w-6 h-6 text-yellow-400 fill-yellow-400" :stroke-width="1.5" />
               <Star v-else class="w-6 h-6 text-gray-300 hover:text-yellow-400 transition" :stroke-width="1.5" />
             </button>
-            <div class="font-semibold text-lg">{{ e.name }}</div>
+            <router-link :to="`/estimates/${e.id}`" class="font-semibold text-lg hover:text-blue-600">{{ e.name
+              }}</router-link>
             <div class="text-sm dark:text-gray-400">
               Клиент: {{ e.client?.name || '—' }}
               <span v-if="e.client?.company">({{ e.client.company }})</span>
             </div>
             <div class="text-sm dark:text-gray-400">Ответственный: {{ e.responsible || '—' }}</div>
             <div class="text-xs text-gray-500 mt-2">Создана: {{ new Date(e.date).toLocaleString() }}</div>
-            <router-link :to="`/estimates/${e.id}`" class="text-blue-600 text-sm hover:underline mt-2 inline-block">
-              Подробнее →
-            </router-link>
-          </div>
-          <div v-if="filteredEstimates.length === 0"
-            class="text-center text-gray-500 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl py-8">
-            <p>Сметы отсутствуют.</p>
-          </div>
-          <QePagination :total="totalEstimates" :per-page="perPage" :page="currentPage" @update:page="changePage"
-            class="mt-4" />
-        </template>
-      </div>
-
-      <!-- Боковая панель с фильтрами и импортом -->
-      <div class="space-y-4" style="width: 320px;">
-        <div class="flex gap-2">
-          <router-link to="/estimates/create" class="qe-btn flex items-center justify-center w-full">
-            <span>Создать смету</span>
-          </router-link>
-          <button @click="triggerFileInput" class="qe-btn flex items-center justify-center w-full">
-            <span>Импорт сметы</span>
-          </button>
-        </div>
-        <div
-          class="border border-gray-200 dark:border-qe-black2 rounded-xl p-4 shadow-sm space-y-4 text-center bg-white dark:bg-qe-black3">
-          <h2 class="font-semibold text-lg">Фильтры</h2>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Название</label>
-            <input v-model="filters.name" class="qe-input w-full mt-1" type="text" placeholder="Название сметы" />
-          </div>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Клиент</label>
-            <QeSingleSelect v-model="filters.client" :options="clientOptions" placeholder="Все клиенты" class="mt-1" />
-          </div>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Статус</label>
-            <QeSingleSelect v-model="filters.status" :options="statusOptions" placeholder="Все статусы" class="mt-1" />
-          </div>
-
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата с</label>
-            <QeDatePicker v-model="filters.date_from" placeholder="Выберите дату от" :format="format" class="mt-1" />
-          </div>
-          <div>
-            <label class="text-sm text-gray-600 dark:text-gray-300 block text-left ">Дата по</label>
-            <QeDatePicker v-model="filters.date_to" placeholder="Выберите дату по" :format="format" class="mt-1" />
-          </div>
-
-          <div class="flex gap-2 pt-2">
-            <button @click="applyFilters" class="qe-btn w-full">Применить</button>
-            <button @click="resetFilters" class="qe-btn-secondary w-full ">Сбросить</button>
+            <div class="text-xs text-gray-500">Обновлена: {{ new Date(e.date).toLocaleString() }}</div>
           </div>
         </div>
+        <div v-if="filteredEstimates.length === 0"
+          class="text-center text-gray-400 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl bg-white/70 mt-4">
+          <p>Сметы отсутствуют.</p>
+        </div>
+        <QePagination :total="totalEstimates" :per-page="perPage" :page="currentPage" @update:page="changePage"
+          class="mt-6" />
       </div>
     </div>
   </div>
 </template>
-
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
@@ -153,7 +121,7 @@ const clientsStore = useClientsStore()
 
 const clients = computed(() => clientsStore.clients)
 
-const perPage = 5
+const perPage = 8
 const currentPage = ref(1)
 const currentFilters = ref({})
 const totalEstimates = computed(() => estimatesStore.total)
@@ -320,6 +288,7 @@ async function toggleFavorite(estimate) {
       estimate.is_favorite = true
       toast.success('Добавлено в избранное')
     }
+
   } catch (e) {
     toast.error('Ошибка при изменении избранного')
   }
