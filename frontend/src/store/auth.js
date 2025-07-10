@@ -6,20 +6,33 @@ import axios from '@/lib/axios'
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         token: localStorage.getItem('token') || null,
-        user: null
+        user: null,
+        pendingEmail: null
     }),
 
     actions: {
         async login(identifier, password) {
-            const res = await axios.post('/auth/login',
-                new URLSearchParams({ username: identifier, password })
-            )
+            try {
+                const res = await axios.post(
+                    '/auth/login',
+                    new URLSearchParams({ username: identifier, password })
+                )
 
-            this.token = res.data.access_token
-            localStorage.setItem('token', this.token)
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+                this.token = res.data.access_token
+                localStorage.setItem('token', this.token)
+                axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
 
-            await this.fetchUser()
+                await this.fetchUser()
+            } catch (error) {
+                if (
+                    error.response?.status === 403 &&
+                    error.response.data.detail === 'ACCOUNT_INACTIVE'
+                ) {
+                    this.pendingEmail = error.response.data.email
+                    throw { type: 'inactive' }
+                }
+                throw error
+            }
         },
 
         async register({ login, email, password }) {
@@ -28,6 +41,20 @@ export const useAuthStore = defineStore('auth', {
                 email,
                 password
             })
+            this.pendingEmail = email
+        },
+
+        async verifyCode({ email, code }) {
+            const res = await axios.post('/auth/verify', { email, code })
+            this.token = res.data.access_token
+            localStorage.setItem('token', this.token)
+            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+            await this.fetchUser()
+            this.pendingEmail = null
+        },
+
+        async resendCode(email) {
+            await axios.post('/auth/resend', { email })
         },
 
         async fetchUser() {

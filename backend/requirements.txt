@@ -8,6 +8,7 @@ click==8.1.8
 cryptography==44.0.2
 dnspython==2.7.0
 ecdsa==0.19.1
+aiosmtplib==2.0.2
 email_validator==2.2.0
 et_xmlfile==2.0.0
 fastapi==0.115.12

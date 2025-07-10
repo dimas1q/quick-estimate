@@ -3,6 +3,8 @@
 import { ref } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
+import OtpVerification from '@/components/OtpVerification.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -14,7 +16,8 @@ const confirmPassword = ref('')
 const showPassword = ref(false)
 const showConfirm = ref(false)
 const error = ref(null)
-const success = ref(false)
+const step = ref('form')
+const toast = useToast()
 
 async function handleRegister() {
     error.value = null
@@ -37,8 +40,8 @@ async function handleRegister() {
 
     try {
         await auth.register({ login: login.value, email: email.value, password: password.value })
-        success.value = true
-        setTimeout(() => router.push('/login'), 1500)
+        toast.success('Код отправлен')
+        step.value = 'verify'
     } catch (e) {
         error.value = 'Ошибка при регистрации'
     }
@@ -52,8 +55,8 @@ async function handleRegister() {
             <img src="/logo.svg" class="w-16 h-16" alt="QuickEstimate" />
             <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">Quick Estimate</span>
         </div>
-        <h2 class="text-xl font-medium mb-6 text-center text-gray-800 dark:text-gray-100">Регистрация</h2>
-        <form @submit.prevent="handleRegister" autocomplete="on">
+        <h2 v-if="step === 'form'" class="text-xl font-medium mb-6 text-center text-gray-800 dark:text-gray-100">Регистрация</h2>
+        <form v-if="step === 'form'" @submit.prevent="handleRegister" autocomplete="on">
             <div class="mb-4">
                 <label class="block mb-1 text-sm font-semibold text-gray-800 dark:text-gray-300"
                     for="login">Логин</label>
@@ -116,9 +119,9 @@ async function handleRegister() {
             </div>
             <button type="submit" class="qe-btn mt-4 w-full">Зарегистрироваться</button>
         </form>
-        <p v-if="success" class="text-green-600 mt-4 text-center animate-pulse">Успешно! Перенаправляем...</p>
+        <OtpVerification v-else :email="email" @verified="() => router.push('/estimates')" />
         <p v-if="error" class="text-red-500 text-sm mt-4 text-center animate-pulse">{{ error }}</p>
-        <p class="text-sm text-gray-600 mt-6 text-center dark:text-gray-400">
+        <p v-if="step === 'form'" class="text-sm text-gray-600 mt-6 text-center dark:text-gray-400">
             Уже есть аккаунт?
             <router-link to="/login"
                 class="text-blue-500 dark:text-blue-400 hover:underline transition">Войти</router-link>
