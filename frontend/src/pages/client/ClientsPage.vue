@@ -41,7 +41,7 @@
           </div>
         </div>
         <div v-if="store.clients.length === 0"
-          class="text-center text-gray-400 border border-gray-100 p-6 rounded-2xl bg-white/70 mt-4">
+          class="text-center text-gray-400 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl bg-white/70 mt-4">
           Клиенты отсутствуют.
         </div>
         <QePagination :total="totalClients" :per-page="perPage" :page="currentPage" @update:page="changePage"

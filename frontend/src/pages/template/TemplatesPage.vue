@@ -29,7 +29,8 @@
             class="flex items-center border border-gray-200
  bg-white rounded-2xl shadow-sm hover:shadow-lg p-5 transition-all border border-gray-100 dark:bg-qe-black3 dark:border-qe-black2">
             <div class="flex flex-col flex-1 items-start justify-center">
-              <router-link :to="`/templates/${template.id}`" class="text-lg font-semibold text-left hover:text-blue-600">{{ template.name }}
+              <router-link :to="`/templates/${template.id}`"
+                class="text-lg font-semibold text-left hover:text-blue-600">{{ template.name }}
               </router-link>
               <div class="text-gray-500 text-sm text-left mb-1">
                 {{ template.description || '—' }}
@@ -38,7 +39,7 @@
           </div>
         </div>
         <div v-if="store.templates.length === 0"
-          class="text-center text-gray-400 border border-gray-100 p-6 rounded-2xl bg-white/70 mt-4">
+          class="text-center text-gray-400 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl bg-white/70 mt-4">
           Шаблоны смет отсутствуют.
         </div>
         <QePagination :total="totalTemplates" :per-page="perPage" :page="currentPage" @update:page="changePage"

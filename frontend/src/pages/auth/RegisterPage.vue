@@ -48,11 +48,11 @@ async function handleRegister() {
 <template>
     <div
         class="w-full max-w-sm bg-white dark:bg-qe-black3 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
-        <div class="flex flex-col items-center mb-7">
+        <div class="flex flex-col items-center mb-6">
             <img src="/logo.svg" class="w-16 h-16" alt="QuickEstimate" />
-            <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">QuickEstimate</span>
+            <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">Quick Estimate</span>
         </div>
-        <h2 class="text-xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Регистрация</h2>
+        <h2 class="text-xl font-medium mb-6 text-center text-gray-800 dark:text-gray-100">Регистрация</h2>
         <form @submit.prevent="handleRegister" autocomplete="on">
             <div class="mb-4">
                 <label class="block mb-1 text-sm font-semibold text-gray-800 dark:text-gray-300"
