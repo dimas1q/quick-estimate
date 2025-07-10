@@ -3,6 +3,7 @@
 import { ref } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'vue-router'
+import OtpVerification from '@/components/OtpVerification.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -10,13 +11,20 @@ const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const error = ref(null)
+const step = ref('login')
+const verifyEmail = ref('')
 
 async function handleLogin() {
     try {
         await auth.login(email.value, password.value)
         router.push('/estimates')
     } catch (e) {
-        error.value = 'Неверный email или пароль'
+        if (e.type === 'inactive') {
+            verifyEmail.value = auth.pendingEmail
+            step.value = 'verify'
+        } else {
+            error.value = 'Неверный email или пароль'
+        }
     }
 }
 </script>
@@ -28,8 +36,8 @@ async function handleLogin() {
             <img src="/logo.svg" class="w-16 h-16" alt="QuickEstimate" />
             <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">Quick Estimate</span>
         </div>
-        <h2 class="text-xl font-medium mb-6 text-center text-gray-800 dark:text-gray-100">Вход в личный кабинет</h2>
-        <form @submit.prevent="handleLogin" autocomplete="on">
+        <h2 v-if="step === 'login'" class="text-xl font-medium mb-6 text-center text-gray-800 dark:text-gray-100">Вход в личный кабинет</h2>
+        <form v-if="step === 'login'" @submit.prevent="handleLogin" autocomplete="on">
             <div class="mb-4">
                 <label class="block mb-1 text-sm font-semibold text-gray-800 dark:text-gray-300" for="identifier">
                     Email или логин
@@ -66,8 +74,9 @@ async function handleLogin() {
             </div>
             <button type="submit" class="qe-btn mb-2 w-full">Войти</button>
         </form>
+        <OtpVerification v-else :email="verifyEmail" :initialSeconds="0" @verified="() => router.push('/estimates')" />
         <p v-if="error" class="text-red-500 text-sm mt-3 text-center animate-pulse">{{ error }}</p>
-        <p class="text-sm text-gray-600 mt-6 text-center dark:text-gray-400">
+        <p v-if="step === 'login'" class="text-sm text-gray-600 mt-6 text-center dark:text-gray-400">
             Нет аккаунта?
             <router-link to="/register"
                 class="text-blue-500 dark:text-blue-400 hover:underline transition">Зарегистрироваться</router-link>

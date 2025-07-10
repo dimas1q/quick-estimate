@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.template import EstimateTemplate
@@ -17,6 +17,10 @@ class User(Base):
     company = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     is_admin = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=False)
+    hashed_otp = Column(String, nullable=True)
+    otp_expires_at = Column(DateTime, nullable=True)
+    otp_sent_at = Column(DateTime, nullable=True)
 
     from app.models.estimate_favorite import EstimateFavorite
 
