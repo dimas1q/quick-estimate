@@ -17,6 +17,7 @@ class UserCreate(UserBase):
 class UserOut(UserBase):
     id: int
     is_admin: bool
+    is_active: bool
 
     model_config = {"from_attributes": True}
 
@@ -32,3 +33,12 @@ class PasswordUpdate(BaseModel):
     current_password: str
     new_password: str
     confirm_password: str
+
+
+class VerifyCode(BaseModel):
+    email: EmailStr
+    code: str
+
+
+class EmailRequest(BaseModel):
+    email: EmailStr

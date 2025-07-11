@@ -30,6 +30,18 @@ export const useAuthStore = defineStore('auth', {
             })
         },
 
+        async verifyCode(email, code) {
+            const res = await axios.post('/auth/verify', { email, code })
+            this.token = res.data.access_token
+            localStorage.setItem('token', this.token)
+            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+            await this.fetchUser()
+        },
+
+        async resendCode(email) {
+            await axios.post('/auth/resend', { email })
+        },
+
         async fetchUser() {
             const res = await axios.get('/users/me', {
                 headers: {

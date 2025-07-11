@@ -3,6 +3,7 @@
 import { ref } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -14,7 +15,13 @@ const confirmPassword = ref('')
 const showPassword = ref(false)
 const showConfirm = ref(false)
 const error = ref(null)
-const success = ref(false)
+const step = ref('form')
+const verifyCode = ref('')
+const verifyEmail = ref('')
+const canResend = ref(false)
+const timer = ref(60)
+let interval
+const toast = useToast()
 
 async function handleRegister() {
     error.value = null
@@ -37,23 +44,57 @@ async function handleRegister() {
 
     try {
         await auth.register({ login: login.value, email: email.value, password: password.value })
-        success.value = true
-        setTimeout(() => router.push('/login'), 1500)
+        verifyEmail.value = email.value
+        toast.success('Код отправлен на email')
+        step.value = 'verify'
+        startTimer()
     } catch (e) {
         error.value = 'Ошибка при регистрации'
+    }
+}
+
+function startTimer() {
+    canResend.value = false
+    timer.value = 60
+    clearInterval(interval)
+    interval = setInterval(() => {
+        timer.value--
+        if (timer.value <= 0) {
+            canResend.value = true
+            clearInterval(interval)
+        }
+    }, 1000)
+}
+
+async function submitCode() {
+    error.value = null
+    try {
+        await auth.verifyCode(verifyEmail.value, verifyCode.value)
+        router.push('/estimates')
+    } catch {
+        error.value = 'Код не верный, попробуйте еще раз'
+    }
+}
+
+async function resend() {
+    try {
+        await auth.resendCode(verifyEmail.value)
+        toast.success('Код отправлен')
+        startTimer()
+    } catch (e) {
+        error.value = e.response?.data?.detail || 'Ошибка отправки'
     }
 }
 </script>
 
 <template>
-    <div
-        class="w-full max-w-sm bg-white dark:bg-qe-black3 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
+    <div class="w-full max-w-sm bg-white dark:bg-qe-black3 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
         <div class="flex flex-col items-center mb-6">
             <img src="/logo.svg" class="w-16 h-16" alt="QuickEstimate" />
             <span class="text-2xl font-extrabold text-blue-700 dark:text-blue-600">Quick Estimate</span>
         </div>
-        <h2 class="text-xl font-medium mb-6 text-center text-gray-800 dark:text-gray-100">Регистрация</h2>
-        <form @submit.prevent="handleRegister" autocomplete="on">
+        <h2 v-if="step === 'form'" class="text-xl font-medium mb-6 text-center text-gray-800 dark:text-gray-100">Регистрация</h2>
+        <form v-if="step === 'form'" @submit.prevent="handleRegister" autocomplete="on">
             <div class="mb-4">
                 <label class="block mb-1 text-sm font-semibold text-gray-800 dark:text-gray-300"
                     for="login">Логин</label>
@@ -116,12 +157,20 @@ async function handleRegister() {
             </div>
             <button type="submit" class="qe-btn mt-4 w-full">Зарегистрироваться</button>
         </form>
-        <p v-if="success" class="text-green-600 mt-4 text-center animate-pulse">Успешно! Перенаправляем...</p>
+        <div v-else class="space-y-4">
+            <h2 class="text-xl font-medium text-center text-gray-800 dark:text-gray-100">Подтверждение аккаунта</h2>
+            <form @submit.prevent="submitCode" class="space-y-4">
+                <input v-model="verifyCode" class="qe-input w-full" placeholder="Код" />
+                <button type="submit" class="qe-btn w-full">Подтвердить</button>
+            </form>
+            <button @click="resend" class="qe-btn w-full" :disabled="!canResend">
+                Отправить еще раз <span v-if="!canResend">({{ timer }})</span>
+            </button>
+        </div>
         <p v-if="error" class="text-red-500 text-sm mt-4 text-center animate-pulse">{{ error }}</p>
-        <p class="text-sm text-gray-600 mt-6 text-center dark:text-gray-400">
+        <p v-if="step === 'form'" class="text-sm text-gray-600 mt-6 text-center dark:text-gray-400">
             Уже есть аккаунт?
-            <router-link to="/login"
-                class="text-blue-500 dark:text-blue-400 hover:underline transition">Войти</router-link>
+            <router-link to="/login" class="text-blue-500 dark:text-blue-400 hover:underline transition">Войти</router-link>
         </p>
     </div>
 </template>
