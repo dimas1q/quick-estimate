@@ -9,10 +9,15 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - mailhog
     environment:
       POSTGRES_DB: quickestimate
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_TLS: "False"
+      SMTP_SSL: "False"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
@@ -50,6 +55,13 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: quickestimate-mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
 
 volumes:
   pgdata:
