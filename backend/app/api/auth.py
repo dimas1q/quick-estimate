@@ -1,5 +1,5 @@
 # api/auth.py
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,14 +30,15 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Логин уже занят")
 
     otp = generate_code()
+    now = datetime.now(timezone.utc)
     new_user = User(
         login=user.login,
         email=user.email,
         hashed_password=hash_password(user.password),
         is_active=False,
         hashed_otp=hash_password(otp),
-        otp_expires_at=datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES),
-        otp_sent_at=datetime.utcnow(),
+        otp_expires_at=now + timedelta(minutes=settings.OTP_EXPIRE_MINUTES),
+        otp_sent_at=now,
     )
 
     db.add(new_user)
@@ -73,7 +74,8 @@ async def verify_code(data: VerifyCode, db: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
-    if not user.hashed_otp or not user.otp_expires_at or user.otp_expires_at < datetime.utcnow():
+    now = datetime.now(timezone.utc)
+    if not user.hashed_otp or not user.otp_expires_at or user.otp_expires_at < now:
         raise HTTPException(status_code=400, detail="Код истёк")
 
     if not verify_password(data.code, user.hashed_otp):
@@ -97,7 +99,7 @@ async def resend_code(data: EmailRequest, db: AsyncSession = Depends(get_db)):
     if user.is_active:
         raise HTTPException(status_code=400, detail="Аккаунт уже активирован")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if user.otp_sent_at and (now - user.otp_sent_at).total_seconds() < 60:
         raise HTTPException(status_code=429, detail="Код уже отправлен. Подождите")
 

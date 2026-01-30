@@ -64,7 +64,7 @@
           </div>
         </div>
         <div v-if="filteredEstimates.length === 0"
-          class="text-center text-gray-400 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl bg-white/70 mt-4">
+          class="text-center text-gray-400 border border-gray-200 dark:border-qe-black2 p-6 rounded-2xl bg-white/70 dark:bg-qe-black2/80 mt-4">
           <p>Сметы отсутствуют.</p>
         </div>
         <QePagination :total="totalEstimates" :per-page="perPage" :page="currentPage" @update:page="changePage"
