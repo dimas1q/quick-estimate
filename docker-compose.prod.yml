@@ -7,7 +7,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       POSTGRES_DB: quickestimate
       POSTGRES_USER: postgres
@@ -27,6 +28,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
 
   mailhog:
     image: mailhog/mailhog:latest
