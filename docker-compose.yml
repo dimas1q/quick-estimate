@@ -60,8 +60,8 @@ services:
     image: mailhog/mailhog:latest
     container_name: quickestimate-mailhog
     ports:
-      - "1025:1025" # SMTP
-      - "8025:8025" # Web UI
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
   pgdata:
