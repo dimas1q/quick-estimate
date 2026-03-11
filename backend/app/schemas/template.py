@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Any, List, Optional
 
 
 class TemplateItemBase(BaseModel):
@@ -23,7 +23,7 @@ class TemplateItemOut(TemplateItemBase):
 
 
 class EstimateTemplateBase(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1)
     description: Optional[str] = None
     use_internal_price: bool = True
 
@@ -42,3 +42,28 @@ class EstimateTemplateOut(EstimateTemplateBase):
     use_internal_price: bool = True
 
     model_config = {"from_attributes": True}
+
+
+class TemplateImportError(BaseModel):
+    path: str
+    message: str
+
+
+class TemplateImportSummary(BaseModel):
+    name: str
+    item_count: int
+    category_count: int
+    categories: List[str]
+    name_exists: bool
+
+
+class TemplateImportPreviewOut(BaseModel):
+    valid: bool
+    errors: List[TemplateImportError] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    preview: Optional[EstimateTemplateCreate] = None
+    summary: Optional[TemplateImportSummary] = None
+
+
+class TemplateImportRequest(BaseModel):
+    payload: dict[str, Any]

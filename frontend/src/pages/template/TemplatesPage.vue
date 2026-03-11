@@ -51,15 +51,11 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useTemplatesStore } from '@/store/templates'
 import QePagination from '@/components/QePagination.vue'
 
-import { FileDown, Plus } from 'lucide-vue-next'
-
 const fileInput = ref(null)
-const router = useRouter()
 const toast = useToast()
 const isLoading = ref(true)
 
@@ -116,56 +112,44 @@ async function handleFile(event) {
   try {
     const text = await file.text()
     const json = JSON.parse(text)
+    const preview = await store.previewTemplateImport(json)
 
-    if ('id' in json) delete json.id
-    json.items?.forEach(item => delete item.id)
+    if (!preview.valid) {
+      const topErrors = (preview.errors || []).slice(0, 5).map(
+        (err) => `${err.path}: ${err.message}`
+      )
+      toast.error(topErrors[0] || 'Шаблон не прошел валидацию')
+      if (topErrors.length > 1) {
+        console.error('Template import validation errors:', topErrors)
+      }
+      return
+    }
 
-    if (!isValidTemplate(json)) return
+    const summary = preview.summary
+    const confirmMessage = [
+      `Импортировать шаблон «${summary?.name || 'Без названия'}»?`,
+      `Позиции: ${summary?.item_count ?? 0}`,
+      `Категории: ${summary?.category_count ?? 0}`,
+      summary?.name_exists ? 'Внимание: шаблон с таким названием уже существует.' : ''
+    ].filter(Boolean).join('\n')
 
-    store.setImportedTemplate(json)
-    router.push({ path: '/templates/create', state: { importedData: json } })
+    if (!confirm(confirmMessage)) return
+
+    await store.importTemplate(json)
+    toast.success('Шаблон успешно импортирован')
+    await store.fetchTemplates({ ...currentFilters.value, page: currentPage.value, limit: perPage })
 
   } catch (e) {
     console.error(e)
-    toast.error('Ошибка при чтении или разборе файла')
+    const detail = e?.response?.data?.detail
+    if (detail?.errors?.length) {
+      const firstError = detail.errors[0]
+      toast.error(`${firstError.path}: ${firstError.message}`)
+    } else {
+      toast.error('Ошибка при чтении или импорте файла')
+    }
+  } finally {
+    event.target.value = ''
   }
-}
-
-function isValidTemplate(template) {
-  if (typeof template !== 'object' || template === null) return false
-  if (typeof template.name !== 'string' || !template.name.trim()) return false
-  if (!Array.isArray(template.items)) return false
-
-  for (const [i, item] of template.items.entries()) {
-    if (!item || typeof item !== 'object') return false
-
-    const { name, quantity, unit, internal_price, external_price } = item
-
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      toast.error(`Ошибка в услуге №${i + 1}: отсутствует название`)
-      return false
-    }
-
-    if (!['шт', 'час', 'день', 'м²', 'м'].includes(unit)) {
-      toast.error(`Ошибка в услуге ${item.name}: недопустимая единица измерения`)
-      return false
-    }
-
-    if (typeof quantity !== 'number' || quantity <= 0) {
-      toast.error(`Ошибка в услуге ${item.name}: количество должно быть > 0`)
-      return false
-    }
-
-    if (typeof internal_price !== 'number' || internal_price <= 0) {
-      toast.error(`Ошибка в услуге ${item.name}: внутренняя цена должна быть > 0`)
-      return false
-    }
-
-    if (typeof external_price !== 'number' || external_price <= 0) {
-      toast.error(`Ошибка в услуге ${item.name}: внешняя цена должна быть > 0`)
-      return false
-    }
-  }
-  return true
 }
 </script>

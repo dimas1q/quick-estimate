@@ -38,6 +38,17 @@ export const useTemplatesStore = defineStore('templates', {
       return res.data
     },
 
+    async previewTemplateImport(payload) {
+      const res = await axios.post('/templates/import/preview', { payload })
+      return res.data
+    },
+
+    async importTemplate(payload) {
+      const res = await axios.post('/templates/import', { payload })
+      await this.fetchTemplates()
+      return res.data
+    },
+
     setImportedTemplate(data) {
       this.importedTemplate = data
     },
