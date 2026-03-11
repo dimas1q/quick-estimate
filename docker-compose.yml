@@ -17,6 +17,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db/quickestimate
       SQLALCHEMY_ECHO: "true"
       CORS_ALLOW_ORIGINS: http://localhost:5173
+      GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
       AUTH_MAX_FAILED_LOGIN_ATTEMPTS: 5
       AUTH_LOCK_MINUTES: 15
       POSTGRES_DB: quickestimate
@@ -37,6 +38,8 @@ services:
       - frontend_node_modules:/app/node_modules
     ports:
       - "5173:5173"
+    environment:
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     command: >
       sh -lc '
         set -e;

@@ -22,6 +22,16 @@ export const useAuthStore = defineStore('auth', {
             await this.fetchUser()
         },
 
+        async loginWithGoogle(credential) {
+            const res = await axios.post('/auth/oauth/google', { credential })
+
+            this.token = res.data.access_token
+            localStorage.setItem('token', this.token)
+            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+
+            await this.fetchUser()
+        },
+
         async register({ login, email, password }) {
             await axios.post('/auth/register', {
                 login,

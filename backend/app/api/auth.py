@@ -1,5 +1,13 @@
 # api/auth.py
 from datetime import datetime, timedelta, timezone
+import asyncio
+import json
+import re
+import secrets
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import urlopen
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,17 +17,73 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
-from app.schemas.user import UserCreate, UserOut, VerifyCode, EmailRequest
+from app.schemas.user import EmailRequest, GoogleOAuthRequest, UserCreate, UserOut, VerifyCode
 from app.utils.auth import authenticate_user
 from app.utils.auth import hash_password, verify_password, create_access_token
 from app.utils.otp import generate_code
 from app.utils.email import send_verification_code
 
 router = APIRouter(tags=["auth"])
+GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
 
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _google_client_ids() -> set[str]:
+    return {
+        client_id.strip()
+        for client_id in settings.GOOGLE_OAUTH_CLIENT_IDS.split(",")
+        if client_id.strip()
+    }
+
+
+def _build_login_candidate(email: str) -> str:
+    base = email.split("@", 1)[0].lower()
+    normalized = re.sub(r"[^a-z0-9_.-]", "_", base).strip("._-")
+    if not normalized:
+        normalized = "user"
+    if len(normalized) < 3:
+        normalized = f"{normalized}_user"
+    return normalized[:48]
+
+
+async def _ensure_unique_login(db: AsyncSession, email: str) -> str:
+    base_login = _build_login_candidate(email)
+    for suffix in range(0, 10000):
+        candidate = base_login if suffix == 0 else f"{base_login}_{suffix}"
+        result = await db.execute(select(User).where(User.login == candidate))
+        existing = result.scalar_one_or_none()
+        if not existing:
+            return candidate
+    raise HTTPException(status_code=500, detail="Не удалось подобрать уникальный логин")
+
+
+def _verify_google_token(credential: str, allowed_client_ids: set[str]) -> dict:
+    if not credential:
+        raise HTTPException(status_code=400, detail="Пустой OAuth credential")
+
+    try:
+        query = urlencode({"id_token": credential})
+        with urlopen(f"https://oauth2.googleapis.com/tokeninfo?{query}", timeout=6) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        raise HTTPException(status_code=401, detail="Неверный Google токен")
+
+    issuer = payload.get("iss")
+    audience = payload.get("aud")
+    email = payload.get("email")
+    email_verified = payload.get("email_verified")
+
+    if issuer not in GOOGLE_ISSUERS:
+        raise HTTPException(status_code=401, detail="Неверный издатель Google токена")
+    if audience not in allowed_client_ids:
+        raise HTTPException(status_code=401, detail="Google токен выдан для другого клиента")
+    if not email or email_verified not in {True, "true", "True"}:
+        raise HTTPException(status_code=401, detail="Google аккаунт не подтвержден")
+
+    return payload
 
 
 async def _find_user_by_identifier(db: AsyncSession, identifier: str) -> User | None:
@@ -175,3 +239,58 @@ async def resend_code(data: EmailRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await send_verification_code(user.email, otp)
     return {"message": "Код отправлен"}
+
+
+@router.post("/oauth/google")
+async def google_oauth_login(
+    data: GoogleOAuthRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    allowed_client_ids = _google_client_ids()
+    if not allowed_client_ids:
+        raise HTTPException(status_code=503, detail="Google OAuth не настроен")
+
+    google_payload = await asyncio.to_thread(
+        _verify_google_token, data.credential, allowed_client_ids
+    )
+    email = str(google_payload["email"]).lower()
+    user_name = google_payload.get("name")
+
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        generated_password = secrets.token_urlsafe(32)
+        login = await _ensure_unique_login(db, email)
+        user = User(
+            login=login,
+            email=email,
+            name=user_name,
+            hashed_password=hash_password(generated_password),
+            is_active=True,
+            failed_login_attempts=0,
+            locked_until=None,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+    else:
+        changed = False
+        if not user.is_active:
+            user.is_active = True
+            changed = True
+        if (user.failed_login_attempts or 0) != 0:
+            user.failed_login_attempts = 0
+            changed = True
+        if user.locked_until is not None:
+            user.locked_until = None
+            changed = True
+        if not user.name and user_name:
+            user.name = user_name
+            changed = True
+        if changed:
+            await db.commit()
+            await db.refresh(user)
+
+    token = create_access_token(data={"sub": str(user.id)})
+    return {"access_token": token, "token_type": "bearer"}

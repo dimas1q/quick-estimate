@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     container_name: quickestimate-prod-app
     ports:
       - "8000:8000"
@@ -14,6 +16,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db/quickestimate
       SQLALCHEMY_ECHO: "false"
       CORS_ALLOW_ORIGINS: http://localhost:5173
+      GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
       AUTH_MAX_FAILED_LOGIN_ATTEMPTS: 5
       AUTH_LOCK_MINUTES: 15
       POSTGRES_DB: quickestimate

@@ -1,6 +1,6 @@
 # frontend/src/pages/auth/LoginPage.vue
 <script setup>
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
@@ -17,9 +17,81 @@ const canResend = ref(false)
 const timer = ref(60)
 const lockoutSeconds = ref(0)
 const lastFailedCredentialsKey = ref(null)
+const googleClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim()
+const googleButtonContainer = ref(null)
+const googleOauthReady = ref(false)
 let interval
 let lockoutInterval
 const toast = useToast()
+
+function loadGoogleScript() {
+    return new Promise((resolve, reject) => {
+        if (window.google?.accounts?.id) {
+            resolve()
+            return
+        }
+
+        const existing = document.querySelector('script[data-google-gsi="true"]')
+        if (existing) {
+            existing.addEventListener('load', () => resolve(), { once: true })
+            existing.addEventListener('error', () => reject(new Error('Google script load failed')), { once: true })
+            return
+        }
+
+        const script = document.createElement('script')
+        script.src = 'https://accounts.google.com/gsi/client'
+        script.async = true
+        script.defer = true
+        script.dataset.googleGsi = 'true'
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Google script load failed'))
+        document.head.appendChild(script)
+    })
+}
+
+async function handleGoogleCredential(response) {
+    const credential = response?.credential
+    if (!credential) {
+        error.value = 'Google не вернул credential для входа'
+        return
+    }
+
+    try {
+        error.value = null
+        await auth.loginWithGoogle(credential)
+        lastFailedCredentialsKey.value = null
+        router.push('/estimates')
+    } catch (e) {
+        error.value = e.response?.data?.detail || 'Не удалось войти через Google'
+    }
+}
+
+async function initGoogleOauth() {
+    if (!googleClientId || !googleButtonContainer.value) {
+        return
+    }
+
+    try {
+        await loadGoogleScript()
+        window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleCredential,
+        })
+        googleButtonContainer.value.innerHTML = ''
+        window.google.accounts.id.renderButton(googleButtonContainer.value, {
+            type: 'standard',
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'pill',
+            width: 320,
+        })
+        googleOauthReady.value = true
+    } catch {
+        googleOauthReady.value = false
+        error.value = 'Не удалось загрузить Google OAuth'
+    }
+}
 
 function parseRetryAfterSeconds(headers, data) {
     const fromBody = Number.parseInt(data?.retry_after, 10)
@@ -127,6 +199,11 @@ async function resend() {
 onBeforeUnmount(() => {
     clearInterval(interval)
     clearInterval(lockoutInterval)
+    window.google?.accounts?.id?.cancel()
+})
+
+onMounted(() => {
+    initGoogleOauth()
 })
 </script>
 
@@ -176,6 +253,17 @@ onBeforeUnmount(() => {
                 <span v-if="lockoutSeconds > 0">Повторите через {{ lockoutSeconds }} сек.</span>
                 <span v-else>Войти</span>
             </button>
+            <div v-if="googleClientId" class="mt-4">
+                <div class="flex items-center gap-3">
+                    <div class="h-px flex-1 bg-gray-200 dark:bg-gray-700"></div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">или</span>
+                    <div class="h-px flex-1 bg-gray-200 dark:bg-gray-700"></div>
+                </div>
+                <div ref="googleButtonContainer" class="mt-4 flex justify-center"></div>
+                <p v-if="!googleOauthReady" class="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
+                    Загрузка входа через Google...
+                </p>
+            </div>
         </form>
         <div v-else class="space-y-4">
             <h2 class="text-xl font-medium text-center text-gray-800 dark:text-gray-100">Подтверждение аккаунта</h2>

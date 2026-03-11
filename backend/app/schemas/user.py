@@ -44,6 +44,10 @@ class EmailRequest(BaseModel):
     email: EmailStr
 
 
+class GoogleOAuthRequest(BaseModel):
+    credential: str
+
+
 class AdminRoleUpdate(BaseModel):
     is_admin: bool
 

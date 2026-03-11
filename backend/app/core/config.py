@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY_PATH: str = "config/secret.key"
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    GOOGLE_OAUTH_CLIENT_IDS: str = ""
     AUTH_MAX_FAILED_LOGIN_ATTEMPTS: int = 5
     AUTH_LOCK_MINUTES: int = 15
 
