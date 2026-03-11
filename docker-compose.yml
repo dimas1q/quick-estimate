@@ -16,6 +16,7 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db/quickestimate
       SQLALCHEMY_ECHO: "true"
+      CORS_ALLOW_ORIGINS: http://localhost:5173
       POSTGRES_DB: quickestimate
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

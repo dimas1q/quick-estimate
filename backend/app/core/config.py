@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
+    CORS_ALLOW_ORIGINS: str = "http://localhost:5173"
+
     SMTP_HOST: str = "localhost"
     SMTP_PORT: int = 25
     SMTP_USER: str | None = None
@@ -22,6 +24,10 @@ class Settings(BaseSettings):
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
     OTP_EXPIRE_MINUTES: int = 10
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.CORS_ALLOW_ORIGINS.split(",") if origin.strip()]
 
 
 settings = Settings()

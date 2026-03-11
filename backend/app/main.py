@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import HTTPException as FastAPIHTTPException
 from app.api import estimates, auth, user, templates, clients, versions, analytics, notes
+from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -13,7 +14,7 @@ app = FastAPI(title="QuickEstimate")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
