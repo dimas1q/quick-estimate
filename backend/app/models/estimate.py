@@ -56,7 +56,11 @@ class Estimate(Base):
     )
 
     status = Column(
-        SQLEnum(EstimateStatus, name="estimate_status"),
+        SQLEnum(
+            EstimateStatus,
+            name="estimate_status",
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+        ),
         nullable=False,
         default=EstimateStatus.DRAFT,
     )
