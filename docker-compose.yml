@@ -8,8 +8,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - mailhog
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
     environment:
       APP_ENV: development
       POSTGRES_DB: quickestimate
@@ -19,11 +21,7 @@ services:
       SMTP_PORT: 1025
       SMTP_TLS: "False"
       SMTP_SSL: "False"
-    command: >
-      sh -lc '
-        alembic upgrade head &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-      '
+    command: ./start.sh --reload
 
   frontend:
     build: ./frontend
@@ -60,6 +58,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
 
   mailhog:
     image: mailhog/mailhog:latest
