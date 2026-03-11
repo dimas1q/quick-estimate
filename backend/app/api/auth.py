@@ -98,9 +98,12 @@ async def login(
 
     if db_user and db_user.locked_until and db_user.locked_until > now:
         retry_after = _lock_retry_after_seconds(db_user.locked_until, now)
-        raise HTTPException(
+        return JSONResponse(
             status_code=429,
-            detail="Слишком много попыток входа. Повторите позже.",
+            content={
+                "detail": "Слишком много попыток входа. Повторите позже.",
+                "retry_after": retry_after,
+            },
             headers={"Retry-After": str(retry_after)},
         )
 
@@ -110,9 +113,12 @@ async def login(
             locked_now = await _register_failed_login(db, db_user, now)
             if locked_now and db_user.locked_until:
                 retry_after = _lock_retry_after_seconds(db_user.locked_until, now)
-                raise HTTPException(
+                return JSONResponse(
                     status_code=429,
-                    detail="Слишком много попыток входа. Повторите позже.",
+                    content={
+                        "detail": "Слишком много попыток входа. Повторите позже.",
+                        "retry_after": retry_after,
+                    },
                     headers={"Retry-After": str(retry_after)},
                 )
         raise HTTPException(status_code=401, detail="Неверный логин/email или пароль")

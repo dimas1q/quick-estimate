@@ -1,6 +1,6 @@
 # frontend/src/pages/auth/LoginPage.vue
 <script setup>
-import { ref } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
@@ -15,20 +15,77 @@ const verify = ref(false)
 const code = ref('')
 const canResend = ref(false)
 const timer = ref(60)
+const lockoutSeconds = ref(0)
+const lastFailedCredentialsKey = ref(null)
 let interval
+let lockoutInterval
 const toast = useToast()
 
+function parseRetryAfterSeconds(headers, data) {
+    const fromBody = Number.parseInt(data?.retry_after, 10)
+    if (Number.isFinite(fromBody) && fromBody > 0) {
+        return fromBody
+    }
+
+    const raw = headers?.['retry-after'] ?? headers?.['Retry-After']
+    const parsed = Number.parseInt(raw, 10)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 60
+}
+
+function setLockoutError(seconds) {
+    error.value = `Слишком много попыток входа. Повторите через ${seconds} сек.`
+}
+
+function startLockoutTimer(seconds) {
+    clearInterval(lockoutInterval)
+    lockoutSeconds.value = seconds
+    setLockoutError(lockoutSeconds.value)
+    lockoutInterval = setInterval(() => {
+        lockoutSeconds.value--
+        if (lockoutSeconds.value <= 0) {
+            lockoutSeconds.value = 0
+            error.value = null
+            clearInterval(lockoutInterval)
+            return
+        }
+        setLockoutError(lockoutSeconds.value)
+    }, 1000)
+}
+
 async function handleLogin() {
+    error.value = null
+    const credentialsKey = `${email.value}::${password.value}`
+
+    if (lastFailedCredentialsKey.value && lastFailedCredentialsKey.value === credentialsKey) {
+        error.value = 'Измените email/логин или пароль перед повторной попыткой'
+        return
+    }
+
+    if (lockoutSeconds.value > 0) {
+        setLockoutError(lockoutSeconds.value)
+        return
+    }
+
     try {
         await auth.login(email.value, password.value)
+        lastFailedCredentialsKey.value = null
         router.push('/estimates')
     } catch (e) {
         if (e.response?.status === 403 && e.response.data.verify_required) {
             verify.value = true
             email.value = e.response.data.email
+            lastFailedCredentialsKey.value = null
             toast.success('Код отправлен на email')
             startTimer()
+        } else if (e.response?.status === 429) {
+            lastFailedCredentialsKey.value = credentialsKey
+            const retryAfterSeconds = parseRetryAfterSeconds(e.response?.headers, e.response?.data)
+            startLockoutTimer(retryAfterSeconds)
+            if (!e.response?.data?.detail) {
+                setLockoutError(retryAfterSeconds)
+            }
         } else {
+            lastFailedCredentialsKey.value = credentialsKey
             error.value = 'Неверный email или пароль'
         }
     }
@@ -66,6 +123,11 @@ async function resend() {
         error.value = e.response?.data?.detail || 'Ошибка отправки'
     }
 }
+
+onBeforeUnmount(() => {
+    clearInterval(interval)
+    clearInterval(lockoutInterval)
+})
 </script>
 
 <template>
@@ -110,7 +172,10 @@ async function resend() {
                     </button>
                 </div>
             </div>
-            <button type="submit" class="qe-btn mb-2 w-full">Войти</button>
+            <button type="submit" class="qe-btn mb-2 w-full" :disabled="lockoutSeconds > 0">
+                <span v-if="lockoutSeconds > 0">Повторите через {{ lockoutSeconds }} сек.</span>
+                <span v-else>Войти</span>
+            </button>
         </form>
         <div v-else class="space-y-4">
             <h2 class="text-xl font-medium text-center text-gray-800 dark:text-gray-100">Подтверждение аккаунта</h2>
