@@ -7,10 +7,22 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useEstimatesStore } from '@/store/estimates'
 import EstimateForm from '@/components/EstimateForm.vue'
 
+const route = useRoute()
 const store = useEstimatesStore()
-const copiedEstimate = store.copiedEstimate
-store.clearCopiedEstimate()
+
+const copiedEstimate = computed(() => {
+  if (route.query.copy === '1') {
+    return store.getCopiedEstimate()
+  }
+  return null
+})
+
+if (route.query.copy !== '1') {
+  store.clearCopiedEstimate()
+}
 </script>

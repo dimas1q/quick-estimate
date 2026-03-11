@@ -779,13 +779,13 @@ async function toggleReadOnly() {
 async function copyEstimate() {
   const original = await store.getEstimateById(estimate.value.id);
   store.setCopiedEstimate(original);
-  router.push("/estimates/create");
+  router.push({ path: "/estimates/create", query: { copy: "1" } });
 }
 
 async function copyVersion() {
   if (!estimate.value) return;
   store.setCopiedEstimate(estimate.value);
-  router.push("/estimates/create");
+  router.push({ path: "/estimates/create", query: { copy: "1" } });
 }
 
 async function deleteEstimate() {

@@ -421,6 +421,7 @@ async function submit() {
 
     const result = await store.createEstimate(payload)
     clearDraftFromLocal()
+    store.clearCopiedEstimate()
     toast.success('Смета создана')
     router.push(`/estimates/${result.id}`)
   } finally {

@@ -1,11 +1,33 @@
 import { defineStore } from 'pinia'
 import axios from '@/lib/axios'
 
+const COPIED_ESTIMATE_STORAGE_KEY = 'qe_copied_estimate'
+
+function loadCopiedEstimateFromStorage() {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(COPIED_ESTIMATE_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function saveCopiedEstimateToStorage(estimate) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(COPIED_ESTIMATE_STORAGE_KEY, JSON.stringify(estimate))
+}
+
+function clearCopiedEstimateFromStorage() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(COPIED_ESTIMATE_STORAGE_KEY)
+}
+
 export const useEstimatesStore = defineStore('estimates', {
   state: () => ({
     estimates: [],
     total: 0,
-    copiedEstimate: null,
+    copiedEstimate: loadCopiedEstimateFromStorage(),
     importedEstimate: null
   }),
 
@@ -111,6 +133,7 @@ export const useEstimatesStore = defineStore('estimates', {
 
     setCopiedEstimate(estimate) {
       this.copiedEstimate = estimate
+      saveCopiedEstimateToStorage(estimate)
     },
 
     setImportedEstimate(data) {
@@ -119,6 +142,13 @@ export const useEstimatesStore = defineStore('estimates', {
 
     clearCopiedEstimate() {
       this.copiedEstimate = null
+      clearCopiedEstimateFromStorage()
+    },
+
+    getCopiedEstimate() {
+      if (this.copiedEstimate) return this.copiedEstimate
+      this.copiedEstimate = loadCopiedEstimateFromStorage()
+      return this.copiedEstimate
     },
 
     getEstimateLogs: async function (id, params = {}) {
