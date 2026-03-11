@@ -114,6 +114,10 @@
             </div>
 
             <!-- Основные кнопки -->
+            <button @click="openSendModal" class="qe-btn-secondary inline-flex items-center">
+              <LucideSend class="w-4 h-4 mr-1" />
+              <span>Отправить email</span>
+            </button>
 
             <button @click="copyEstimate" class="qe-btn flex items-center">
               <ClipboardPaste class="w-4 h-4 mr-1" />
@@ -468,6 +472,47 @@
         </div>
       </div>
     </div>
+    <transition name="modal-fade">
+      <div v-if="showSendModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeSendModal" />
+        <div
+          class="relative z-10 w-full max-w-xl rounded-2xl bg-white dark:bg-qe-black2 shadow-2xl border border-gray-200 dark:border-qe-black3 p-6">
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Отправка сметы по email</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Email получателя</label>
+              <input v-model.trim="sendForm.to" type="email" class="qe-input w-full" placeholder="client@example.com" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Тема письма</label>
+              <input v-model.trim="sendForm.subject" type="text" class="qe-input w-full"
+                placeholder="Смета для согласования" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Текст письма</label>
+              <textarea v-model.trim="sendForm.message" rows="5" class="qe-input w-full resize-y"
+                placeholder="Введите текст письма" />
+            </div>
+            <div class="flex flex-wrap items-center gap-4">
+              <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input v-model="sendForm.attach_pdf" type="checkbox" class="rounded border-gray-300" />
+                <span>PDF</span>
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input v-model="sendForm.attach_excel" type="checkbox" class="rounded border-gray-300" />
+                <span>Excel</span>
+              </label>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-3">
+            <button class="qe-btn-secondary" @click="closeSendModal" :disabled="isSending">Отмена</button>
+            <button class="qe-btn-success" @click="sendEstimateEmail" :disabled="!canSendEstimate || isSending">
+              {{ isSending ? "Отправка..." : "Отправить" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
     <!-- Модалка -->
     <QeModal v-model="showConfirm" @confirm="deleteEstimate">
       Вы уверены, что хотите удалить данную смету?
@@ -513,6 +558,7 @@ import {
   LucideArrowUpRight,
   LucideCalculator,
   LucideFolder,
+  LucideSend,
 } from "lucide-vue-next";
 
 
@@ -532,6 +578,15 @@ const currentVersion = ref(null);
 const showExport = ref(false);
 const menuRef = ref(null);
 const showConfirm = ref(false);
+const showSendModal = ref(false);
+const isSending = ref(false);
+const sendForm = ref({
+  to: "",
+  subject: "",
+  message: "",
+  attach_pdf: true,
+  attach_excel: true,
+});
 
 const estimate = ref(null);
 const notes = ref([]);
@@ -627,6 +682,30 @@ onClickOutside(menuRef, () => {
 
 function confirmDelete() {
   showConfirm.value = true;
+}
+
+const canSendEstimate = computed(
+  () =>
+    !!sendForm.value.to &&
+    !!sendForm.value.message &&
+    (sendForm.value.attach_pdf || sendForm.value.attach_excel),
+);
+
+function openSendModal() {
+  if (!estimate.value) return;
+  sendForm.value = {
+    to: estimate.value.client?.email || "",
+    subject: `Смета: ${estimate.value.name}`,
+    message: `Здравствуйте!\n\nНаправляю смету «${estimate.value.name}» во вложении.`,
+    attach_pdf: true,
+    attach_excel: true,
+  };
+  showSendModal.value = true;
+}
+
+function closeSendModal() {
+  if (isSending.value) return;
+  showSendModal.value = false;
 }
 
 async function changeLogPage(p) {
@@ -761,6 +840,30 @@ async function downloadPdf(estimate) {
   }
 }
 
+async function sendEstimateEmail() {
+  if (!estimate.value || !canSendEstimate.value || isSending.value) return;
+
+  try {
+    isSending.value = true;
+    await store.sendEstimateByEmail(estimate.value.id, {
+      to: sendForm.value.to,
+      subject: sendForm.value.subject,
+      message: sendForm.value.message,
+      attach_pdf: sendForm.value.attach_pdf,
+      attach_excel: sendForm.value.attach_excel,
+    });
+    toast.success("Смета успешно отправлена");
+    showSendModal.value = false;
+    await changeLogPage(logPage.value);
+  } catch (e) {
+    console.error(e);
+    const detail = e?.response?.data?.detail;
+    toast.error(typeof detail === "string" ? detail : "Не удалось отправить смету");
+  } finally {
+    isSending.value = false;
+  }
+}
+
 async function viewVersion(ver) {
   const id = route.params.id;
   // 1. Навигация
@@ -813,5 +916,15 @@ async function deleteVersion(version) {
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-5px);
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
 }
 </style>

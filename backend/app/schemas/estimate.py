@@ -1,5 +1,5 @@
 ## backend/app/schemas/estimate.py
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from app.schemas.item import EstimateItemOut, EstimateItemCreate, EstimateItemUpdate
@@ -65,3 +65,11 @@ class EstimateOut(EstimateBase):
     status: EstimateStatus
     is_favorite: Optional[bool] = False
     model_config = {"from_attributes": True}
+
+
+class EstimateSendEmail(BaseModel):
+    to: EmailStr
+    subject: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    message: str = Field(..., min_length=1, max_length=5000)
+    attach_pdf: bool = True
+    attach_excel: bool = True

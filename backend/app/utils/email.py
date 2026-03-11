@@ -1,14 +1,36 @@
 import aiosmtplib
 from email.message import EmailMessage
+from typing import Iterable, TypedDict
+
 from app.core.config import settings
 
 
-async def send_email(subject: str, body: str, to: str):
+class EmailAttachment(TypedDict):
+    filename: str
+    content: bytes
+    content_type: str
+
+
+async def send_email(
+    subject: str,
+    body: str,
+    to: str,
+    attachments: Iterable[EmailAttachment] | None = None,
+):
     message = EmailMessage()
     message["From"] = settings.SMTP_FROM
     message["To"] = to
     message["Subject"] = subject
     message.set_content(body)
+
+    for attachment in attachments or []:
+        maintype, subtype = attachment["content_type"].split("/", 1)
+        message.add_attachment(
+            attachment["content"],
+            maintype=maintype,
+            subtype=subtype,
+            filename=attachment["filename"],
+        )
 
     await aiosmtplib.send(
         message,

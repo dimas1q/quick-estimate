@@ -93,6 +93,11 @@ export const useEstimatesStore = defineStore('estimates', {
       return res.data
     },
 
+    async sendEstimateByEmail(id, payload) {
+      const res = await axios.post(`/estimates/${id}/send-email`, payload)
+      return res.data
+    },
+
 
     setCopiedEstimate(estimate) {
       this.copiedEstimate = estimate

@@ -22,8 +22,14 @@ from app.models.user import User
 from app.models.client import Client
 from app.models.version import EstimateVersion
 from app.schemas.changelog import ChangeLogOut
-from app.schemas.estimate import EstimateCreate, EstimateOut, EstimateUpdate
+from app.schemas.estimate import (
+    EstimateCreate,
+    EstimateOut,
+    EstimateSendEmail,
+    EstimateUpdate,
+)
 from app.utils.auth import get_current_user
+from app.utils.email import EmailAttachment, send_email
 from app.utils.excel import generate_excel
 from app.utils.pdf import render_pdf
 from app.schemas.paginated import Paginated
@@ -653,6 +659,107 @@ async def export_estimate_pdf(
             "Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"
         },
     )
+
+
+@router.post("/{estimate_id}/send-email")
+async def send_estimate_email(
+    estimate_id: int,
+    payload: EstimateSendEmail,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    if not payload.attach_pdf and not payload.attach_excel:
+        raise HTTPException(
+            status_code=422,
+            detail="Необходимо выбрать хотя бы один формат вложения (PDF или Excel)",
+        )
+
+    result = await db.execute(
+        select(Estimate)
+        .options(
+            selectinload(Estimate.items),
+            selectinload(Estimate.client),
+            selectinload(Estimate.notes),
+        )
+        .where(Estimate.id == estimate_id)
+    )
+    estimate = result.scalar_one_or_none()
+    if not estimate or estimate.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
+
+    attachments: List[EmailAttachment] = []
+    if payload.attach_pdf:
+        total_internal = (
+            sum(
+                (item.internal_price or 0) * (item.quantity or 0)
+                for item in estimate.items
+            )
+            if estimate.use_internal_price
+            else 0
+        )
+        total_external = sum(
+            (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
+        )
+        total_diff = total_external - total_internal if estimate.use_internal_price else 0
+        vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
+        total_with_vat = total_external + vat
+
+        pdf_bytes = render_pdf(
+            "estimate_pdf.html",
+            {
+                "estimate": estimate,
+                "total_internal": total_internal,
+                "total_external": total_external,
+                "total_diff": total_diff,
+                "vat": vat,
+                "total_with_vat": total_with_vat,
+            },
+        )
+        attachments.append(
+            {
+                "filename": f"estimate_{estimate.id}.pdf",
+                "content": pdf_bytes,
+                "content_type": "application/pdf",
+            }
+        )
+
+    if payload.attach_excel:
+        excel_file = generate_excel(estimate)
+        attachments.append(
+            {
+                "filename": f"estimate_{estimate.id}.xlsx",
+                "content": excel_file.getvalue(),
+                "content_type": (
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ),
+            }
+        )
+
+    subject = payload.subject or f"Смета: {estimate.name}"
+    await send_email(
+        subject=subject,
+        body=payload.message,
+        to=payload.to,
+        attachments=attachments,
+    )
+
+    db.add(
+        EstimateChangeLog(
+            estimate_id=estimate.id,
+            user_id=user.id,
+            action="Отправка",
+            description=f"Смета отправлена на {payload.to}",
+            details=[
+                {
+                    "label": "Вложения",
+                    "new": ", ".join(a["filename"] for a in attachments),
+                }
+            ],
+        )
+    )
+    await db.commit()
+
+    return {"detail": "Смета успешно отправлена"}
 
 
 @router.get("/{estimate_id}/export/excel")
