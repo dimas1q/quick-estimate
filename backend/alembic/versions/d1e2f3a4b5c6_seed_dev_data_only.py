@@ -1,7 +1,7 @@
 """seed development data only
 
 Revision ID: d1e2f3a4b5c6
-Revises: 0123456789ab
+Revises: f0e1d2c3b4a5
 Create Date: 2026-03-11 23:50:00
 """
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "d1e2f3a4b5c6"
-down_revision: Union[str, None] = "0123456789ab"
+down_revision: Union[str, None] = "f0e1d2c3b4a5"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
