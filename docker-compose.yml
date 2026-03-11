@@ -11,6 +11,7 @@ services:
       - db
       - mailhog
     environment:
+      APP_ENV: development
       POSTGRES_DB: quickestimate
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
