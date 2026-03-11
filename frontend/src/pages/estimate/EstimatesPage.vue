@@ -170,7 +170,7 @@ async function applyFilters() {
     client: filters.value.client,
     date_from: filters.value.date_from ? formatDateToYYYYMMDD(filters.value.date_from) + 'T00:00:00Z' : '',
     date_to: filters.value.date_to ? formatDateToYYYYMMDD(filters.value.date_to) + 'T23:59:59Z' : '',
-    status: [...filters.value.status]
+    status: filters.value.status
   }
   currentPage.value = 1
   params.append('page', currentPage.value)
@@ -266,7 +266,7 @@ async function fetchEstimatesPage() {
   if (currentFilters.value.client) params.append('client', currentFilters.value.client)
   if (currentFilters.value.date_from) params.append('date_from', currentFilters.value.date_from)
   if (currentFilters.value.date_to) params.append('date_to', currentFilters.value.date_to)
-  currentFilters.value.status?.forEach(s => params.append('status', s))
+  if (currentFilters.value.status) params.append('status', currentFilters.value.status)
   await estimatesStore.fetchEstimates(params)
   isLoading.value = false
 }
