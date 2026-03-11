@@ -33,6 +33,10 @@
                 }[estimate.status]
               }}
             </span>
+            <span v-if="estimate.read_only"
+              class="inline-block align-middle rounded-full px-2 py-0.5 text-xs font-semibold ml-1 mt-1 bg-amber-100 text-amber-800">
+              Только чтение
+            </span>
           </h1>
           <p v-if="isVersionView" class="mt-1 text-sm text-gray-500">
             Просмотр версии №{{ currentVersion }}
@@ -67,7 +71,7 @@
         <div class="flex space-x-2 items-center relative">
           <!-- если мы в режиме версии, показываем другие кнопки -->
           <template v-if="isVersionView">
-            <button @click="restoreVersion(currentVersion)" class="qe-btn-warning flex items-center">
+            <button v-if="!estimate.read_only" @click="restoreVersion(currentVersion)" class="qe-btn-warning flex items-center">
               <RotateCcw class="w-4 h-4 mr-1" />
               <span>Восстановить</span>
             </button>
@@ -75,7 +79,7 @@
               <ClipboardPaste class="w-4 h-4 mr-1" />
               <span>Копировать</span>
             </button>
-            <button @click="deleteVersion(currentVersion)" class="qe-btn-danger flex items-center">
+            <button v-if="!estimate.read_only" @click="deleteVersion(currentVersion)" class="qe-btn-danger flex items-center">
               <LucideTrash2 class="w-4 h-4 mr-1" />
               <span>Удалить версию</span>
             </button>
@@ -114,6 +118,11 @@
             </div>
 
             <!-- Основные кнопки -->
+            <button @click="toggleReadOnly" class="qe-btn-secondary inline-flex items-center">
+              <LucideLock v-if="estimate.read_only" class="w-4 h-4 mr-1" />
+              <LucideLockOpen v-else class="w-4 h-4 mr-1" />
+              <span>{{ estimate.read_only ? 'Снять read-only' : 'Только чтение' }}</span>
+            </button>
             <button @click="openSendModal" class="qe-btn-secondary inline-flex items-center">
               <LucideSend class="w-4 h-4 mr-1" />
               <span>Отправить email</span>
@@ -123,11 +132,12 @@
               <ClipboardPaste class="w-4 h-4 mr-1" />
               <span>Копировать</span>
             </button>
-            <RouterLink :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning flex items-center">
+            <RouterLink v-if="!estimate.read_only" :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning flex items-center">
               <LucidePencilLine class="w-4 h-4 mr-1" />
               <span>Редактировать</span>
             </RouterLink>
-            <button @click="confirmDelete" class="qe-btn-danger flex items-center">
+            <button @click="confirmDelete" class="qe-btn-danger flex items-center" :disabled="estimate.read_only"
+              :class="{ 'opacity-50 cursor-not-allowed': estimate.read_only }">
               <LucideTrash2 class="w-4 h-4 mr-1" />
               <span>Удалить</span>
             </button>
@@ -264,7 +274,8 @@
         </div>
 
         <!-- Примечания -->
-        <NotesBlock class="mt-8" :notes="notes" @add="addNote" @update="updateNote" @delete="deleteNote" />
+        <NotesBlock class="mt-8" :notes="notes" :read-only="estimate.read_only" @add="addNote" @update="updateNote"
+          @delete="deleteNote" />
 
         <!-- Категории и услуги -->
         <div class="mt-8">
@@ -558,6 +569,8 @@ import {
   LucideArrowUpRight,
   LucideCalculator,
   LucideFolder,
+  LucideLock,
+  LucideLockOpen,
   LucideSend,
 } from "lucide-vue-next";
 
@@ -681,6 +694,10 @@ onClickOutside(menuRef, () => {
 });
 
 function confirmDelete() {
+  if (estimate.value?.read_only) {
+    toast.error("Смета в режиме только чтение");
+    return;
+  }
   showConfirm.value = true;
 }
 
@@ -722,9 +739,29 @@ async function changeVersionPage(p) {
   versionTotal.value = res.total;
 }
 
+async function toggleReadOnly() {
+  if (!estimate.value) return;
+  try {
+    const updated = await store.setEstimateReadOnly(estimate.value.id, !estimate.value.read_only);
+    estimate.value = updated;
+    toast.success(updated.read_only ? "Смета переведена в режим только чтение" : "Режим редактирования восстановлен");
+    await changeLogPage(logPage.value);
+  } catch (e) {
+    console.error(e);
+    const detail = e?.response?.data?.detail;
+    toast.error(typeof detail === "string" ? detail : "Не удалось изменить режим сметы");
+  }
+}
+
 async function copyEstimate() {
   const original = await store.getEstimateById(estimate.value.id);
   store.setCopiedEstimate(original);
+  router.push("/estimates/create");
+}
+
+async function copyVersion() {
+  if (!estimate.value) return;
+  store.setCopiedEstimate(estimate.value);
   router.push("/estimates/create");
 }
 
@@ -785,28 +822,55 @@ const vat = computed(() =>
 const totalWithVat = computed(() => totalExternal.value + vat.value);
 
 async function addNote(text) {
-  const n = await notesStore.addEstimateNote(route.params.id, text);
-  notes.value.unshift(n);
-  const res = await store.getEstimateLogs(route.params.id, { page: logPage.value, limit: 10 });
-  logs.value = res.items;
-  logTotal.value = res.total;
+  if (estimate.value?.read_only) {
+    toast.error("Смета в режиме только чтение");
+    return;
+  }
+  try {
+    const n = await notesStore.addEstimateNote(route.params.id, text);
+    notes.value.unshift(n);
+    const res = await store.getEstimateLogs(route.params.id, { page: logPage.value, limit: 10 });
+    logs.value = res.items;
+    logTotal.value = res.total;
+  } catch (e) {
+    const detail = e?.response?.data?.detail;
+    toast.error(typeof detail === "string" ? detail : "Не удалось добавить примечание");
+  }
 }
 
 async function updateNote(payload) {
-  const n = await notesStore.updateNote(payload.id, payload.text);
-  const idx = notes.value.findIndex((x) => x.id === payload.id);
-  if (idx !== -1) notes.value[idx] = n;
-  const res = await store.getEstimateLogs(route.params.id, { page: logPage.value, limit: 10 });
-  logs.value = res.items;
-  logTotal.value = res.total;
+  if (estimate.value?.read_only) {
+    toast.error("Смета в режиме только чтение");
+    return;
+  }
+  try {
+    const n = await notesStore.updateNote(payload.id, payload.text);
+    const idx = notes.value.findIndex((x) => x.id === payload.id);
+    if (idx !== -1) notes.value[idx] = n;
+    const res = await store.getEstimateLogs(route.params.id, { page: logPage.value, limit: 10 });
+    logs.value = res.items;
+    logTotal.value = res.total;
+  } catch (e) {
+    const detail = e?.response?.data?.detail;
+    toast.error(typeof detail === "string" ? detail : "Не удалось обновить примечание");
+  }
 }
 
 async function deleteNote(id) {
-  await notesStore.deleteNote(id);
-  notes.value = notes.value.filter((n) => n.id !== id);
-  const res = await store.getEstimateLogs(route.params.id, { page: logPage.value, limit: 10 });
-  logs.value = res.items;
-  logTotal.value = res.total;
+  if (estimate.value?.read_only) {
+    toast.error("Смета в режиме только чтение");
+    return;
+  }
+  try {
+    await notesStore.deleteNote(id);
+    notes.value = notes.value.filter((n) => n.id !== id);
+    const res = await store.getEstimateLogs(route.params.id, { page: logPage.value, limit: 10 });
+    logs.value = res.items;
+    logTotal.value = res.total;
+  } catch (e) {
+    const detail = e?.response?.data?.detail;
+    toast.error(typeof detail === "string" ? detail : "Не удалось удалить примечание");
+  }
 }
 
 function formatCurrency(val) {
@@ -879,6 +943,10 @@ async function viewVersion(ver) {
 }
 
 async function restoreVersion(version) {
+  if (estimate.value?.read_only) {
+    toast.error("Смета в режиме только чтение");
+    return;
+  }
   const id = route.params.id;
   try {
     await store.restoreVersion(version, estimate.value.id);
@@ -892,6 +960,10 @@ async function restoreVersion(version) {
 }
 
 async function deleteVersion(version) {
+  if (estimate.value?.read_only) {
+    toast.error("Смета в режиме только чтение");
+    return;
+  }
   if (!confirm(`Вы точно хотите удалить версию №${version}?`)) return;
 
   try {

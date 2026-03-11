@@ -5,8 +5,17 @@
             {{ error }}
         </div>
         <div v-if="estimate" class="space-y-6 max-w-7xl mx-auto px-16 py-8">
-            <h1 class="text-2xl font-bold mb-6 text-center py-2">Редактирование сметы: {{ estimate?.name }}</h1>
-            <EstimateForm :initial="estimate" mode="edit" @updated="onUpdated" />
+            <template v-if="estimate.read_only">
+                <h1 class="text-2xl font-bold mb-3 text-center py-2">Смета в режиме только чтение</h1>
+                <p class="text-center text-gray-500 mb-6">Редактирование запрещено до снятия режима read-only.</p>
+                <div class="flex justify-center">
+                    <button class="qe-btn-secondary" @click="goBackToEstimate">Вернуться к смете</button>
+                </div>
+            </template>
+            <template v-else>
+                <h1 class="text-2xl font-bold mb-6 text-center py-2">Редактирование сметы: {{ estimate?.name }}</h1>
+                <EstimateForm :initial="estimate" mode="edit" @updated="onUpdated" />
+            </template>
         </div>
     </div>
 </template>
@@ -46,6 +55,10 @@ onUnmounted(() => {
 
 function onUpdated() {
     toast.success('Смета сохранена')
+    router.push(`/estimates/${route.params.id}`)
+}
+
+function goBackToEstimate() {
     router.push(`/estimates/${route.params.id}`)
 }
 </script>

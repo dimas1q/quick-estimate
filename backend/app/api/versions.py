@@ -25,6 +25,11 @@ router = APIRouter(
 )
 
 
+def _ensure_estimate_not_read_only(est: Estimate):
+    if est.read_only:
+        raise HTTPException(409, "Смета находится в режиме только чтение")
+
+
 def _parse_datetime(value):
     if value in (None, ""):
         return None
@@ -119,6 +124,7 @@ async def restore_version(
 
     if not est or est.user_id != user.id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
+    _ensure_estimate_not_read_only(est)
 
     data = ver.payload
     restore_fields = {
@@ -195,6 +201,7 @@ async def delete_version(
     est = await db.get(Estimate, estimate_id)
     if not est or est.user_id != user.id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
+    _ensure_estimate_not_read_only(est)
     # 2) найти сам снимок
     q = await db.execute(
         select(EstimateVersion).where(

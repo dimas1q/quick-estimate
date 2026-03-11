@@ -17,6 +17,7 @@ class EstimateBase(BaseModel):
     vat_enabled: bool = True
     vat_rate: int = 20
     use_internal_price: bool = True
+    read_only: bool = False
 
 
 class EstimateCreate(EstimateBase):
@@ -97,3 +98,7 @@ class EstimateAutosave(BaseModel):
     vat_rate: Optional[int] = None
     use_internal_price: Optional[bool] = None
     items: Optional[List[EstimateItemAutosave]] = None
+
+
+class EstimateReadOnlyUpdate(BaseModel):
+    read_only: bool

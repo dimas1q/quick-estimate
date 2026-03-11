@@ -83,6 +83,7 @@ class Estimate(Base):
     vat_enabled = Column(Boolean, default=True)
     vat_rate = Column(Integer, default=20, nullable=False)
     use_internal_price = Column(Boolean, default=True, nullable=False)
+    read_only = Column(Boolean, default=False, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="estimates")

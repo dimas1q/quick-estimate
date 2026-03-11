@@ -26,6 +26,7 @@ from app.schemas.estimate import (
     EstimateAutosave,
     EstimateCreate,
     EstimateOut,
+    EstimateReadOnlyUpdate,
     EstimateSendEmail,
     EstimateUpdate,
 )
@@ -120,6 +121,14 @@ async def ensure_client_belongs_to_user(
     return client
 
 
+def ensure_estimate_not_read_only(estimate: Estimate):
+    if estimate.read_only:
+        raise HTTPException(
+            status_code=409,
+            detail="Смета находится в режиме только чтение",
+        )
+
+
 @router.post("/", response_model=EstimateOut)
 async def create_estimate(
     estimate: EstimateCreate,
@@ -189,6 +198,7 @@ async def update_estimate(
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
+    ensure_estimate_not_read_only(estimate)
     await ensure_client_belongs_to_user(db, updated_data.client_id, user.id)
 
     old_out = EstimateOut.from_orm(old_estimate)
@@ -238,7 +248,7 @@ async def update_estimate(
 
     # Простые поля (кроме items, vat_enabled, vat_rate, use_internal_price)
     for field, value in updated_data.dict(
-        exclude={"items", "vat_enabled", "vat_rate", "use_internal_price"}
+        exclude={"items", "vat_enabled", "vat_rate", "use_internal_price", "read_only"}
     ).items():
         old_val = getattr(estimate, field)
         actions = FIELD_ACTIONS_RU.get(field)
@@ -413,6 +423,7 @@ async def autosave_estimate(
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
+    ensure_estimate_not_read_only(estimate)
     data = payload.dict(exclude_unset=True)
 
     if "client_id" in data:
@@ -455,6 +466,61 @@ async def autosave_estimate(
     return {"detail": "Черновик сохранен", "updated_at": estimate.updated_at}
 
 
+@router.patch("/{estimate_id}/read-only", response_model=EstimateOut)
+async def set_estimate_read_only(
+    estimate_id: int,
+    payload: EstimateReadOnlyUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
+    estimate = result.scalar_one_or_none()
+    if not estimate:
+        raise HTTPException(status_code=404, detail="Смета не найдена")
+    if estimate.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
+
+    if estimate.read_only != payload.read_only:
+        estimate.read_only = payload.read_only
+        details = [
+            {
+                "label": "Режим редактирования",
+                "new": "Только чтение" if payload.read_only else "Редактирование",
+            }
+        ]
+        db.add(
+            EstimateChangeLog(
+                estimate_id=estimate.id,
+                user_id=user.id,
+                action="Изменение режима доступа",
+                description=(
+                    "Смета переведена в режим только чтение"
+                    if payload.read_only
+                    else "Смета переведена в режим редактирования"
+                ),
+                details=details,
+            )
+        )
+        if estimate.client_id:
+            db.add(
+                ClientChangeLog(
+                    client_id=estimate.client_id,
+                    user_id=user.id,
+                    action="Изменение режима доступа сметы",
+                    description=f"Изменен режим доступа сметы: {estimate.name}",
+                    details=details,
+                )
+            )
+        await db.commit()
+
+    result = await db.execute(
+        select(Estimate)
+        .options(selectinload(Estimate.items), selectinload(Estimate.client))
+        .where(Estimate.id == estimate_id)
+    )
+    return result.scalar_one()
+
+
 @router.delete("/{estimate_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_estimate(
     estimate_id: int,
@@ -470,6 +536,7 @@ async def delete_estimate(
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
+    ensure_estimate_not_read_only(estimate)
     await db.delete(estimate)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

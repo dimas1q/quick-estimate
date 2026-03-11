@@ -5,7 +5,8 @@
         <NotebookPen class="w-6 h-6 text-blue-600" />
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white select-none">Примечания</h3>
       </div>
-      <button v-if="!adding" @click="startAdd" class="qe-btn shadow-sm transition-all">Добавить</button>
+      <span v-if="readOnly" class="text-xs font-semibold text-amber-600">Только чтение</span>
+      <button v-else-if="!adding" @click="startAdd" class="qe-btn shadow-sm transition-all">Добавить</button>
     </div>
     <!-- Добавление примечания -->
     <Transition name="note-fade">
@@ -44,7 +45,7 @@
                 • {{ n.user_name }}
               </p>
             </div>
-            <div class="flex gap-2 whitespace-nowrap mt-3">
+            <div v-if="!readOnly" class="flex gap-2 whitespace-nowrap mt-3">
               <button
                 class="qe-btn-warning px-2 py-1 rounded-full hover:bg-yellow-500 dark:hover:bg-yellow-900/20 transition"
                 @click="startEdit(n)" aria-label="Редактировать">
@@ -68,7 +69,8 @@ import { ref, nextTick } from 'vue'
 import { NotebookPen, LucidePencil, LucideTrash2 } from 'lucide-vue-next'
 
 const props = defineProps({
-  notes: { type: Array, default: () => [] }
+  notes: { type: Array, default: () => [] },
+  readOnly: { type: Boolean, default: false }
 })
 const emit = defineEmits(['add', 'update', 'delete'])
 

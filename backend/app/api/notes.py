@@ -64,6 +64,11 @@ async def create_estimate_note(
     user: User = Depends(get_current_user),
 ):
     estimate = await _get_entity(db, Estimate, estimate_id, user.id)
+    if estimate.read_only:
+        raise HTTPException(
+            status_code=409,
+            detail="Смета находится в режиме только чтение",
+        )
     note = Note(text=note_in.text, estimate_id=estimate_id, user_id=user.id)
     db.add(note)
 
@@ -234,6 +239,11 @@ async def update_note(
     note = result.scalar_one_or_none()
     if not note or note.user_id != user.id:
         raise HTTPException(status_code=404, detail="Примечание не найдено")
+    if note.estimate_id and note.estimate and note.estimate.read_only:
+        raise HTTPException(
+            status_code=409,
+            detail="Смета находится в режиме только чтение",
+        )
 
     old_text = note.text
     note.text = note_in.text
@@ -301,6 +311,11 @@ async def delete_note(
     note = result.scalar_one_or_none()
     if not note or note.user_id != user.id:
         raise HTTPException(status_code=404, detail="Примечание не найдено")
+    if note.estimate_id and note.estimate and note.estimate.read_only:
+        raise HTTPException(
+            status_code=409,
+            detail="Смета находится в режиме только чтение",
+        )
 
     old_text = note.text
     now = datetime.now(timezone.utc)

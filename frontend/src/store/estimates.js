@@ -103,6 +103,11 @@ export const useEstimatesStore = defineStore('estimates', {
       return res.data
     },
 
+    async setEstimateReadOnly(id, readOnly) {
+      const res = await axios.patch(`/estimates/${id}/read-only`, { read_only: readOnly })
+      return res.data
+    },
+
 
     setCopiedEstimate(estimate) {
       this.copiedEstimate = estimate
