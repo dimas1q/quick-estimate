@@ -1,12 +1,10 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
-# Адрес подключения к PostgreSQL в Docker
-DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db/quickestimate"
+from app.core.config import settings
 
 # Асинхронный движок SQLAlchemy
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(settings.DATABASE_URL, echo=settings.SQLALCHEMY_ECHO)
 
 # Сессия для запросов
 SessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)

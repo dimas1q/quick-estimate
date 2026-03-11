@@ -8,14 +8,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.utils.secret_key import load_or_create_secret_key
 from sqlalchemy.future import select
 from sqlalchemy import or_
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
 import bcrypt
 
 # Конфигурация
-SECRET_KEY = load_or_create_secret_key("config/secret.key")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+if settings.JWT_SECRET_KEY and settings.JWT_SECRET_KEY.strip():
+    SECRET_KEY = settings.JWT_SECRET_KEY
+else:
+    SECRET_KEY = load_or_create_secret_key(settings.JWT_SECRET_KEY_PATH)
+ALGORITHM = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
