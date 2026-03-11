@@ -46,6 +46,74 @@
           class="mt-6" />
       </template>
     </div>
+
+    <transition name="modal-fade">
+      <div v-if="showImportPreviewModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeImportPreviewModal" />
+        <div
+          class="relative z-10 w-full max-w-2xl rounded-2xl bg-white dark:bg-qe-black2 shadow-2xl border border-gray-200 dark:border-qe-black3 p-6">
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-3">Предпросмотр импорта шаблона</h3>
+          <div v-if="importPreview?.valid" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="rounded-lg border border-gray-200 dark:border-qe-black3 px-3 py-2">
+                <p class="text-xs text-gray-500">Шаблон</p>
+                <p class="font-semibold text-gray-800 dark:text-white">{{ importPreview?.summary?.name || '—' }}</p>
+              </div>
+              <div class="rounded-lg border border-gray-200 dark:border-qe-black3 px-3 py-2">
+                <p class="text-xs text-gray-500">Позиции</p>
+                <p class="font-semibold text-gray-800 dark:text-white">{{ importPreview?.summary?.item_count ?? 0 }}</p>
+              </div>
+              <div class="rounded-lg border border-gray-200 dark:border-qe-black3 px-3 py-2">
+                <p class="text-xs text-gray-500">Категории</p>
+                <p class="font-semibold text-gray-800 dark:text-white">{{ importPreview?.summary?.category_count ?? 0 }}</p>
+              </div>
+            </div>
+            <div v-if="importPreview?.summary?.categories?.length"
+              class="rounded-lg border border-gray-200 dark:border-qe-black3 px-3 py-2">
+              <p class="text-xs text-gray-500 mb-1">Категории</p>
+              <div class="flex flex-wrap gap-2">
+                <span v-for="category in importPreview.summary.categories" :key="category"
+                  class="inline-flex rounded-full bg-blue-50 text-blue-700 text-xs px-2 py-1 dark:bg-blue-900/30 dark:text-blue-300">
+                  {{ category }}
+                </span>
+              </div>
+            </div>
+            <div v-if="importPreview?.warnings?.length"
+              class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:bg-amber-900/20 dark:border-amber-900/40">
+              <p class="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-1">Предупреждения</p>
+              <ul class="list-disc pl-5 space-y-1 text-sm text-amber-700 dark:text-amber-300">
+                <li v-for="(warning, idx) in importPreview.warnings" :key="idx">{{ warning }}</li>
+              </ul>
+            </div>
+          </div>
+          <div v-else class="space-y-3">
+            <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:bg-red-900/20 dark:border-red-900/40">
+              <p class="text-sm font-semibold text-red-700 dark:text-red-300 mb-1">Ошибки валидации</p>
+              <ul class="space-y-1 text-sm text-red-700 dark:text-red-300 max-h-64 overflow-auto pr-2">
+                <li v-for="(error, idx) in importPreview?.errors || []" :key="idx">
+                  <span class="font-semibold">{{ error.path }}:</span> {{ error.message }}
+                </li>
+              </ul>
+            </div>
+            <div v-if="importPreview?.warnings?.length"
+              class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:bg-amber-900/20 dark:border-amber-900/40">
+              <p class="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-1">Предупреждения</p>
+              <ul class="list-disc pl-5 space-y-1 text-sm text-amber-700 dark:text-amber-300">
+                <li v-for="(warning, idx) in importPreview.warnings" :key="idx">{{ warning }}</li>
+              </ul>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-3">
+            <button class="qe-btn-secondary" @click="closeImportPreviewModal" :disabled="isImporting">
+              Закрыть
+            </button>
+            <button v-if="importPreview?.valid" class="qe-btn" @click="confirmImportTemplate" :disabled="isImporting">
+              {{ isImporting ? 'Импорт...' : 'Импортировать' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -58,6 +126,10 @@ import QePagination from '@/components/QePagination.vue'
 const fileInput = ref(null)
 const toast = useToast()
 const isLoading = ref(true)
+const showImportPreviewModal = ref(false)
+const importPreview = ref(null)
+const pendingImportPayload = ref(null)
+const isImporting = ref(false)
 
 const store = useTemplatesStore()
 
@@ -113,31 +185,9 @@ async function handleFile(event) {
     const text = await file.text()
     const json = JSON.parse(text)
     const preview = await store.previewTemplateImport(json)
-
-    if (!preview.valid) {
-      const topErrors = (preview.errors || []).slice(0, 5).map(
-        (err) => `${err.path}: ${err.message}`
-      )
-      toast.error(topErrors[0] || 'Шаблон не прошел валидацию')
-      if (topErrors.length > 1) {
-        console.error('Template import validation errors:', topErrors)
-      }
-      return
-    }
-
-    const summary = preview.summary
-    const confirmMessage = [
-      `Импортировать шаблон «${summary?.name || 'Без названия'}»?`,
-      `Позиции: ${summary?.item_count ?? 0}`,
-      `Категории: ${summary?.category_count ?? 0}`,
-      summary?.name_exists ? 'Внимание: шаблон с таким названием уже существует.' : ''
-    ].filter(Boolean).join('\n')
-
-    if (!confirm(confirmMessage)) return
-
-    await store.importTemplate(json)
-    toast.success('Шаблон успешно импортирован')
-    await store.fetchTemplates({ ...currentFilters.value, page: currentPage.value, limit: perPage })
+    importPreview.value = preview
+    pendingImportPayload.value = json
+    showImportPreviewModal.value = true
 
   } catch (e) {
     console.error(e)
@@ -152,4 +202,43 @@ async function handleFile(event) {
     event.target.value = ''
   }
 }
+
+function closeImportPreviewModal() {
+  if (isImporting.value) return
+  showImportPreviewModal.value = false
+}
+
+async function confirmImportTemplate() {
+  if (!importPreview.value?.valid || !pendingImportPayload.value || isImporting.value) return
+  try {
+    isImporting.value = true
+    await store.importTemplate(pendingImportPayload.value)
+    toast.success('Шаблон успешно импортирован')
+    await store.fetchTemplates({ ...currentFilters.value, page: currentPage.value, limit: perPage })
+    showImportPreviewModal.value = false
+  } catch (e) {
+    console.error(e)
+    const detail = e?.response?.data?.detail
+    if (detail?.errors?.length) {
+      const firstError = detail.errors[0]
+      toast.error(`${firstError.path}: ${firstError.message}`)
+    } else {
+      toast.error('Ошибка импорта шаблона')
+    }
+  } finally {
+    isImporting.value = false
+  }
+}
 </script>
+
+<style scoped>
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+</style>
