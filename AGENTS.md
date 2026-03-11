@@ -1,146 +1,108 @@
-# AGENTS.md — QuickEstimate Project Codex Guide
+# AGENTS.md — QuickEstimate (актуализировано на 11.03.2026)
 
-## Project Overview
+## 1) Краткий контекст проекта
 
-QuickEstimate is a modern web application for fast, convenient estimate management (составление смет), built with Python (FastAPI), Vue 3, Pinia, Tailwind CSS, PostgreSQL, and Docker. The application allows users to create, edit, duplicate, export, and manage estimates and templates, with advanced role-based authentication and a clean, mobile-adaptive UI.
+QuickEstimate — FastAPI + Vue 3 приложение для смет (не Flask).
 
-## Codebase Structure
+Стек:
+- Backend: FastAPI, async SQLAlchemy, Alembic, JWT, Pydantic.
+- Frontend: Vue 3, Pinia, Vue Router, Tailwind, Vite.
+- DB/infra: PostgreSQL 14, Docker Compose, Mailhog.
 
-* **backend/** — Python backend (FastAPI):
+## 2) Реальное состояние функционала
 
-  * `alembic/` — DB migrations
-  * `app/api/` — API routers (auth, estimates, clients, templates, analytics, versions, user)
-  * `app/models/` — ORM models (user, estimate, client, item, template, version, changelog, etc.)
-  * `app/schemas/` — Pydantic schemas (api serialization)
-  * `app/utils/` — utils (pdf/excel export, auth)
-  * `app/templates/` — Jinja2 HTML for PDF export
-  * `main.py` — entry point (FastAPI app)
-  * `config/` — config files
-  * `requirements.txt` — dependencies
-* **frontend/** — Vue 3 + Vite + Pinia (SPA):
+### Реализовано
+- Email/password auth + OTP-активация, JWT.
+- CRUD: сметы, шаблоны, клиенты.
+- История изменений (logs), избранное.
+- Версии смет (создание снимков, restore с ограничениями).
+- Экспорт смет: PDF/Excel.
+- Аналитика (backend + frontend отображение).
 
-  * `src/components/` — UI components (forms, editors, modals, etc.)
-  * `src/pages/` — main pages (estimates, templates, clients, analytics, profile, auth)
-  * `src/layouts/` — layout wrappers (Default, Auth)
-  * `src/store/` — Pinia stores for state (auth, estimates, templates, clients, analytics)
-  * `src/assets/` — global styles (main.css), static assets
-  * `src/lib/axios.js` — API client
-  * `src/router/index.js` — routing config
-  * `tailwind.config.js` — Tailwind CSS setup
-  * `vite.config.js` — Vite config
-  * `App.vue` — root app
-  * `main.js` — app entry
-* **Docker & Compose**
+### Частично или отсутствует
+- OAuth-провайдеров нет.
+- Полноценного admin-контура нет (хотя `is_admin` в модели есть).
+- Скидки по позициям нет.
+- Read-only режим сметы нет.
+- Autosave черновиков нет.
+- Email-отправка смет клиенту нет (email используется для OTP).
+- Полноценного мастера «создать смету из шаблона» нет.
+- Backend import endpoint для смет/шаблонов нет (импорт в основном фронтовый).
+- Клонирования шаблона отдельным endpoint нет.
+- NGINX/CI-CD в репозитории нет.
 
-  * `Dockerfile` — multistage build (backend + frontend)
-  * `docker-compose.yml` — local dev: backend, frontend, db
-  * `docker-compose.prod.yml` — production: all-in-one app + db
-  * PostgreSQL is used for persistence.
+## 3) Структура репозитория
 
-## Key Practices & Standards
+- `backend/`
+  - `app/api/`: `auth`, `user`, `estimates`, `templates`, `clients`, `versions`, `analytics`, `notes`
+  - `app/models/`, `app/schemas/`, `app/utils/`, `app/templates/`
+  - `alembic/versions/` миграции
+- `frontend/`
+  - `src/pages/`, `src/components/`, `src/store/`, `src/router/`
+  - `src/lib/axios.js`
+- infra
+  - `docker-compose.yml` (dev)
+  - `docker-compose.prod.yml` (prod)
+  - root `Dockerfile` (multistage: frontend build + backend runtime)
 
-### 1. **Frontend (Vue 3, Pinia, Tailwind CSS)**
+## 4) Ключевые риски, которые нужно учитывать при изменениях
 
-* Use **composition API** and `<script setup>` when possible.
-* State is managed via **Pinia** (`src/store`). Avoid direct API calls in components — use the store actions instead.
-* Use **async/await** for all async code. All API requests use the configured Axios client (`src/lib/axios.js`).
-* **Component re-use:** All forms and UI logic are in `src/components`. Example: `EstimateForm.vue`, `TemplateForm.vue`, `ClientForm.vue`, `EstimateItemsEditor.vue`, and modals (`QeModal.vue`).
-* **Modals, dialogs:** Use `QeModal.vue` for all modals. Animate with Tailwind and Vue transitions.
-* **Styling:** Use only **Tailwind CSS** utility classes for styling. Stick to the established color palette, spacing, and rounded corners. Do not use custom CSS unless absolutely required. All UI must be consistent with existing pages (look at `EstimateDetailsPage.vue`, `Sidebar.vue`, `TemplateForm.vue`, etc.).
-* **Dark mode:** Respect dark mode in all components. Use classes like `dark:bg-gray-900` and `dark:text-white`.
-* **Forms:** Use floating labels or clean, modern label-input stacks. Avoid legacy or material design unless already in use.
-* **Mobile:** All layouts/pages/components must be **responsive** (flex/grid, `max-w-6xl mx-auto` for content, etc.).
-* **Transitions/UX:** Use Tailwind and Vue transitions for modals, toasts, and route/page changes. For toasts, use `vue-toastification`.
-* **Routing:** All routes/pages must be registered in `src/router/index.js` and use explicit layout wrappers (`DefaultLayout`, `AuthLayout`).
+- Alembic-цепочка миграций неконсистентна (ветвления + merge/seed история).
+- На старте backend вызывается `create_all()` параллельно с миграционным подходом.
+- `DATABASE_URL` захардкожен в `backend/app/core/database.py`.
+- CORS зафиксирован на `http://localhost:5173`.
+- Restore версий смет восстанавливает не все поля.
+- В UI выбор клиентов/шаблонов может быть неполным из-за backend default `limit=5`.
+- В `EstimatesPage.vue` есть баг фильтра статуса (строка статуса превращается в массив символов).
+- Автотестов нет.
 
-### 2. **Backend (Python FastAPI)**
+## 5) Правила для агентских изменений
 
-* Use **async/await** for all endpoints, DB code, and IO.
-* All models must be defined in `app/models`, and Pydantic schemas in `app/schemas`.
-* **API routers:** Each logical area has its own file in `app/api` (auth, estimates, clients, templates, analytics, user, versions).
-* **DB access:** SQLAlchemy ORM is used. All DB operations should use the async session pattern.
-* **Business logic:** Keep logic in routers, not in models or schemas.
-* **Security:** Auth via JWT (Bearer), OAuth support, password hashing, roles (user, admin). Add all required security checks and role checks.
-* **Exports:** For PDF use `pdfkit` + `wkhtmltopdf` (HTML in `app/templates`). For Excel use `openpyxl`.
+### Frontend
+- Использовать Pinia store actions для API; не дублировать HTTP-вызовы в компонентах.
+- Предпочитать Composition API и `<script setup>`.
+- Стилизация через Tailwind utility classes; сохранять existing UI/UX паттерны.
+- Учитывать dark mode и адаптивность.
 
-### 3. **Docker & Dev Workflow**
+### Backend
+- Использовать async/await для endpoint-ов и DB операций.
+- Проверять авторизацию и user ownership в каждом endpoint.
+- Согласовывать изменения моделей с миграциями Alembic.
 
-* All code should run via Docker Compose (see `docker-compose.yml`). For local dev: run `frontend` and `backend` separately for hot reload.
-* DB: PostgreSQL 14.
-* Frontend: `npm run dev` or via Docker Compose.
+## 6) Проверка изменений
 
-### 4. **Code Quality & Linting**
+Минимум перед сдачей:
+```bash
+python3 -m compileall backend/app
+```
 
-* Frontend: Respect Tailwind class sorting.
-* Backend: Keep imports sorted and code clean.
-* All code (Python, JS, Vue) must be **self-explanatory, DRY, and modular**.
+Важно по frontend:
+- На текущем состоянии `npm ci` падает (lockfile mismatch).
+- При необходимости локальной работы использовать `npm install` как временный обходной путь, но помнить, что lockfile требует нормализации.
 
-## How to Work with This Repo (for Codex Agents)
+## 7) Команды
 
-### Navigation
+Dev стек:
+```bash
+docker compose up --build
+```
 
-* Start from the root README for the high-level overview.
-* See `backend/app/api` for main backend endpoints and logic.
-* See `frontend/src/pages` and `frontend/src/components` for main UI and logic. All business/data logic is in Pinia stores (`frontend/src/store`).
-* Follow established UI/UX patterns — always look at existing page and form implementations before creating new ones.
+Prod стек:
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
 
-### Commands
+Локально frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-* **Frontend dev:**
-
-  ```bash
-  cd frontend && npm install && npm run dev
-  ```
-
-* **Frontend build:**
-
-  ```bash
-  cd frontend && npm run build
-  ```
-
-* **Full stack (dev):**
-
-  ```bash
-  docker-compose up --build
-  ```
-
-* **Full stack (prod):**
-
-  ```bash
-  docker-compose -f docker-compose.prod.yml up --build -d
-  ```
-
-## Design Guide
-
-* Follow existing components/pages for all new UI (see `EstimateDetailsPage.vue`, `TemplatesPage.vue`, `Sidebar.vue`).
-* Only use **Tailwind utility classes** for spacing, color, typography, etc.
-* All forms must look modern, minimal, and match the rest of the app.
-* Components must be responsive and adapt to mobile.
-* Animate modals, dropdowns, and toasts smoothly. Use Vue transitions and Tailwind for entry/exit.
-* Maintain sidebar navigation for all main pages. Place the project/service name top-left in the sidebar.
-
-## Auth, State, and Data
-
-* Auth is via JWT. Store in Pinia (`auth.js`). Session persists in `localStorage`.
-* All user, estimate, template, and client state is managed via Pinia stores (`src/store`). Never fetch data directly in components.
-* Use stores to trigger fetch, create, update, delete, import/export, etc.
-* Route/page access is protected via router guards (see `src/router/index.js`).
-
-## Contribution Checklist (for Codex/AI agents)
-
-* Follow DRY and KISS principles.
-* Maintain code/readability and modularity.
-* Never hardcode styles; always use Tailwind utility classes.
-* All async code must use async/await.
-* Respect dark mode, responsiveness, and existing layout.
-* Write self-documenting code. Add comments only where non-obvious.
-
-## FAQ / Patterns
-
-* **Modals:** Use `QeModal.vue` with animated transitions.
-* **Toasts:** Use `vue-toastification` for notifications.
-* **Sidebar navigation:** All new main pages must be registered in the sidebar component.
-* **Export/import:** Use store actions to handle data export/import (see `estimates.js`, `templates.js` and etc.).
-* **PDF/Excel export:** Use backend endpoints; frontend just triggers download.
-* **Analytics:** Business logic is backend; frontend just displays data from store.
-* **Version history:** Managed per estimate; UI uses dedicated components/tabs.
+Локально backend:
+```bash
+cd backend
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```

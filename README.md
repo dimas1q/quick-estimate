@@ -1,87 +1,94 @@
 # QuickEstimate
-FastAPI + Vue 3 application for building and tracking estimates with clients, templates, analytics, and export workflows.
 
-## Features
-- JWT authentication (login/register), profile update, and token persistence in `localStorage`
-- Estimate lifecycle with items, VAT toggles, statuses, favorites, version history, and changelogs
-- Client and template management with shared item library; notes on estimates/clients/templates
-- Exports: PDF (wkhtmltopdf + Jinja2), Excel (openpyxl), CSV/PDF/Excel analytics
-- Analytics: revenue/time-series breakdowns, category/responsible metrics, MoM/YoY growth
-- Responsive Vue 3 SPA (Pinia, Vue Router, Tailwind, ApexCharts, Toastification) with dark-mode toggle
+QuickEstimate — веб-приложение для управления сметами (FastAPI + Vue 3 + PostgreSQL + Docker).
 
-## Architecture / Project Structure
-- `backend/` — FastAPI app (`app/main.py`) with async SQLAlchemy, Alembic migrations, JWT auth, PDF/Excel utilities  
-  - `app/api/` routers: `auth`, `users`, `estimates`, `templates`, `clients`, `versions`, `analytics`, `notes`
-  - `app/models/` ORM models: estimates, items, templates, clients, users, changelogs, favorites, versions, notes
-  - `app/utils/` auth (bcrypt + jose), PDF (pdfkit/wkhtmltopdf), Excel exports, analytics Excel
-  - `alembic/` migrations; `start.sh` applies migrations then runs Uvicorn
-- `frontend/` — Vue 3 + Vite SPA with Pinia stores (`src/store`), routed pages under `src/pages`, Tailwind styles in `src/assets/main.css`
-- Docker: separate `backend/Dockerfile` (Python 3.11 + wkhtmltopdf) and `frontend/Dockerfile` (Node 20); `docker-compose.yml` for dev stack
-- Data persistence: PostgreSQL 14 (service `db`), volume `pgdata`; JWT secret stored at `config/secret.key` (mounted from `data/`)
+## Текущее состояние (на 11 марта 2026)
 
-## Requirements
-- Python 3.11, Node.js 20, npm
-- PostgreSQL 14
-- wkhtmltopdf available on host if running backend outside Docker
-- Docker + Docker Compose (recommended for dev/prod)
+### Реализовано
+- JWT-аутентификация (логин/регистрация) + email OTP-активация аккаунта.
+- CRUD для смет, шаблонов и клиентов.
+- Позиции сметы: количество, единица, внутренняя/внешняя цена, категории, подсчёт итогов.
+- НДС (вкл/выкл + ставка) и расчёт итоговой суммы с НДС.
+- История изменений (change logs), избранные сметы.
+- Версионирование смет (снимки + восстановление, с ограничениями).
+- Экспорт сметы в PDF/Excel.
+- Аналитика на backend + визуализация на frontend.
+- Docker Compose для dev/prod окружения.
 
-## Quick Start (local)
-Recommended path is the dev Docker Compose stack.
+### Не реализовано / реализовано частично
+- OAuth (Google/GitHub и т.д.) отсутствует.
+- Полноценный admin-контур (управление пользователями/ролями) отсутствует.
+- Отправка сметы клиенту по email с настраиваемым текстом/вложением отсутствует.
+- Скидки по позициям (процент/фикс) отсутствуют.
+- Read-only режим сметы отсутствует.
+- Автосохранение черновика отсутствует.
+- Полноценный flow «создать смету из шаблона» отсутствует (есть добавление позиций из шаблона).
+- Импорт через backend endpoint отсутствует (импорт в основном фронтовый).
+- Клонирование шаблонов отдельной операцией отсутствует.
+- NGINX/CI-CD pipeline в репозитории отсутствуют.
 
+## Стек
+- Backend: FastAPI, SQLAlchemy (async), Alembic, Pydantic, JWT.
+- Frontend: Vue 3, Pinia, Vue Router, Tailwind CSS, Vite.
+- DB: PostgreSQL 14.
+- Infra: Docker, Docker Compose, Mailhog (dev SMTP).
+
+## Структура
+- `backend/` — API, модели, схемы, миграции, экспорт PDF/Excel.
+- `frontend/` — SPA на Vue 3, страницы, компоненты, Pinia stores.
+- `docker-compose.yml` — dev-стек (`backend`, `frontend`, `db`, `mailhog`).
+- `docker-compose.prod.yml` — prod-стек (`app`, `db`, `mailhog`).
+- `Dockerfile` — мультистейдж сборка frontend + backend в одном контейнере.
+
+## Запуск
+
+### Dev (рекомендуется)
 ```bash
 docker compose up --build
-# frontend: http://localhost:5173
-# api:      http://localhost:8000/api
 ```
 
-Notes:
-- Backend binds to 0.0.0.0:8000 and expects PostgreSQL at host `db` with user/password `postgres` / DB `quickestimate`.
-- CORS allows `http://localhost:5173`.
-- JWT secret is auto-created at `config/secret.key` (persisted via `data/` volume).
+Сервисы:
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:8000/api`
+- Mailhog UI: `http://localhost:8025`
 
-## Docker
-- Dev stack: `docker compose up --build` (services: `backend`, `frontend`, `db`)
-- Prod compose: `docker compose -f docker-compose.prod.yml up --build -d`  
-  The prod file expects a monolithic `Dockerfile` at repo root (not present); either add one or point it to the existing `backend/Dockerfile` and ship built frontend assets into `backend/app/frontend`.
+### Prod compose
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
 
-## Configuration
-Environment:
+## Локальная разработка без Docker
 
-| Variable | Default | Scope | Description |
-| --- | --- | --- | --- |
-| `POSTGRES_DB` | `quickestimate` | Docker compose | Database name |
-| `POSTGRES_USER` | `postgres` | Docker compose | Database user |
-| `POSTGRES_PASSWORD` | `postgres` | Docker compose | Database password |
-| `VITE_API_URL` | `http://localhost:8000/api` (dev), `/api` (prod) | frontend | API base URL used by Axios |
+### Backend
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-Other config:
-- Backend DB URL is hardcoded to `postgresql+asyncpg://postgres:postgres@db/quickestimate` (`backend/app/core/database.py`). If running without Docker, ensure the host `db` resolves or adjust that file.
-- JWT secret stored/read from `config/secret.key` (auto-generated if missing).
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Usage
-- Backend (manual):  
-  ```bash
-  cd backend
-  python -m venv .venv && source .venv/bin/activate
-  pip install -r requirements.txt
-  alembic upgrade head  
-  uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-  ```
-- Frontend (manual):  
-  ```bash
-  cd frontend
-  npm install
-  cp .env.development .env 
-  npm run dev -- --host
-  ```
-- API base path: `/api`. Authorization via `Authorization: Bearer <token>`.
+## Проверка состояния сборки
+- `python3 -m compileall backend/app` — проходит успешно.
+- `frontend: npm ci` — падает из-за рассинхронизации `package.json` и `package-lock.json` (ошибка EUSAGE).
+- Автотесты в репозитории не обнаружены.
 
+## Известные технические риски
+- Миграции Alembic в неконсистентном состоянии (ветвление истории + dev seed migration как актуальный head).
+- Одновременно используются Alembic и `Base.metadata.create_all()` на старте приложения.
+- `DATABASE_URL` захардкожен в `backend/app/core/database.py`.
+- CORS ограничен `http://localhost:5173` в `backend/app/main.py`.
+- Восстановление версии сметы в `backend/app/api/versions.py` восстанавливает не все поля модели.
+- В формах выбора клиентов/шаблонов загружается только первая страница (backend default `limit=5`).
+- Баг фильтра по статусу в `frontend/src/pages/estimate/EstimatesPage.vue` (статус сериализуется как массив символов).
 
-## Troubleshooting
-- Backend cannot connect to DB outside Docker: either run Postgres as `db` host or update `backend/app/core/database.py`.
-- PDF export fails: install `wkhtmltopdf` on host or run inside the backend Docker image.
-- CORS errors: ensure the frontend origin matches the allowed origin (`http://localhost:5173` by default) or adjust middleware in `app/main.py`.
-- Prod compose build fails: supply a root `Dockerfile` or point to existing backend Dockerfile and include built frontend assets under `backend/app/frontend`.
-
-## License
-PolyForm Noncommercial License 1.0.0 (see `LICENSE` and `NOTICE` for non-commercial and attribution terms).
+## Лицензия
+PolyForm Noncommercial License 1.0.0 (`LICENSE`, `NOTICE`).
