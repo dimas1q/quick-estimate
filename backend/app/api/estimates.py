@@ -99,12 +99,28 @@ def prettify_number(val):
         return str(val)
 
 
+async def ensure_client_belongs_to_user(
+    db: AsyncSession, client_id: Optional[int], user_id: int
+):
+    if client_id is None:
+        return None
+
+    client = await db.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+    if client.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этому клиенту")
+    return client
+
+
 @router.post("/", response_model=EstimateOut)
 async def create_estimate(
     estimate: EstimateCreate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    await ensure_client_belongs_to_user(db, estimate.client_id, user.id)
+
     items_data = estimate.items or []
     new_estimate = Estimate(**estimate.dict(exclude={"items"}), user_id=user.id)
     db.add(new_estimate)
@@ -121,14 +137,15 @@ async def create_estimate(
             description="Смета создана",
         )
     )
-    db.add(
-        ClientChangeLog(
-            client_id=new_estimate.client_id,
-            user_id=user.id,
-            action="Создание сметы",
-            description=f"Создана смета: {new_estimate.name}",
+    if new_estimate.client_id:
+        db.add(
+            ClientChangeLog(
+                client_id=new_estimate.client_id,
+                user_id=user.id,
+                action="Создание сметы",
+                description=f"Создана смета: {new_estimate.name}",
+            )
         )
-    )
 
     await db.commit()
 
@@ -164,6 +181,8 @@ async def update_estimate(
 
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
+
+    await ensure_client_belongs_to_user(db, updated_data.client_id, user.id)
 
     old_out = EstimateOut.from_orm(old_estimate)
     old_payload = jsonable_encoder(old_out)
@@ -351,16 +370,17 @@ async def update_estimate(
         )
     )
 
-    db.add(
-        ClientChangeLog(
-            client_id=estimate.client_id,
-            user_id=user.id,
-            action="Обновление сметы",
-            description=f"Обновлена смета: {estimate.name}",
-            details=details if details else None,
-            timestamp=now,
+    if estimate.client_id:
+        db.add(
+            ClientChangeLog(
+                client_id=estimate.client_id,
+                user_id=user.id,
+                action="Обновление сметы",
+                description=f"Обновлена смета: {estimate.name}",
+                details=details if details else None,
+                timestamp=now,
+            )
         )
-    )
 
     await db.commit()
 
