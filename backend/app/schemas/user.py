@@ -42,3 +42,11 @@ class VerifyCode(BaseModel):
 
 class EmailRequest(BaseModel):
     email: EmailStr
+
+
+class AdminRoleUpdate(BaseModel):
+    is_admin: bool
+
+
+class AdminActivationUpdate(BaseModel):
+    is_active: bool
