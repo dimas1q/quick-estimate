@@ -23,6 +23,7 @@ from app.models.client import Client
 from app.models.version import EstimateVersion
 from app.schemas.changelog import ChangeLogOut
 from app.schemas.estimate import (
+    EstimateAutosave,
     EstimateCreate,
     EstimateOut,
     EstimateSendEmail,
@@ -396,6 +397,62 @@ async def update_estimate(
         .where(Estimate.id == estimate_id)
     )
     return result.scalar_one()
+
+
+@router.patch("/{estimate_id}/autosave")
+async def autosave_estimate(
+    estimate_id: int,
+    payload: EstimateAutosave,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
+    estimate = result.scalar_one_or_none()
+    if not estimate:
+        raise HTTPException(status_code=404, detail="Смета не найдена")
+    if estimate.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
+
+    data = payload.dict(exclude_unset=True)
+
+    if "client_id" in data:
+        await ensure_client_belongs_to_user(db, data["client_id"], user.id)
+        estimate.client_id = data["client_id"]
+
+    for field in (
+        "name",
+        "responsible",
+        "event_datetime",
+        "event_place",
+        "status",
+        "vat_enabled",
+        "vat_rate",
+        "use_internal_price",
+    ):
+        if field in data:
+            setattr(estimate, field, data[field])
+
+    if "items" in data:
+        await db.execute(delete(EstimateItem).where(EstimateItem.estimate_id == estimate_id))
+        for item in data["items"] or []:
+            item_data = item if isinstance(item, dict) else item.dict()
+            db.add(
+                EstimateItem(
+                    estimate_id=estimate_id,
+                    name=item_data.get("name", ""),
+                    description=item_data.get("description", ""),
+                    quantity=item_data.get("quantity", 0),
+                    unit=item_data.get("unit", "шт"),
+                    internal_price=item_data.get("internal_price", 0),
+                    external_price=item_data.get("external_price", 0),
+                    category=item_data.get("category", ""),
+                )
+            )
+
+    await db.commit()
+    await db.refresh(estimate)
+
+    return {"detail": "Черновик сохранен", "updated_at": estimate.updated_at}
 
 
 @router.delete("/{estimate_id}", status_code=status.HTTP_204_NO_CONTENT)

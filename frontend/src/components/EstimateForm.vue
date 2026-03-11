@@ -104,27 +104,34 @@
     </div>
 
     <!-- 3. Кнопки -->
-    <div class="flex justify-end space-x-2">
-      <button type="button" @click="cancel" class="qe-btn-secondary">
-        Отмена
-      </button>
-      <button type="submit" class="qe-btn">
-        Сохранить
-      </button>
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <span class="text-xs" :class="autosaveMessageClass">
+        {{ autosaveMessage }}
+      </span>
+      <div class="flex justify-end space-x-2">
+        <button type="button" @click="cancel" class="qe-btn-secondary">
+          Отмена
+        </button>
+        <button type="submit" class="qe-btn" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Сохранение...' : 'Сохранить' }}
+        </button>
+      </div>
     </div>
   </form>
 </template>
 
 <script setup>
-import { reactive, watch, onMounted, computed } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useEstimatesStore } from '@/store/estimates'
-import { useClientsStore } from '@/store/clients'
-import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import { useToast } from 'vue-toastification'
+
+import EstimateItemsEditor from '@/components/EstimateItemsEditor.vue'
 import QeDatePicker from '@/components/QeDatePicker.vue'
 import QeSingleSelect from '@/components/QeSingleSelect.vue'
+import { useClientsStore } from '@/store/clients'
+import { useEstimatesStore } from '@/store/estimates'
 
+const AUTOSAVE_DELAY_MS = 1200
 
 const props = defineProps({
   initial: Object,
@@ -153,7 +160,42 @@ const estimate = reactive({
   status: 'draft'
 })
 
+const autosaveState = ref('idle')
+const autosaveAt = ref(null)
+const autosaveEnabled = ref(false)
+const isHydrating = ref(false)
+const isSubmitting = ref(false)
+let autosaveTimer = null
+
 const clients = computed(() => clientsStore.clients)
+const draftStorageKey = computed(() => {
+  if (props.mode === 'copy') {
+    return `qe_estimate_draft_copy_${props.initial?.id || 'new'}`
+  }
+  return 'qe_estimate_draft_create'
+})
+const autosaveMessage = computed(() => {
+  if (autosaveState.value === 'saving') return 'Автосохранение...'
+  if (autosaveState.value === 'pending') return 'Есть несохраненные изменения'
+  if (autosaveState.value === 'saved' && autosaveAt.value) {
+    return `Черновик сохранен: ${formatAutosaveTime(autosaveAt.value)}`
+  }
+  if (autosaveState.value === 'local_saved' && autosaveAt.value) {
+    return `Локальный черновик сохранен: ${formatAutosaveTime(autosaveAt.value)}`
+  }
+  if (autosaveState.value === 'restored') return 'Восстановлен черновик из браузера'
+  if (autosaveState.value === 'error') return 'Ошибка автосохранения'
+  return ''
+})
+const autosaveMessageClass = computed(() => {
+  if (autosaveState.value === 'error') return 'text-red-500'
+  if (autosaveState.value === 'pending') return 'text-amber-600'
+  if (autosaveState.value === 'saving') return 'text-blue-500'
+  if (autosaveState.value === 'saved' || autosaveState.value === 'local_saved' || autosaveState.value === 'restored') {
+    return 'text-emerald-600'
+  }
+  return 'text-transparent'
+})
 
 const clientOptions = computed(() => [
   { value: null, label: 'Без клиента' },
@@ -173,76 +215,155 @@ const statusOptions = [
 
 onMounted(async () => {
   await clientsStore.fetchClients()
+
   if (store.importedEstimate) {
-    estimate.name = store.importedEstimate.name || ''
-    estimate.client_id = store.importedEstimate.client?.id || null
-    estimate.responsible = store.importedEstimate.responsible || ''
-    estimate.event_datetime = store.importedEstimate.event_datetime || ''
-    estimate.event_place = store.importedEstimate.event_place || ''
-    estimate.vat_enabled = store.importedEstimate.vat_enabled ?? true
-    estimate.vat_rate = store.importedEstimate.vat_rate ?? 20.0
-    estimate.use_internal_price = store.importedEstimate.use_internal_price ?? true
-    estimate.status = store.importedEstimate.status || 'draft'
-
-    estimate.items.splice(0)
-    for (const item of store.importedEstimate.items || []) {
-      estimate.items.push({
-        ...item,
-        category_input: item.category || ''
-      })
-    }
-
+    applyEstimateData(store.importedEstimate)
     store.importedEstimate = null
+  } else if (props.mode !== 'edit') {
+    const localDraft = loadDraftFromLocal()
+    if (localDraft) {
+      applyEstimateData(localDraft)
+      autosaveState.value = 'restored'
+    }
+  }
+
+  autosaveEnabled.value = true
+})
+
+onUnmounted(() => {
+  if (autosaveTimer) {
+    clearTimeout(autosaveTimer)
   }
 })
 
-
 watch(() => props.initial, (value) => {
-  if (value) {
-    Object.assign(estimate, {
-      name: props.mode === 'copy' ? `Копия: ${value.name}` : value.name,
-      client_id: value.client?.id || null,
-      responsible: value.responsible || '',
-      event_datetime: value.event_datetime || '',
-      event_place: value.event_place || '',
-      vat_enabled: value.vat_enabled ?? true,
-      vat_rate: value.vat_rate ?? 20.0,
-      use_internal_price: value.use_internal_price ?? true,
-      status: value.status || 'draft',
-      items: (value.items || []).map(item => ({
-        ...item,
-        category_input: item.category || ''
-      }))
-    })
-  }
+  if (!value) return
+  applyEstimateData(value, { isCopy: props.mode === 'copy' })
 }, { immediate: true })
 
+watch(estimate, () => {
+  if (!autosaveEnabled.value || isHydrating.value || isSubmitting.value) return
+  scheduleAutosave()
+}, { deep: true })
+
+function mapItemsForForm(items = []) {
+  return items.map(item => ({
+    ...item,
+    category_input: item.category || ''
+  }))
+}
+
+function applyEstimateData(value, options = {}) {
+  isHydrating.value = true
+  Object.assign(estimate, {
+    name: options.isCopy ? `Копия: ${value.name}` : (value.name || ''),
+    client_id: value.client?.id ?? value.client_id ?? null,
+    responsible: value.responsible || '',
+    event_datetime: value.event_datetime || '',
+    event_place: value.event_place || '',
+    vat_enabled: value.vat_enabled ?? true,
+    vat_rate: value.vat_rate ?? 20,
+    use_internal_price: value.use_internal_price ?? true,
+    status: value.status || 'draft',
+    items: mapItemsForForm(value.items || [])
+  })
+  isHydrating.value = false
+}
+
 function flattenItems(categories) {
-  // Возвращает плоский массив с подставленной категорией
   return categories.flatMap(cat =>
-    cat.items.map(item => ({ ...item, category: cat.name }))
+    (cat.items || []).map(item => ({ ...item, category: cat.name || '' }))
   )
 }
 
+function prepareEstimatePayload(source) {
+  const payload = JSON.parse(JSON.stringify(source))
+  if (Array.isArray(payload.items) && payload.items.length && payload.items[0]?.items) {
+    payload.items = flattenItems(payload.items)
+  }
+
+  payload.items = (payload.items || []).map(item => ({
+    id: item.id ?? undefined,
+    name: item.name || '',
+    description: item.description || '',
+    quantity: Number(item.quantity ?? 0),
+    unit: item.unit || 'шт',
+    internal_price: Number(item.internal_price ?? 0),
+    external_price: Number(item.external_price ?? 0),
+    category: item.category || item.category_input || ''
+  }))
+  payload.name = payload.name || ''
+  payload.responsible = payload.responsible || ''
+  payload.client_id = payload.client_id || null
+  payload.event_datetime = payload.event_datetime || null
+  payload.event_place = payload.event_place || null
+  return payload
+}
+
+function scheduleAutosave() {
+  if (autosaveTimer) {
+    clearTimeout(autosaveTimer)
+  }
+  autosaveState.value = 'pending'
+  autosaveTimer = setTimeout(() => {
+    performAutosave()
+  }, AUTOSAVE_DELAY_MS)
+}
+
+async function performAutosave() {
+  const payload = prepareEstimatePayload(estimate)
+  try {
+    autosaveState.value = 'saving'
+    if (props.mode === 'edit' && props.initial?.id) {
+      await store.autosaveEstimate(props.initial.id, payload)
+      autosaveState.value = 'saved'
+      autosaveAt.value = new Date()
+      return
+    }
+
+    localStorage.setItem(draftStorageKey.value, JSON.stringify(payload))
+    autosaveState.value = 'local_saved'
+    autosaveAt.value = new Date()
+  } catch (e) {
+    console.error(e)
+    autosaveState.value = 'error'
+  }
+}
+
+function loadDraftFromLocal() {
+  try {
+    const raw = localStorage.getItem(draftStorageKey.value)
+    return raw ? JSON.parse(raw) : null
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
+function clearDraftFromLocal() {
+  localStorage.removeItem(draftStorageKey.value)
+}
 
 async function submit() {
-  // Преобразовать из categories в плоский массив услуг (если нужно)
-  if (estimate.items.length && estimate.items[0]?.items) {
-    estimate.items = flattenItems(estimate.items)
-  }
-  if (!validateEstimate()) return
+  const payload = prepareEstimatePayload(estimate)
+  if (!validateEstimate(payload)) return
 
-  if (!estimate.event_datetime) estimate.event_datetime = null
-  if (!estimate.event_place) estimate.event_place = null
+  try {
+    isSubmitting.value = true
+    if (props.mode === 'edit') {
+      await store.updateEstimate(props.initial.id, payload)
+      autosaveState.value = 'saved'
+      autosaveAt.value = new Date()
+      emit('updated')
+      return
+    }
 
-  let result
-  if (props.mode === 'edit') {
-    result = await store.updateEstimate(props.initial.id, estimate)
-    emit('updated')
-  } else {
-    result = await store.createEstimate(estimate)
+    const result = await store.createEstimate(payload)
+    clearDraftFromLocal()
     toast.success('Смета создана')
     router.push(`/estimates/${result.id}`)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -260,47 +381,52 @@ const format = (date) => {
   return `${day}.${month}.${year} ${hours}:${minutes}`
 }
 
+function formatAutosaveTime(date) {
+  return date.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
 function checkVatRate() {
-  // Сначала приводим к целому
   estimate.vat_rate = Math.round(estimate.vat_rate)
-  // Если не число, обнуляем
   if (isNaN(estimate.vat_rate)) {
     estimate.vat_rate = ''
     return
   }
-  // Обрезаем диапазон
   if (estimate.vat_rate > 99) estimate.vat_rate = 99
   if (estimate.vat_rate < 1) estimate.vat_rate = ''
 }
 
-function validateEstimate() {
-  if (!estimate.name?.trim()) {
-    toast.error("Название сметы обязательно")
+function validateEstimate(data) {
+  if (!data.name?.trim()) {
+    toast.error('Название сметы обязательно')
     return false
   }
-  if (!estimate.responsible?.trim()) {
-    toast.error("Ответственный обязателен")
+  if (!data.responsible?.trim()) {
+    toast.error('Ответственный обязателен')
     return false
   }
 
-  if (estimate.vat_enabled) {
+  if (data.vat_enabled) {
     if (
-      typeof estimate.vat_rate !== "number" ||
-      !Number.isInteger(estimate.vat_rate) ||
-      estimate.vat_rate < 1 ||
-      estimate.vat_rate > 99
+      typeof data.vat_rate !== 'number' ||
+      !Number.isInteger(data.vat_rate) ||
+      data.vat_rate < 1 ||
+      data.vat_rate > 99
     ) {
-      toast.error("НДС должен быть целым числом от 1 до 99")
+      toast.error('НДС должен быть целым числом от 1 до 99')
       return false
     }
   }
 
-  if (!estimate.items.length) {
-    toast.error("Добавьте хотя бы одну услугу")
+  if (!data.items.length) {
+    toast.error('Добавьте хотя бы одну услугу')
     return false
   }
 
-  for (const [i, item] of estimate.items.entries()) {
+  for (const [i, item] of data.items.entries()) {
     if (!item.name?.trim()) {
       toast.error(`Услуга №${i + 1}: название обязательно`)
       return false
@@ -309,7 +435,7 @@ function validateEstimate() {
       toast.error(`Услуга ${item.name}: количество должно быть > 0`)
       return false
     }
-    if (estimate.use_internal_price && (!item.internal_price || item.internal_price <= 0)) {
+    if (data.use_internal_price && (!item.internal_price || item.internal_price <= 0)) {
       toast.error(`Услуга ${item.name}: внутренняя цена должна быть > 0`)
       return false
     }
@@ -321,7 +447,6 @@ function validateEstimate() {
 
   return true
 }
-
 </script>
 
 <style scoped>

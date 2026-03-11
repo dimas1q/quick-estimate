@@ -39,6 +39,11 @@ export const useEstimatesStore = defineStore('estimates', {
       return res.data
     },
 
+    async autosaveEstimate(id, data) {
+      const res = await axios.patch(`/estimates/${id}/autosave`, data)
+      return res.data
+    },
+
     async getEstimateVersion(versionId, estimateId) {
       const res = await axios.get(`/versions/${versionId}`, {
         params: { estimate_id: estimateId }

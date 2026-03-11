@@ -73,3 +73,27 @@ class EstimateSendEmail(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000)
     attach_pdf: bool = True
     attach_excel: bool = True
+
+
+class EstimateItemAutosave(BaseModel):
+    id: Optional[int] = None
+    name: str = ""
+    description: str = ""
+    quantity: float = 0
+    unit: str = "шт"
+    internal_price: float = 0
+    external_price: float = 0
+    category: str = ""
+
+
+class EstimateAutosave(BaseModel):
+    name: Optional[str] = None
+    client_id: Optional[int] = None
+    responsible: Optional[str] = None
+    event_datetime: Optional[datetime] = None
+    event_place: Optional[str] = None
+    status: Optional[EstimateStatus] = None
+    vat_enabled: Optional[bool] = None
+    vat_rate: Optional[int] = None
+    use_internal_price: Optional[bool] = None
+    items: Optional[List[EstimateItemAutosave]] = None
