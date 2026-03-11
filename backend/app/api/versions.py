@@ -1,5 +1,6 @@
 # backend/app/api/versions.py
 from typing import List
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status, Query
 from sqlalchemy import delete, func
@@ -9,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.client_changelog import ClientChangeLog
+from app.models.client import Client
 from app.models.estimate import Estimate
 from app.models.item import EstimateItem
 from app.models.version import EstimateVersion
@@ -21,6 +23,17 @@ router = APIRouter(
     tags=["versions"],
     dependencies=[Depends(get_current_user)],
 )
+
+
+def _parse_datetime(value):
+    if value in (None, ""):
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        normalized = value.replace("Z", "+00:00")
+        return datetime.fromisoformat(normalized)
+    return value
 
 
 @router.get("/", response_model=Paginated[VersionOut])
@@ -108,16 +121,40 @@ async def restore_version(
         raise HTTPException(404, "Смета не найдена или нет доступа")
 
     data = ver.payload
-    # обновляем поля
-    for f, v in data.items():
-        if f in {"name", "notes", "responsible", "vat_enabled", "client_id", "status"}:
-            setattr(est, f, v)
+    restore_fields = {
+        "name",
+        "responsible",
+        "event_place",
+        "status",
+        "vat_enabled",
+        "vat_rate",
+        "use_internal_price",
+        "client_id",
+        "event_datetime",
+    }
+
+    new_client_id = data.get("client_id")
+    if new_client_id is not None:
+        client = await db.get(Client, new_client_id)
+        if not client or client.user_id != user.id:
+            raise HTTPException(403, "Нет доступа к клиенту из сохраненной версии")
+
+    for field in restore_fields:
+        if field not in data:
+            continue
+        value = data[field]
+        if field == "event_datetime":
+            value = _parse_datetime(value)
+        setattr(est, field, value)
+
     # удаляем старые item’ы и вставляем из payload
     await db.execute(
         delete(EstimateItem).where(EstimateItem.estimate_id == estimate_id)
     )
-    for it in data["items"]:
-        db.add(EstimateItem(**it, estimate_id=estimate_id))
+    for item in data.get("items", []):
+        item_payload = dict(item)
+        item_payload.pop("id", None)
+        db.add(EstimateItem(**item_payload, estimate_id=estimate_id))
 
     # 5) добавим запись в change_log
     from app.models.changelog import EstimateChangeLog
@@ -130,14 +167,15 @@ async def restore_version(
             description=f"Восстановлена версия #{version}",
         )
     )
-    db.add(
-        ClientChangeLog(
-            client_id=est.client_id,
-            user_id=user.id,
-            action="Восстановление сметы",
-            description=f"Восстановлена версия #{version} для сметы {est.name}",
+    if est.client_id:
+        db.add(
+            ClientChangeLog(
+                client_id=est.client_id,
+                user_id=user.id,
+                action="Восстановление сметы",
+                description=f"Восстановлена версия #{version} для сметы {est.name}",
+            )
         )
-    )
 
     await db.commit()
 
