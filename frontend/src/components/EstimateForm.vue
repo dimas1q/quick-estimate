@@ -105,9 +105,18 @@
 
     <!-- 3. Кнопки -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <span class="text-xs" :class="autosaveMessageClass">
-        {{ autosaveMessage }}
-      </span>
+      <div v-if="showAutosavePanel"
+        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 dark:border-qe-black2 dark:bg-qe-black2">
+        <span class="h-2 w-2 rounded-full" :class="autosaveDotClass"></span>
+        <span class="text-xs font-medium" :class="autosaveMessageClass">
+          {{ autosaveMessage }}
+        </span>
+        <button v-if="showResetDraft" type="button"
+          class="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-500 transition-colors"
+          @click="resetLocalDraft">
+          Сбросить черновик
+        </button>
+      </div>
       <div class="flex justify-end space-x-2">
         <button type="button" @click="cancel" class="qe-btn-secondary">
           Отмена
@@ -165,6 +174,8 @@ const autosaveAt = ref(null)
 const autosaveEnabled = ref(false)
 const isHydrating = ref(false)
 const isSubmitting = ref(false)
+const hasLocalDraft = ref(false)
+const skipNextAutosave = ref(false)
 let autosaveTimer = null
 
 const clients = computed(() => clientsStore.clients)
@@ -194,7 +205,18 @@ const autosaveMessageClass = computed(() => {
   if (autosaveState.value === 'saved' || autosaveState.value === 'local_saved' || autosaveState.value === 'restored') {
     return 'text-emerald-600'
   }
-  return 'text-transparent'
+  return 'text-gray-500 dark:text-gray-400'
+})
+const showResetDraft = computed(() => props.mode !== 'edit' && hasLocalDraft.value)
+const showAutosavePanel = computed(() => !!autosaveMessage.value || showResetDraft.value)
+const autosaveDotClass = computed(() => {
+  if (autosaveState.value === 'error') return 'bg-red-500'
+  if (autosaveState.value === 'pending') return 'bg-amber-500'
+  if (autosaveState.value === 'saving') return 'bg-blue-500'
+  if (autosaveState.value === 'saved' || autosaveState.value === 'local_saved' || autosaveState.value === 'restored') {
+    return 'bg-emerald-500'
+  }
+  return 'bg-gray-400'
 })
 
 const clientOptions = computed(() => [
@@ -224,6 +246,7 @@ onMounted(async () => {
     if (localDraft) {
       applyEstimateData(localDraft)
       autosaveState.value = 'restored'
+      hasLocalDraft.value = true
     }
   }
 
@@ -243,6 +266,10 @@ watch(() => props.initial, (value) => {
 
 watch(estimate, () => {
   if (!autosaveEnabled.value || isHydrating.value || isSubmitting.value) return
+  if (skipNextAutosave.value) {
+    skipNextAutosave.value = false
+    return
+  }
   scheduleAutosave()
 }, { deep: true })
 
@@ -322,6 +349,7 @@ async function performAutosave() {
     }
 
     localStorage.setItem(draftStorageKey.value, JSON.stringify(payload))
+    hasLocalDraft.value = true
     autosaveState.value = 'local_saved'
     autosaveAt.value = new Date()
   } catch (e) {
@@ -342,6 +370,39 @@ function loadDraftFromLocal() {
 
 function clearDraftFromLocal() {
   localStorage.removeItem(draftStorageKey.value)
+  hasLocalDraft.value = false
+}
+
+function resetEstimateData() {
+  isHydrating.value = true
+  Object.assign(estimate, {
+    name: '',
+    client_id: null,
+    responsible: '',
+    event_datetime: '',
+    event_place: '',
+    items: [],
+    vat_enabled: true,
+    vat_rate: 20,
+    use_internal_price: true,
+    status: 'draft'
+  })
+  isHydrating.value = false
+}
+
+function resetLocalDraft() {
+  if (!confirm('Сбросить сохраненный черновик?')) return
+
+  skipNextAutosave.value = true
+  clearDraftFromLocal()
+  autosaveState.value = 'idle'
+  autosaveAt.value = null
+
+  if (props.mode === 'copy' && props.initial) {
+    applyEstimateData(props.initial, { isCopy: true })
+  } else {
+    resetEstimateData()
+  }
 }
 
 async function submit() {

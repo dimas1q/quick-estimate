@@ -68,7 +68,7 @@
           </button>
         </div>
 
-        <div class="flex space-x-2 items-center relative">
+        <div class="flex flex-wrap justify-end gap-2 items-center relative">
           <!-- если мы в режиме версии, показываем другие кнопки -->
           <template v-if="isVersionView">
             <button v-if="!estimate.read_only" @click="restoreVersion(currentVersion)" class="qe-btn-warning flex items-center">
@@ -92,7 +92,8 @@
           <template v-else>
             <!-- Выпадающее меню -->
             <div class="relative" ref="menuRef">
-              <button @click="showExport = !showExport" class="qe-btn-success inline-flex items-center">
+              <button @click="showExport = !showExport; showActionsMenu = false"
+                class="qe-btn-success inline-flex items-center gap-1 px-5 py-2">
                 <Download class="w-4 h-4 mr-1" />
                 <span>Экспортировать</span>
                 <svg class="w-4 h-4 ml-2 transition-transform duration-200" :class="{ 'rotate-180': showExport }"
@@ -101,46 +102,56 @@
                 </svg>
               </button>
               <div v-if="showExport"
-                class="absolute right-0 mt-2 w-38 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
+                class="absolute right-0 mt-2 w-max min-w-0 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
                 <button @click="downloadJson(estimate.id)"
-                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-center text-sm text-gray-700 rounded-xl">
+                  class="block whitespace-nowrap text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-t-xl">
                   JSON
                 </button>
                 <button @click="downloadExcel(estimate)"
-                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-xl">
+                  class="block whitespace-nowrap text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700">
                   Excel
                 </button>
                 <button @click="downloadPdf(estimate)"
-                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-center text-gray-700 rounded-xl">
+                  class="block whitespace-nowrap text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-b-xl">
                   PDF
                 </button>
               </div>
             </div>
-
-            <!-- Основные кнопки -->
-            <button @click="toggleReadOnly" class="qe-btn-secondary inline-flex items-center">
-              <LucideLock v-if="estimate.read_only" class="w-4 h-4 mr-1" />
-              <LucideLockOpen v-else class="w-4 h-4 mr-1" />
-              <span>{{ estimate.read_only ? 'Снять read-only' : 'Только чтение' }}</span>
-            </button>
-            <button @click="openSendModal" class="qe-btn-secondary inline-flex items-center">
-              <LucideSend class="w-4 h-4 mr-1" />
-              <span>Отправить email</span>
-            </button>
-
-            <button @click="copyEstimate" class="qe-btn flex items-center">
-              <ClipboardPaste class="w-4 h-4 mr-1" />
-              <span>Копировать</span>
-            </button>
-            <RouterLink v-if="!estimate.read_only" :to="`/estimates/${estimate.id}/edit`" class="qe-btn-warning flex items-center">
-              <LucidePencilLine class="w-4 h-4 mr-1" />
-              <span>Редактировать</span>
-            </RouterLink>
-            <button @click="confirmDelete" class="qe-btn-danger flex items-center" :disabled="estimate.read_only"
-              :class="{ 'opacity-50 cursor-not-allowed': estimate.read_only }">
-              <LucideTrash2 class="w-4 h-4 mr-1" />
-              <span>Удалить</span>
-            </button>
+            <div class="relative" ref="actionsMenuRef">
+              <button @click="showActionsMenu = !showActionsMenu; showExport = false"
+                class="qe-btn-secondary inline-flex items-center gap-1 px-5 py-2">
+                <MoreHorizontal class="w-4 h-4 mr-1" />
+                <span>Действия</span>
+                <svg class="w-4 h-4 ml-2 transition-transform duration-200" :class="{ 'rotate-180': showActionsMenu }"
+                  fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div v-if="showActionsMenu"
+                class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl ring-1 ring-black/5 backdrop-blur-sm border border-gray-100 animate-fade-in z-50">
+                <button @click="onActionMenuClick(openSendModal)"
+                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-t-xl">
+                  Отправить email
+                </button>
+                <button @click="onActionMenuClick(copyEstimate)"
+                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700">
+                  Копировать смету
+                </button>
+                <button @click="onActionMenuClick(toggleReadOnly)"
+                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700"
+                  :class="{ 'rounded-b-xl': estimate.read_only }">
+                  {{ estimate.read_only ? 'Снять режим только чтение' : 'Перевести в только чтение' }}
+                </button>
+                <button v-if="!estimate.read_only" @click="onActionMenuClick(goToEdit)"
+                  class="block w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700">
+                  Редактировать
+                </button>
+                <button v-if="!estimate.read_only" @click="onActionMenuClick(confirmDelete)"
+                  class="block w-full text-left px-4 py-2 hover:bg-red-50 transition-colors text-sm text-red-600 rounded-b-xl">
+                  Удалить
+                </button>
+              </div>
+            </div>
           </template>
         </div>
 
@@ -555,7 +566,6 @@ import {
   LucideUserCircle,
   LucideMapPin,
   LucidePercentCircle,
-  LucidePencilLine,
   ClipboardPaste,
   LucideTrash2,
   Download,
@@ -569,9 +579,7 @@ import {
   LucideArrowUpRight,
   LucideCalculator,
   LucideFolder,
-  LucideLock,
-  LucideLockOpen,
-  LucideSend,
+  MoreHorizontal,
 } from "lucide-vue-next";
 
 
@@ -590,6 +598,8 @@ const currentVersion = ref(null);
 
 const showExport = ref(false);
 const menuRef = ref(null);
+const showActionsMenu = ref(false);
+const actionsMenuRef = ref(null);
 const showConfirm = ref(false);
 const showSendModal = ref(false);
 const isSending = ref(false);
@@ -692,6 +702,9 @@ onUnmounted(() => {
 onClickOutside(menuRef, () => {
   showExport.value = false;
 });
+onClickOutside(actionsMenuRef, () => {
+  showActionsMenu.value = false;
+});
 
 function confirmDelete() {
   if (estimate.value?.read_only) {
@@ -699,6 +712,16 @@ function confirmDelete() {
     return;
   }
   showConfirm.value = true;
+}
+
+function onActionMenuClick(handler) {
+  showActionsMenu.value = false;
+  handler();
+}
+
+function goToEdit() {
+  if (!estimate.value) return;
+  router.push(`/estimates/${estimate.value.id}/edit`);
 }
 
 const canSendEstimate = computed(
