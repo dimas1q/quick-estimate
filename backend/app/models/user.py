@@ -18,6 +18,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_admin = Column(Boolean, default=False)
     is_active = Column(Boolean, nullable=False, server_default="0")
+    failed_login_attempts = Column(Integer, nullable=False, default=0, server_default="0")
+    locked_until = Column(DateTime(timezone=True), nullable=True)
     hashed_otp = Column(String, nullable=True)
     otp_expires_at = Column(DateTime(timezone=True), nullable=True)
     otp_sent_at = Column(DateTime(timezone=True), nullable=True)
