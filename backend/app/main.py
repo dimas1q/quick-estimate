@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import http_exception_handler
-from fastapi.exceptions import HTTPException as FastAPIHTTPException
+from fastapi.exceptions import HTTPException as FastAPIHTTPException, RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
@@ -64,6 +64,25 @@ app.include_router(notes.router, prefix="/api/notes")
 
 def _is_test_env() -> bool:
     return str(settings.APP_ENV).strip().lower() in {"test", "testing"}
+
+
+def _is_api_request(request: Request) -> bool:
+    return request.url.path.startswith("/api")
+
+
+def _api_error_payload(
+    *,
+    code: str,
+    detail,
+    meta: dict | None = None,
+) -> dict:
+    payload = {
+        "code": code,
+        "detail": detail,
+    }
+    if meta:
+        payload["meta"] = meta
+    return payload
 
 
 def _startup_checks_strict() -> bool:
@@ -200,6 +219,35 @@ async def app_lifespan(_app: FastAPI):
 app.router.lifespan_context = app_lifespan
 
 
+@app.exception_handler(FastAPIHTTPException)
+async def api_http_error_handler(request: Request, exc: FastAPIHTTPException):
+    if _is_api_request(request):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=_api_error_payload(
+                code="http_error",
+                detail=exc.detail,
+                meta={"path": request.url.path},
+            ),
+            headers=exc.headers,
+        )
+    return await http_exception_handler(request, exc)
+
+
+@app.exception_handler(RequestValidationError)
+async def api_validation_error_handler(request: Request, exc: RequestValidationError):
+    if _is_api_request(request):
+        return JSONResponse(
+            status_code=422,
+            content=_api_error_payload(
+                code="validation_error",
+                detail=exc.errors(),
+                meta={"path": request.url.path},
+            ),
+        )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
+
 # Path to built frontend (dist)
 frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 index_file = os.path.join(frontend_path, "index.html")
@@ -213,7 +261,14 @@ if os.path.exists(index_file):
             if getattr(exc, "detail", None) and exc.detail != "Not Found":
                 return await http_exception_handler(request, exc)
         if request.url.path.startswith("/api"):
-            return JSONResponse(status_code=404, content={"detail": "API route not found"})
+            return JSONResponse(
+                status_code=404,
+                content=_api_error_payload(
+                    code="not_found",
+                    detail="API route not found",
+                    meta={"path": request.url.path},
+                ),
+            )
         if os.path.splitext(request.url.path)[1]:
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
         return FileResponse(index_file)

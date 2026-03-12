@@ -100,6 +100,7 @@ import { useToast } from 'vue-toastification'
 
 import QePagination from '@/components/QePagination.vue'
 import { useAdminStore } from '@/store/admin'
+import { getApiErrorMessage } from '@/lib/api-error'
 
 const router = useRouter()
 const toast = useToast()
@@ -139,7 +140,7 @@ async function loadUsers(page = currentPage.value) {
       search: search.value || undefined
     })
   } catch (e) {
-    toast.error(e?.response?.data?.detail || 'Не удалось загрузить пользователей')
+    toast.error(getApiErrorMessage(e, 'Не удалось загрузить пользователей'))
   } finally {
     isLoading.value = false
   }
@@ -153,7 +154,7 @@ async function toggleRole(user) {
     toast.success('Роль пользователя обновлена')
     await loadUsers(currentPage.value)
   } catch (e) {
-    toast.error(e?.response?.data?.detail || 'Не удалось изменить роль')
+    toast.error(getApiErrorMessage(e, 'Не удалось изменить роль'))
   } finally {
     busyUserId.value = null
   }
@@ -167,7 +168,7 @@ async function toggleActivation(user) {
     toast.success('Статус пользователя обновлен')
     await loadUsers(currentPage.value)
   } catch (e) {
-    toast.error(e?.response?.data?.detail || 'Не удалось изменить статус')
+    toast.error(getApiErrorMessage(e, 'Не удалось изменить статус'))
   } finally {
     busyUserId.value = null
   }
