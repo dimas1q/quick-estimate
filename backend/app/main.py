@@ -137,8 +137,14 @@ def _check_api_initialized() -> bool:
 
 
 def _check_export_subsystem() -> bool:
-    template_path = Path(__file__).resolve().parent / "templates" / "estimate_pdf.html"
-    pdf_ready = callable(render_pdf) and template_path.exists()
+    template_dir = Path(__file__).resolve().parent / "templates"
+    required_templates = (
+        "estimate_pdf.html",
+        "invoice_pdf.html",
+        "act_pdf.html",
+    )
+    templates_ready = all((template_dir / name).exists() for name in required_templates)
+    pdf_ready = callable(render_pdf) and templates_ready
     excel_ready = callable(generate_excel)
     wkhtmltopdf_ready = shutil.which("wkhtmltopdf") is not None
     return pdf_ready and excel_ready and wkhtmltopdf_ready

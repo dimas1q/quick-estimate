@@ -249,6 +249,67 @@ async def check_profit_guard(
     )
 
 
+def ensure_financial_documents_allowed(estimate: Estimate):
+    allowed_statuses = {EstimateStatus.APPROVED, EstimateStatus.PAID}
+    if estimate.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=409,
+            detail="Счет и акт доступны только для согласованных или оплаченных смет",
+        )
+
+
+def build_financial_document_number(
+    prefix: str,
+    estimate_id: int,
+    issued_at: datetime,
+) -> str:
+    return f"{prefix}-{issued_at.strftime('%Y%m%d')}-{estimate_id:06d}"
+
+
+def calculate_estimate_totals(estimate: Estimate) -> dict[str, float]:
+    total_internal = (
+        sum(
+            (item.internal_price or 0) * (item.quantity or 0) for item in estimate.items
+        )
+        if estimate.use_internal_price
+        else 0
+    )
+    total_external = sum(
+        (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
+    )
+    total_diff = total_external - total_internal if estimate.use_internal_price else 0
+    vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
+    total_with_vat = total_external + vat
+    return {
+        "total_internal": total_internal,
+        "total_external": total_external,
+        "total_diff": total_diff,
+        "vat": vat,
+        "total_with_vat": total_with_vat,
+    }
+
+
+async def load_estimate_with_relations(
+    db: AsyncSession,
+    estimate_id: int,
+    user_id: int,
+) -> Estimate:
+    result = await db.execute(
+        select(Estimate)
+        .options(
+            selectinload(Estimate.items),
+            selectinload(Estimate.client),
+            selectinload(Estimate.notes),
+            selectinload(Estimate.user),
+        )
+        .where(Estimate.id == estimate_id)
+    )
+    estimate = result.scalar_one_or_none()
+    if not estimate or estimate.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
+    return estimate
+
+
 @router.post("/", response_model=EstimateOut)
 async def create_estimate(
     estimate: EstimateCreate,
@@ -872,43 +933,14 @@ async def export_estimate_pdf(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Estimate)
-        .options(
-            selectinload(Estimate.items),
-            selectinload(Estimate.client),
-            selectinload(Estimate.notes),
-        )
-        .where(Estimate.id == estimate_id)
-    )
-    estimate = result.scalar_one_or_none()
-    if not estimate or estimate.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
-
-    # --- Новые суммы ---
-    total_internal = (
-        sum(
-            (item.internal_price or 0) * (item.quantity or 0) for item in estimate.items
-        )
-        if estimate.use_internal_price
-        else 0
-    )
-    total_external = sum(
-        (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
-    )
-    total_diff = total_external - total_internal if estimate.use_internal_price else 0
-    vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
-    total_with_vat = total_external + vat
+    estimate = await load_estimate_with_relations(db, estimate_id, user.id)
+    totals = calculate_estimate_totals(estimate)
 
     pdf_bytes = render_pdf(
         "estimate_pdf.html",
         {
             "estimate": estimate,
-            "total_internal": total_internal,
-            "total_external": total_external,
-            "total_diff": total_diff,
-            "vat": vat,
-            "total_with_vat": total_with_vat,
+            **totals,
         },
     )
     return StreamingResponse(
@@ -917,6 +949,64 @@ async def export_estimate_pdf(
         headers={
             "Content-Disposition": f"attachment; filename=estimate_{estimate.id}.pdf"
         },
+    )
+
+
+@router.get("/{estimate_id}/export/invoice-pdf")
+async def export_estimate_invoice_pdf(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    estimate = await load_estimate_with_relations(db, estimate_id, user.id)
+    ensure_financial_documents_allowed(estimate)
+    totals = calculate_estimate_totals(estimate)
+    issued_at = datetime.now(timezone.utc)
+    invoice_number = build_financial_document_number("INV", estimate.id, issued_at)
+
+    pdf_bytes = render_pdf(
+        "invoice_pdf.html",
+        {
+            "estimate": estimate,
+            "invoice_number": invoice_number,
+            "issue_date": issued_at,
+            **totals,
+        },
+    )
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=invoice_{estimate.id}.pdf"
+        },
+    )
+
+
+@router.get("/{estimate_id}/export/act-pdf")
+async def export_estimate_act_pdf(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    estimate = await load_estimate_with_relations(db, estimate_id, user.id)
+    ensure_financial_documents_allowed(estimate)
+    totals = calculate_estimate_totals(estimate)
+    issued_at = datetime.now(timezone.utc)
+    act_number = build_financial_document_number("ACT", estimate.id, issued_at)
+
+    pdf_bytes = render_pdf(
+        "act_pdf.html",
+        {
+            "estimate": estimate,
+            "act_number": act_number,
+            "issue_date": issued_at,
+            **totals,
+        },
+    )
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=act_{estimate.id}.pdf"},
     )
 
 
@@ -933,45 +1023,17 @@ async def send_estimate_email(
             detail="Необходимо выбрать хотя бы один формат вложения (PDF или Excel)",
         )
 
-    result = await db.execute(
-        select(Estimate)
-        .options(
-            selectinload(Estimate.items),
-            selectinload(Estimate.client),
-            selectinload(Estimate.notes),
-        )
-        .where(Estimate.id == estimate_id)
-    )
-    estimate = result.scalar_one_or_none()
-    if not estimate or estimate.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
+    estimate = await load_estimate_with_relations(db, estimate_id, user.id)
 
     attachments: List[EmailAttachment] = []
     if payload.attach_pdf:
-        total_internal = (
-            sum(
-                (item.internal_price or 0) * (item.quantity or 0)
-                for item in estimate.items
-            )
-            if estimate.use_internal_price
-            else 0
-        )
-        total_external = sum(
-            (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
-        )
-        total_diff = total_external - total_internal if estimate.use_internal_price else 0
-        vat = total_external * (estimate.vat_rate / 100) if estimate.vat_enabled else 0
-        total_with_vat = total_external + vat
+        totals = calculate_estimate_totals(estimate)
 
         pdf_bytes = render_pdf(
             "estimate_pdf.html",
             {
                 "estimate": estimate,
-                "total_internal": total_internal,
-                "total_external": total_external,
-                "total_diff": total_diff,
-                "vat": vat,
-                "total_with_vat": total_with_vat,
+                **totals,
             },
         )
         attachments.append(

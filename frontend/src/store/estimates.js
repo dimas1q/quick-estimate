@@ -118,6 +118,20 @@ export const useEstimatesStore = defineStore('estimates', {
       return res.data
     },
 
+    async downloadInvoicePdf(id) {
+      const res = await axios.get(`/estimates/${id}/export/invoice-pdf`, {
+        responseType: 'blob'
+      })
+      return res.data
+    },
+
+    async downloadActPdf(id) {
+      const res = await axios.get(`/estimates/${id}/export/act-pdf`, {
+        responseType: 'blob'
+      })
+      return res.data
+    },
+
     async downloadEstimateExcel(id) {
       const res = await axios.get(`/estimates/${id}/export/excel`, {
         responseType: 'blob'

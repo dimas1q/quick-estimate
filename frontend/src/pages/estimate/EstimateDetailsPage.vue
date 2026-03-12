@@ -111,6 +111,14 @@
                   class="block whitespace-nowrap text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700">
                   Excel
                 </button>
+                <button v-if="canGenerateFinancialDocuments" @click="downloadInvoice(estimate)"
+                  class="block whitespace-nowrap text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700">
+                  Счет (PDF)
+                </button>
+                <button v-if="canGenerateFinancialDocuments" @click="downloadAct(estimate)"
+                  class="block whitespace-nowrap text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700">
+                  Акт (PDF)
+                </button>
                 <button @click="downloadPdf(estimate)"
                   class="block whitespace-nowrap text-left px-4 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 rounded-b-xl">
                   PDF
@@ -843,6 +851,9 @@ const vat = computed(() =>
     : 0,
 );
 const totalWithVat = computed(() => totalExternal.value + vat.value);
+const canGenerateFinancialDocuments = computed(() =>
+  ["approved", "paid"].includes(estimate.value?.status),
+);
 
 async function addNote(text) {
   if (estimate.value?.read_only) {
@@ -901,11 +912,13 @@ function formatCurrency(val) {
 }
 
 async function downloadJson(id) {
+  showExport.value = false;
   await store.exportEstimate(id);
 }
 
 
 async function downloadExcel(estimate) {
+  showExport.value = false;
   try {
     const blob = await store.downloadEstimateExcel(estimate.id);
     fileDownload(blob, `${estimate.name}.xlsx`);
@@ -917,6 +930,7 @@ async function downloadExcel(estimate) {
 }
 
 async function downloadPdf(estimate) {
+  showExport.value = false;
   try {
     const blob = await store.downloadEstimatePdf(estimate.id);
     fileDownload(blob, `${estimate.name}.pdf`);
@@ -924,6 +938,32 @@ async function downloadPdf(estimate) {
   } catch (e) {
     console.error(e);
     toast.error("Ошибка при загрузке PDF");
+  }
+}
+
+async function downloadInvoice(estimate) {
+  showExport.value = false;
+  try {
+    const blob = await store.downloadInvoicePdf(estimate.id);
+    fileDownload(blob, `${estimate.name}_invoice.pdf`);
+    toast.success("Счет успешно загружен");
+  } catch (e) {
+    console.error(e);
+    const detail = e?.response?.data?.detail;
+    toast.error(typeof detail === "string" ? detail : "Ошибка при загрузке счета");
+  }
+}
+
+async function downloadAct(estimate) {
+  showExport.value = false;
+  try {
+    const blob = await store.downloadActPdf(estimate.id);
+    fileDownload(blob, `${estimate.name}_act.pdf`);
+    toast.success("Акт успешно загружен");
+  } catch (e) {
+    console.error(e);
+    const detail = e?.response?.data?.detail;
+    toast.error(typeof detail === "string" ? detail : "Ошибка при загрузке акта");
   }
 }
 
