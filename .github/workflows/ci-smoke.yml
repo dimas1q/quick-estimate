@@ -87,6 +87,7 @@ jobs:
             tests/test_admin_rbac.py \
             tests/test_startup_health_policy.py \
             tests/test_estimate_status_filter.py \
+            tests/test_profit_guard.py \
             tests/test_template_import_preview.py \
             tests/test_estimate_smoke.py
 

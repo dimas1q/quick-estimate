@@ -46,6 +46,9 @@ class Settings(BaseModel):
     SMTP_SSL: bool = False
     SMTP_TIMEOUT_SECONDS: int = 15
 
+    PROFIT_GUARD_ENABLED: bool = True
+    PROFIT_GUARD_MIN_MARGIN_PERCENT: float = 15.0
+
     SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8000
     SERVER_RELOAD: bool = False
@@ -112,6 +115,8 @@ ENV_OVERRIDE_KEYS = {
     "SMTP_TLS",
     "SMTP_SSL",
     "SMTP_TIMEOUT_SECONDS",
+    "PROFIT_GUARD_ENABLED",
+    "PROFIT_GUARD_MIN_MARGIN_PERCENT",
     "SERVER_HOST",
     "SERVER_PORT",
     "SERVER_RELOAD",
@@ -290,6 +295,12 @@ def _parse_toml_config(config_data: dict[str, Any], config_path: Path) -> dict[s
         parsed["SMTP_SSL"] = smtp_cfg["ssl"]
     if "timeout_seconds" in smtp_cfg:
         parsed["SMTP_TIMEOUT_SECONDS"] = smtp_cfg["timeout_seconds"]
+
+    profit_guard_cfg = config_data.get("profit_guard", {})
+    if "enabled" in profit_guard_cfg:
+        parsed["PROFIT_GUARD_ENABLED"] = profit_guard_cfg["enabled"]
+    if "min_margin_percent" in profit_guard_cfg:
+        parsed["PROFIT_GUARD_MIN_MARGIN_PERCENT"] = profit_guard_cfg["min_margin_percent"]
 
     if "host" in server_cfg:
         parsed["SERVER_HOST"] = server_cfg["host"]

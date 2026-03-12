@@ -103,6 +103,34 @@
         :use-internal-price="estimate.use_internal_price" />
     </div>
 
+    <div v-if="profitGuardVisible"
+      class="rounded-xl border p-4"
+      :class="profitGuardHasRisk
+        ? 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20'
+        : 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20'">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="text-sm font-semibold" :class="profitGuardHasRisk ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-800 dark:text-emerald-300'">
+          Smart Profit Guard
+        </div>
+        <div class="text-xs text-gray-600 dark:text-gray-300">
+          Порог: {{ profitGuardResult?.threshold_percent ?? 0 }}%
+        </div>
+      </div>
+      <div class="mt-2 text-sm text-gray-700 dark:text-gray-200">
+        {{ profitGuardMessage }}
+      </div>
+      <div v-if="profitGuardResult" class="mt-2 text-xs text-gray-600 dark:text-gray-300">
+        Общая маржа: <span class="font-semibold">{{ profitGuardResult.overall_margin_percent }}%</span>
+        <span class="mx-1">•</span>
+        Риск-позиций: <span class="font-semibold">{{ profitGuardResult.risk_count }}</span>
+      </div>
+      <ul v-if="profitGuardHasRisk" class="mt-2 space-y-1 text-xs text-amber-900 dark:text-amber-200">
+        <li v-for="risk in topProfitRisks" :key="`${risk.index}-${risk.name}`">
+          {{ risk.name }}<span v-if="risk.category"> ({{ risk.category }})</span> — маржа {{ risk.margin_percent }}%
+        </li>
+      </ul>
+    </div>
+
     <!-- 3. Кнопки -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div v-if="showAutosavePanel"
@@ -175,8 +203,13 @@ const autosaveEnabled = ref(false)
 const isHydrating = ref(false)
 const isSubmitting = ref(false)
 const hasLocalDraft = ref(false)
+const profitGuardResult = ref(null)
+const profitGuardError = ref('')
+const profitGuardChecking = ref(false)
 const skipNextAutosave = ref(false)
 let autosaveTimer = null
+let profitGuardTimer = null
+let profitGuardRequestId = 0
 
 const clients = computed(() => clientsStore.clients)
 const draftStorageKey = computed(() => {
@@ -219,6 +252,17 @@ const autosaveDotClass = computed(() => {
   return 'bg-gray-400'
 })
 
+const profitGuardHasRisk = computed(() => !!profitGuardResult.value?.has_risk)
+const profitGuardVisible = computed(() => estimate.use_internal_price && ((estimate.items || []).length > 0))
+const profitGuardMessage = computed(() => {
+  if (!profitGuardVisible.value) return ''
+  if (profitGuardChecking.value) return 'Проверка маржи...'
+  if (profitGuardError.value) return profitGuardError.value
+  if (profitGuardResult.value?.message) return profitGuardResult.value.message
+  return 'Проверка маржи недоступна'
+})
+const topProfitRisks = computed(() => (profitGuardResult.value?.risks || []).slice(0, 5))
+
 const clientOptions = computed(() => [
   { value: null, label: 'Без клиента' },
   ...clients.value.map(c => ({
@@ -251,11 +295,15 @@ onMounted(async () => {
   }
 
   autosaveEnabled.value = true
+  scheduleProfitGuardCheck()
 })
 
 onUnmounted(() => {
   if (autosaveTimer) {
     clearTimeout(autosaveTimer)
+  }
+  if (profitGuardTimer) {
+    clearTimeout(profitGuardTimer)
   }
 })
 
@@ -271,6 +319,7 @@ watch(estimate, () => {
     return
   }
   scheduleAutosave()
+  scheduleProfitGuardCheck()
 }, { deep: true })
 
 function mapItemsForForm(items = []) {
@@ -327,6 +376,20 @@ function prepareEstimatePayload(source) {
   return payload
 }
 
+function prepareProfitGuardPayload(source) {
+  const payload = prepareEstimatePayload(source)
+  return {
+    use_internal_price: !!payload.use_internal_price,
+    items: (payload.items || []).map((item) => ({
+      name: item.name || '',
+      category: item.category || '',
+      quantity: Number(item.quantity ?? 0),
+      internal_price: Number(item.internal_price ?? 0),
+      external_price: Number(item.external_price ?? 0)
+    }))
+  }
+}
+
 function scheduleAutosave() {
   if (autosaveTimer) {
     clearTimeout(autosaveTimer)
@@ -355,6 +418,42 @@ async function performAutosave() {
   } catch (e) {
     console.error(e)
     autosaveState.value = 'error'
+  }
+}
+
+function scheduleProfitGuardCheck() {
+  if (profitGuardTimer) {
+    clearTimeout(profitGuardTimer)
+  }
+  if (!profitGuardVisible.value) {
+    profitGuardResult.value = null
+    profitGuardError.value = ''
+    return
+  }
+  profitGuardTimer = setTimeout(() => {
+    performProfitGuardCheck()
+  }, 500)
+}
+
+async function performProfitGuardCheck() {
+  if (!profitGuardVisible.value || isHydrating.value) return
+
+  const requestId = ++profitGuardRequestId
+  const payload = prepareProfitGuardPayload(estimate)
+  try {
+    profitGuardChecking.value = true
+    const result = await store.checkProfitGuard(payload)
+    if (requestId !== profitGuardRequestId) return
+    profitGuardResult.value = result
+    profitGuardError.value = ''
+  } catch {
+    if (requestId !== profitGuardRequestId) return
+    profitGuardResult.value = null
+    profitGuardError.value = 'Не удалось проверить маржу'
+  } finally {
+    if (requestId === profitGuardRequestId) {
+      profitGuardChecking.value = false
+    }
   }
 }
 
@@ -408,6 +507,10 @@ function resetLocalDraft() {
 async function submit() {
   const payload = prepareEstimatePayload(estimate)
   if (!validateEstimate(payload)) return
+  if (profitGuardHasRisk.value) {
+    const accepted = confirm('Есть позиции с низкой маржой. Сохранить смету в текущем виде?')
+    if (!accepted) return
+  }
 
   try {
     isSubmitting.value = true

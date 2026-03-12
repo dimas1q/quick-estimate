@@ -1,18 +1,19 @@
 # backend/app/api/estimates.py
 # Implementation of the estimates API endpoints
-import re
-from typing import Optional, List
-from urllib.parse import quote
 import logging
+import re
+from typing import List, Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
-from sqlalchemy import delete, func
+from sqlalchemy import delete, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
 from app.models.client_changelog import ClientChangeLog
@@ -26,10 +27,13 @@ from app.schemas.changelog import ChangeLogOut
 from app.schemas.estimate import (
     EstimateAutosave,
     EstimateCreate,
+    EstimateProfitGuardCheckIn,
+    EstimateProfitGuardCheckOut,
     EstimateOut,
     EstimateReadOnlyUpdate,
     EstimateSendEmail,
     EstimateUpdate,
+    ProfitGuardRisk,
 )
 from app.utils.auth import get_current_user
 from app.utils.email import EmailAttachment, send_email
@@ -90,6 +94,106 @@ STATUS_LABELS_RU = {
 }
 
 
+def _round_currency(value: float) -> float:
+    return round(float(value or 0.0), 2)
+
+
+def _round_percent(value: float) -> float:
+    return round(float(value or 0.0), 2)
+
+
+def _build_profit_guard_result(
+    payload: EstimateProfitGuardCheckIn,
+    *,
+    enabled: bool,
+    threshold_percent: float,
+) -> EstimateProfitGuardCheckOut:
+    threshold = max(0.0, float(threshold_percent))
+    if not enabled:
+        return EstimateProfitGuardCheckOut(
+            enabled=False,
+            threshold_percent=threshold,
+            has_risk=False,
+            risk_count=0,
+            message="Smart Profit Guard отключен",
+            total_internal=0,
+            total_external=0,
+            total_margin_amount=0,
+            overall_margin_percent=0,
+            risks=[],
+        )
+
+    if not payload.use_internal_price:
+        return EstimateProfitGuardCheckOut(
+            enabled=True,
+            threshold_percent=threshold,
+            has_risk=False,
+            risk_count=0,
+            message="Внутренняя цена отключена, расчет маржи недоступен",
+            total_internal=0,
+            total_external=0,
+            total_margin_amount=0,
+            overall_margin_percent=0,
+            risks=[],
+        )
+
+    total_internal = 0.0
+    total_external = 0.0
+    risks: List[ProfitGuardRisk] = []
+
+    for index, item in enumerate(payload.items):
+        quantity = float(item.quantity or 0)
+        internal_price = float(item.internal_price or 0)
+        external_price = float(item.external_price or 0)
+        internal_total = quantity * internal_price
+        external_total = quantity * external_price
+        margin_amount = external_total - internal_total
+
+        total_internal += internal_total
+        total_external += external_total
+
+        if external_total <= 0:
+            continue
+
+        margin_percent = (margin_amount / external_total) * 100
+        if margin_percent < threshold:
+            risks.append(
+                ProfitGuardRisk(
+                    index=index,
+                    name=(item.name or f"Позиция #{index + 1}").strip(),
+                    category=(item.category or "").strip(),
+                    margin_percent=_round_percent(margin_percent),
+                    margin_amount=_round_currency(margin_amount),
+                    internal_total=_round_currency(internal_total),
+                    external_total=_round_currency(external_total),
+                )
+            )
+
+    total_margin_amount = total_external - total_internal
+    overall_margin_percent = (
+        (total_margin_amount / total_external) * 100 if total_external > 0 else 0.0
+    )
+
+    has_risk = len(risks) > 0
+    message = (
+        f"Найдено {len(risks)} риск-позиций с маржой ниже {threshold:.2f}%"
+        if has_risk
+        else "Риск-позиций не найдено"
+    )
+    return EstimateProfitGuardCheckOut(
+        enabled=True,
+        threshold_percent=_round_percent(threshold),
+        has_risk=has_risk,
+        risk_count=len(risks),
+        message=message,
+        total_internal=_round_currency(total_internal),
+        total_external=_round_currency(total_external),
+        total_margin_amount=_round_currency(total_margin_amount),
+        overall_margin_percent=_round_percent(overall_margin_percent),
+        risks=sorted(risks, key=lambda risk: risk.margin_percent),
+    )
+
+
 def prettify_value(value):
     if value in [None, ""]:
         return "—"
@@ -129,6 +233,20 @@ def ensure_estimate_not_read_only(estimate: Estimate):
             status_code=409,
             detail="Смета находится в режиме только чтение",
         )
+
+
+@router.post("/profit-guard/check", response_model=EstimateProfitGuardCheckOut)
+async def check_profit_guard(
+    payload: EstimateProfitGuardCheckIn,
+    _user: User = Depends(get_current_user),
+):
+    return _build_profit_guard_result(
+        payload,
+        enabled=bool(getattr(settings, "PROFIT_GUARD_ENABLED", True)),
+        threshold_percent=float(
+            getattr(settings, "PROFIT_GUARD_MIN_MARGIN_PERCENT", 15.0)
+        ),
+    )
 
 
 @router.post("/", response_model=EstimateOut)

@@ -66,6 +66,11 @@ export const useEstimatesStore = defineStore('estimates', {
       return res.data
     },
 
+    async checkProfitGuard(data) {
+      const res = await axios.post('/estimates/profit-guard/check', data)
+      return res.data
+    },
+
     async getEstimateVersion(versionId, estimateId) {
       const res = await axios.get(`/versions/${versionId}`, {
         params: { estimate_id: estimateId }

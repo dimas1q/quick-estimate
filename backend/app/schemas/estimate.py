@@ -107,3 +107,39 @@ class EstimateAutosave(BaseModel):
 
 class EstimateReadOnlyUpdate(BaseModel):
     read_only: bool
+
+
+class ProfitGuardItemInput(BaseModel):
+    name: str = ""
+    category: str = ""
+    quantity: float = 0
+    internal_price: float = 0
+    external_price: float = 0
+
+
+class EstimateProfitGuardCheckIn(BaseModel):
+    use_internal_price: bool = True
+    items: List[ProfitGuardItemInput] = Field(default_factory=list)
+
+
+class ProfitGuardRisk(BaseModel):
+    index: int
+    name: str
+    category: str
+    margin_percent: float
+    margin_amount: float
+    internal_total: float
+    external_total: float
+
+
+class EstimateProfitGuardCheckOut(BaseModel):
+    enabled: bool
+    threshold_percent: float
+    has_risk: bool
+    risk_count: int
+    message: str
+    total_internal: float
+    total_external: float
+    total_margin_amount: float
+    overall_margin_percent: float
+    risks: List[ProfitGuardRisk] = Field(default_factory=list)

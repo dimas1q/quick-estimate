@@ -5,6 +5,7 @@ FastAPI + Vue 3 application for building and tracking estimates with clients, te
 - JWT authentication (login/register), profile update, and token persistence in `localStorage`
 - Access + refresh JWT tokens with `/api/auth/refresh` token rotation flow
 - Estimate lifecycle with items, VAT toggles, statuses, favorites, version history, and changelogs
+- Smart Profit Guard: margin checks with low-margin line warnings while editing estimates
 - Client and template management with shared item library; notes on estimates/clients/templates
 - Exports: PDF (wkhtmltopdf + Jinja2), Excel (openpyxl), CSV/PDF/Excel analytics
 - Analytics: revenue/time-series breakdowns, category/responsible metrics, MoM/YoY growth
@@ -71,6 +72,7 @@ Primary configuration source is TOML.
 Environment variables are now overrides only (for example `APP_CONFIG_FILE`, `DATABASE_URL`, `APP_DOMAIN`, `GOOGLE_OAUTH_CLIENT_ID`).
 SMTP timeout is configurable via `[smtp].timeout_seconds` (or `SMTP_TIMEOUT_SECONDS` override).
 Startup strictness is configurable via `[server].startup_strict_checks` (or `STARTUP_STRICT_CHECKS` override).
+Smart Profit Guard is configurable via `[profit_guard]` (`enabled`, `min_margin_percent`) or env overrides `PROFIT_GUARD_ENABLED` and `PROFIT_GUARD_MIN_MARGIN_PERCENT`.
 
 Security note:
 - Do not commit JWT secrets into git.
