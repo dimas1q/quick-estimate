@@ -877,12 +877,15 @@ async def send_estimate_email(
         )
 
     subject = payload.subject or f"Смета: {estimate.name}"
-    await send_email(
-        subject=subject,
-        body=payload.message,
-        to=payload.to,
-        attachments=attachments,
-    )
+    try:
+        await send_email(
+            subject=subject,
+            body=payload.message,
+            to=payload.to,
+            attachments=attachments,
+        )
+    except RuntimeError:
+        raise HTTPException(status_code=502, detail="Не удалось отправить письмо со сметой")
 
     db.add(
         EstimateChangeLog(

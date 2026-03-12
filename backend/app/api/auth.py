@@ -140,7 +140,12 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
     db.add(new_user)
     await db.commit()
-    await send_verification_code(user.email, otp)
+    try:
+        await send_verification_code(user.email, otp)
+    except RuntimeError:
+        await db.delete(new_user)
+        await db.commit()
+        raise HTTPException(status_code=502, detail="Не удалось отправить код подтверждения")
     await db.refresh(new_user)
     return new_user
 
@@ -232,8 +237,12 @@ async def resend_code(data: EmailRequest, db: AsyncSession = Depends(get_db)):
     user.hashed_otp = hash_password(otp)
     user.otp_expires_at = now + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
     user.otp_sent_at = now
+    try:
+        await send_verification_code(user.email, otp)
+    except RuntimeError:
+        await db.rollback()
+        raise HTTPException(status_code=502, detail="Не удалось отправить код подтверждения")
     await db.commit()
-    await send_verification_code(user.email, otp)
     return {"message": "Код отправлен"}
 
 
