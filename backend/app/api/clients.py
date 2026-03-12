@@ -1,6 +1,7 @@
 ## backend/app/api/clients.py
 
-from typing import List, Optional
+from collections import defaultdict
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
@@ -9,11 +10,19 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.models.client import Client
+from app.models.client import Client, ClientPipelineStage
 from app.models.client_changelog import ClientChangeLog
-from app.models.estimate import Estimate
+from app.models.estimate import Estimate, EstimateStatus
 from app.models.user import User
-from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
+from app.schemas.client import (
+    ClientCreate,
+    ClientOut,
+    ClientPipelineItem,
+    ClientPipelineOut,
+    ClientPipelineSummary,
+    ClientPipelineUpdate,
+    ClientUpdate,
+)
 from app.schemas.paginated import Paginated
 from app.schemas.client_changelog import ClientChangeLogOut
 from app.utils.auth import get_current_user
@@ -68,11 +77,33 @@ FIELD_ACTIONS_CLIENT_RU = {
     },
 }
 
+PIPELINE_STAGE_LABELS_RU = {
+    ClientPipelineStage.LEAD: "Лид",
+    ClientPipelineStage.QUOTE: "КП",
+    ClientPipelineStage.APPROVED: "Согласовано",
+    ClientPipelineStage.PAID: "Оплачено",
+}
+
+PIPELINE_FORECAST_WEIGHTS = {
+    ClientPipelineStage.LEAD: 0.1,
+    ClientPipelineStage.QUOTE: 0.4,
+    ClientPipelineStage.APPROVED: 0.75,
+    ClientPipelineStage.PAID: 1.0,
+}
+
 
 def prettify_value(val):
     if val in [None, ""]:
         return "—"
     return str(val)
+
+
+def _estimate_total_with_vat(estimate: Estimate) -> float:
+    total_external = sum(
+        (item.external_price or 0) * (item.quantity or 0) for item in estimate.items
+    )
+    vat = total_external * ((estimate.vat_rate or 0) / 100) if estimate.vat_enabled else 0
+    return float(total_external + vat)
 
 
 @router.post("/", response_model=ClientOut, status_code=status.HTTP_201_CREATED)
@@ -102,6 +133,7 @@ async def list_clients(
     name: Optional[str] = Query(None),
     company: Optional[str] = Query(None),
     email: Optional[str] = Query(None),
+    pipeline_stage: Optional[ClientPipelineStage] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
@@ -114,6 +146,8 @@ async def list_clients(
         filters.append(Client.company.ilike(f"%{company}%"))
     if email:
         filters.append(Client.email.ilike(f"%{email}%"))
+    if pipeline_stage:
+        filters.append(Client.pipeline_stage == pipeline_stage)
 
     count_q = select(func.count()).select_from(Client).where(*filters)
     total = await db.scalar(count_q)
@@ -127,6 +161,138 @@ async def list_clients(
     )
     result = await db.execute(q)
     return {"items": result.scalars().all(), "total": total}
+
+
+@router.get("/pipeline", response_model=ClientPipelineOut)
+async def get_clients_pipeline(
+    name: Optional[str] = Query(None),
+    company: Optional[str] = Query(None),
+    email: Optional[str] = Query(None),
+    pipeline_stage: Optional[ClientPipelineStage] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    filters = [Client.user_id == user.id]
+    if name:
+        filters.append(Client.name.ilike(f"%{name}%"))
+    if company:
+        filters.append(Client.company.ilike(f"%{company}%"))
+    if email:
+        filters.append(Client.email.ilike(f"%{email}%"))
+    if pipeline_stage:
+        filters.append(Client.pipeline_stage == pipeline_stage)
+
+    clients_result = await db.execute(select(Client).where(*filters).order_by(Client.name))
+    clients = clients_result.scalars().all()
+    if not clients:
+        return ClientPipelineOut(
+            summary=ClientPipelineSummary(
+                lead_count=0,
+                quote_count=0,
+                approved_count=0,
+                paid_count=0,
+                total_expected_revenue=0,
+                weighted_forecast=0,
+            ),
+            items=[],
+        )
+
+    client_ids = [client.id for client in clients]
+    estimates_result = await db.execute(
+        select(Estimate)
+        .options(selectinload(Estimate.items))
+        .where(
+            Estimate.user_id == user.id,
+            Estimate.client_id.in_(client_ids),
+        )
+        .order_by(Estimate.date.desc())
+    )
+    estimates = estimates_result.scalars().all()
+
+    estimates_by_client: dict[int, list[Estimate]] = defaultdict(list)
+    for estimate in estimates:
+        if estimate.client_id is not None:
+            estimates_by_client[int(estimate.client_id)].append(estimate)
+
+    summary_counts = {
+        ClientPipelineStage.LEAD: 0,
+        ClientPipelineStage.QUOTE: 0,
+        ClientPipelineStage.APPROVED: 0,
+        ClientPipelineStage.PAID: 0,
+    }
+    total_expected_revenue = 0.0
+    weighted_forecast = 0.0
+    items: list[ClientPipelineItem] = []
+
+    for client in clients:
+        stage = client.pipeline_stage or ClientPipelineStage.LEAD
+        summary_counts[stage] += 1
+
+        client_estimates = estimates_by_client.get(client.id, [])
+        last_estimate = client_estimates[0] if client_estimates else None
+        paid_revenue = 0.0
+        open_revenue = 0.0
+        for estimate in client_estimates:
+            estimate_total = _estimate_total_with_vat(estimate)
+            if estimate.status == EstimateStatus.PAID:
+                paid_revenue += estimate_total
+            elif estimate.status in {
+                EstimateStatus.DRAFT,
+                EstimateStatus.SENT,
+                EstimateStatus.APPROVED,
+            }:
+                open_revenue += estimate_total
+
+        expected_revenue = (
+            float(client.pipeline_expected_revenue)
+            if (client.pipeline_expected_revenue or 0) > 0
+            else open_revenue
+        )
+        forecast_amount = expected_revenue * PIPELINE_FORECAST_WEIGHTS[stage]
+        total_expected_revenue += expected_revenue
+        weighted_forecast += forecast_amount
+
+        items.append(
+            ClientPipelineItem(
+                id=client.id,
+                name=client.name,
+                company=client.company,
+                pipeline_stage=stage,
+                pipeline_expected_revenue=expected_revenue,
+                forecast_amount=forecast_amount,
+                estimates_count=len(client_estimates),
+                last_estimate_date=last_estimate.date if last_estimate else None,
+                last_estimate_status=last_estimate.status if last_estimate else None,
+                open_revenue=open_revenue,
+                paid_revenue=paid_revenue,
+            )
+        )
+
+    stage_order = {
+        ClientPipelineStage.LEAD: 0,
+        ClientPipelineStage.QUOTE: 1,
+        ClientPipelineStage.APPROVED: 2,
+        ClientPipelineStage.PAID: 3,
+    }
+    items.sort(
+        key=lambda item: (
+            stage_order.get(item.pipeline_stage, 99),
+            -item.forecast_amount,
+            item.name.lower(),
+        )
+    )
+
+    return ClientPipelineOut(
+        summary=ClientPipelineSummary(
+            lead_count=summary_counts[ClientPipelineStage.LEAD],
+            quote_count=summary_counts[ClientPipelineStage.QUOTE],
+            approved_count=summary_counts[ClientPipelineStage.APPROVED],
+            paid_count=summary_counts[ClientPipelineStage.PAID],
+            total_expected_revenue=total_expected_revenue,
+            weighted_forecast=weighted_forecast,
+        ),
+        items=items,
+    )
 
 
 @router.get("/{client_id}", response_model=ClientOut)
@@ -239,6 +405,64 @@ async def update_client(
                 user_id=user.id,
                 action="Обновление",
                 description="Клиент обновлен",
+                details=details,
+            )
+        )
+
+    await db.commit()
+    await db.refresh(client)
+    return client
+
+
+@router.patch("/{client_id}/pipeline", response_model=ClientOut)
+async def update_client_pipeline(
+    client_id: int,
+    payload: ClientPipelineUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+    )
+    client = result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    details = []
+    update_data = payload.dict(exclude_unset=True)
+
+    if "pipeline_stage" in update_data:
+        new_stage = update_data["pipeline_stage"]
+        if client.pipeline_stage != new_stage:
+            details.append(
+                {
+                    "label": "Этап воронки",
+                    "old": PIPELINE_STAGE_LABELS_RU.get(client.pipeline_stage, "—"),
+                    "new": PIPELINE_STAGE_LABELS_RU.get(new_stage, "—"),
+                }
+            )
+            client.pipeline_stage = new_stage
+
+    if "pipeline_expected_revenue" in update_data:
+        new_revenue = float(update_data["pipeline_expected_revenue"] or 0)
+        old_revenue = float(client.pipeline_expected_revenue or 0)
+        if abs(old_revenue - new_revenue) >= 0.01:
+            details.append(
+                {
+                    "label": "Ожидаемая выручка",
+                    "old": f"{old_revenue:.2f} ₽",
+                    "new": f"{new_revenue:.2f} ₽",
+                }
+            )
+            client.pipeline_expected_revenue = new_revenue
+
+    if details:
+        db.add(
+            ClientChangeLog(
+                client_id=client_id,
+                user_id=user.id,
+                action="Pipeline",
+                description="Обновлен этап продаж клиента",
                 details=details,
             )
         )

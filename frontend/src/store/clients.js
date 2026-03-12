@@ -47,5 +47,16 @@ export const useClientsStore = defineStore("clients", {
       const res = await axios.get(`/clients/${id}/logs`, { params });
       return res.data;
     },
+
+    async fetchClientsPipeline(params = {}) {
+      const res = await axios.get("/clients/pipeline", { params });
+      return res.data;
+    },
+
+    async updateClientPipeline(id, payload) {
+      const res = await axios.patch(`/clients/${id}/pipeline`, payload);
+      await this.fetchClients();
+      return res.data;
+    },
   },
 });

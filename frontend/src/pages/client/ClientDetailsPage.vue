@@ -53,6 +53,44 @@
 
       <!-- Данные клиента -->
       <div v-if="activeTab === 'details'">
+        <div
+          class="mb-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-qe-black2 dark:bg-qe-black3">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p class="text-lg font-bold text-gray-800 dark:text-white">Sales Pipeline</p>
+              <p class="text-sm text-gray-500 dark:text-gray-300">Управление этапом клиента и ожидаемой выручкой</p>
+            </div>
+            <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="pipelineStageBadgeClass">
+              {{ pipelineStageLabel }}
+            </span>
+          </div>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+                Этап воронки
+              </label>
+              <select v-model="pipelineForm.pipeline_stage" class="qe-input w-full">
+                <option v-for="option in pipelineStageOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+                Ожидаемая выручка
+              </label>
+              <input v-model.number="pipelineForm.pipeline_expected_revenue" type="number" min="0" step="0.01"
+                class="qe-input w-full" placeholder="0.00" />
+            </div>
+            <div class="flex items-end">
+              <button @click="savePipeline" :disabled="isSavingPipeline"
+                class="qe-btn-success w-full disabled:opacity-60 disabled:cursor-not-allowed">
+                {{ isSavingPipeline ? "Сохранение..." : "Сохранить этап" }}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="grid gap-4 text-sm text-gray-800 dark:text-gray-200 grid-cols-1 md:grid-cols-2">
           <!-- Левый блок -->
           <div
@@ -270,7 +308,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useClientsStore } from "@/store/clients";
 import { useNotesStore } from "@/store/notes";
@@ -319,6 +357,55 @@ const notesStore = useNotesStore();
 const toast = useToast();
 const showDetails = ref({})
 const notes = ref([])
+const isSavingPipeline = ref(false)
+const pipelineForm = ref({
+  pipeline_stage: "lead",
+  pipeline_expected_revenue: 0,
+})
+
+const pipelineStageOptions = [
+  { value: "lead", label: "Лид" },
+  { value: "quote", label: "КП" },
+  { value: "approved", label: "Согласовано" },
+  { value: "paid", label: "Оплачено" },
+]
+
+const pipelineStageMeta = {
+  lead: {
+    label: "Лид",
+    className: "bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-200",
+  },
+  quote: {
+    label: "КП",
+    className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-200",
+  },
+  approved: {
+    label: "Согласовано",
+    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200",
+  },
+  paid: {
+    label: "Оплачено",
+    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200",
+  },
+}
+
+const pipelineStageLabel = computed(() => {
+  const stage = client.value?.pipeline_stage || "lead"
+  return pipelineStageMeta[stage]?.label || "Лид"
+})
+
+const pipelineStageBadgeClass = computed(() => {
+  const stage = client.value?.pipeline_stage || "lead"
+  return pipelineStageMeta[stage]?.className || pipelineStageMeta.lead.className
+})
+
+function syncPipelineForm() {
+  if (!client.value) return
+  pipelineForm.value = {
+    pipeline_stage: client.value.pipeline_stage || "lead",
+    pipeline_expected_revenue: Number(client.value.pipeline_expected_revenue || 0),
+  }
+}
 
 onMounted(async () => {
   const { client: c, estimates: e, total } = await store.getClientWithEstimates(
@@ -326,6 +413,7 @@ onMounted(async () => {
     { page: estimatesPage.value, limit: 5 }
   );
   client.value = c;
+  syncPipelineForm();
   estimates.value = e;
   estimatesTotal.value = total;
   const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
@@ -340,6 +428,7 @@ watch(() => route.params.id, async () => {
     { page: estimatesPage.value, limit: 5 }
   );
   client.value = c;
+  syncPipelineForm();
   estimates.value = e;
   estimatesTotal.value = total;
   const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
@@ -406,6 +495,28 @@ async function deleteClient() {
     } else {
       toast.error("Ошибка удаления клиента");
     }
+  }
+}
+
+async function savePipeline() {
+  if (!client.value || isSavingPipeline.value) return
+  try {
+    isSavingPipeline.value = true
+    const updated = await store.updateClientPipeline(client.value.id, {
+      pipeline_stage: pipelineForm.value.pipeline_stage,
+      pipeline_expected_revenue: Number(pipelineForm.value.pipeline_expected_revenue || 0),
+    })
+    client.value = updated
+    syncPipelineForm()
+    const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 })
+    logs.value = logRes.items
+    logTotal.value = logRes.total
+    toast.success("Этап продаж обновлен")
+  } catch (error) {
+    const detail = error?.response?.data?.detail
+    toast.error(typeof detail === "string" ? detail : "Не удалось обновить этап продаж")
+  } finally {
+    isSavingPipeline.value = false
   }
 }
 </script>

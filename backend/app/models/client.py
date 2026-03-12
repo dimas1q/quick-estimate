@@ -1,8 +1,17 @@
 ## backend/app/models/client.py
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
+import enum
+
+from sqlalchemy import Column, DateTime, Enum as SQLEnum, Float, ForeignKey, Integer, String, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+
+
+class ClientPipelineStage(str, enum.Enum):
+    LEAD = "lead"
+    QUOTE = "quote"
+    APPROVED = "approved"
+    PAID = "paid"
 
 
 class Client(Base):
@@ -21,6 +30,16 @@ class Client(Base):
     account = Column(String, nullable=True)
     bank = Column(String, nullable=True)
     corr_account = Column(String, nullable=True)
+    pipeline_stage = Column(
+        SQLEnum(
+            ClientPipelineStage,
+            name="client_pipeline_stage",
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+        ),
+        nullable=False,
+        default=ClientPipelineStage.LEAD,
+    )
+    pipeline_expected_revenue = Column(Float, nullable=False, default=0.0)
     notes = relationship(
         "Note", back_populates="client", cascade="all, delete-orphan"
     )
