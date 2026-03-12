@@ -8,24 +8,23 @@ import AuthLayout from '@/layouts/AuthLayout.vue'
 import LoginPage from '@/pages/auth/LoginPage.vue'
 import RegisterPage from '@/pages/auth/RegisterPage.vue'
 
-// pages
-import ProfilePage from '@/pages/profile/ProfilePage.vue'
-import EstimatesPage from '@/pages/estimate/EstimatesPage.vue'
-import EstimateCreatePage from '@/pages/estimate/EstimateCreatePage.vue'
-import EstimateDetailsPage from '@/pages/estimate/EstimateDetailsPage.vue'
-import EstimateEditPage from '@/pages/estimate/EstimateEditPage.vue'
-import TemplatesPage from '@/pages/template/TemplatesPage.vue'
-import TemplateCreatePage from '@/pages/template/TemplateCreatePage.vue'
-import TemplateEditPage from '@/pages/template/TemplateEditPage.vue'
-import TemplateDetailsPage from '@/pages/template/TemplateDetailsPage.vue'
-import ClientsPage from '@/pages/client/ClientsPage.vue'
-import ClientCreatePage from '@/pages/client/ClientCreatePage.vue'
-import ClientDetailsPage from '@/pages/client/ClientDetailsPage.vue'
-import ClientEditPage from '@/pages/client/ClientEditPage.vue'
-import AnalyticsPage from '@/pages/analytics/AnalyticsPage.vue'
-import AdminUsersPage from '@/pages/admin/AdminUsersPage.vue'
-import AdminUserWorkspacePage from '@/pages/admin/AdminUserWorkspacePage.vue'
-import NotFoundPage from '@/pages/errors/NotFoundPage.vue'
+const ProfilePage = () => import('@/pages/profile/ProfilePage.vue')
+const EstimatesPage = () => import('@/pages/estimate/EstimatesPage.vue')
+const EstimateCreatePage = () => import('@/pages/estimate/EstimateCreatePage.vue')
+const EstimateDetailsPage = () => import('@/pages/estimate/EstimateDetailsPage.vue')
+const EstimateEditPage = () => import('@/pages/estimate/EstimateEditPage.vue')
+const TemplatesPage = () => import('@/pages/template/TemplatesPage.vue')
+const TemplateCreatePage = () => import('@/pages/template/TemplateCreatePage.vue')
+const TemplateEditPage = () => import('@/pages/template/TemplateEditPage.vue')
+const TemplateDetailsPage = () => import('@/pages/template/TemplateDetailsPage.vue')
+const ClientsPage = () => import('@/pages/client/ClientsPage.vue')
+const ClientCreatePage = () => import('@/pages/client/ClientCreatePage.vue')
+const ClientDetailsPage = () => import('@/pages/client/ClientDetailsPage.vue')
+const ClientEditPage = () => import('@/pages/client/ClientEditPage.vue')
+const AnalyticsPage = () => import('@/pages/analytics/AnalyticsPage.vue')
+const AdminUsersPage = () => import('@/pages/admin/AdminUsersPage.vue')
+const AdminUserWorkspacePage = () => import('@/pages/admin/AdminUserWorkspacePage.vue')
+const NotFoundPage = () => import('@/pages/errors/NotFoundPage.vue')
 
 
 const routes = [

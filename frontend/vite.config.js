@@ -6,7 +6,16 @@ export default defineConfig({
   clearScreen: false,
   plugins: [vue()],
   build: {
-    target: 'esnext'
+    target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-vue': ['vue', 'vue-router', 'pinia'],
+          'vendor-ui': ['@headlessui/vue', '@heroicons/vue', 'lucide-vue-next', '@vueuse/core'],
+          'vendor-charts': ['apexcharts', 'vue3-apexcharts']
+        }
+      }
+    }
   },
   resolve: {
     alias: {
