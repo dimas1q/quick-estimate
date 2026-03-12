@@ -14,7 +14,7 @@
           placeholder="Поиск по email/login"
           @keyup.enter="loadUsers(1)"
         />
-        <button class="qe-btn px-4" @click="loadUsers(1)">Найти</button>
+        <button class="qe-btn px-4" @click="loadUsers(1)" :disabled="isLoading">Найти</button>
       </div>
     </div>
 
@@ -51,7 +51,7 @@
                   class="qe-btn-secondary px-2.5 py-1 text-xs whitespace-nowrap"
                   :title="u.is_admin ? 'Снять роль администратора' : 'Назначить администратором'"
                   @click="toggleRole(u)"
-                  :disabled="isBusy"
+                  :disabled="isRowBusy(u.id)"
                 >
                   {{ u.is_admin ? 'Снять роль администратора' : 'Назначить администратором' }}
                 </button>
@@ -59,7 +59,7 @@
                   class="qe-btn-secondary px-2.5 py-1 text-xs whitespace-nowrap"
                   :title="u.is_active ? 'Отключить пользователя' : 'Активировать пользователя'"
                   @click="toggleActivation(u)"
-                  :disabled="isBusy"
+                  :disabled="isRowBusy(u.id)"
                 >
                   {{ u.is_active ? 'Отключить' : 'Включить' }}
                 </button>
@@ -67,6 +67,7 @@
                   class="qe-btn px-2.5 py-1 text-xs whitespace-nowrap"
                   title="Открыть управление данными пользователя"
                   @click="openWorkspace(u)"
+                  :disabled="isRowBusy(u.id)"
                 >
                   Данные
                 </button>
@@ -108,7 +109,7 @@ const perPage = 20
 const currentPage = ref(1)
 const search = ref('')
 const isLoading = ref(false)
-const isBusy = ref(false)
+const busyUserId = ref(null)
 
 function roleClass(isAdmin) {
   return [
@@ -145,8 +146,8 @@ async function loadUsers(page = currentPage.value) {
 }
 
 async function toggleRole(user) {
-  if (isBusy.value) return
-  isBusy.value = true
+  if (isRowBusy(user.id)) return
+  busyUserId.value = user.id
   try {
     await store.updateUserRole(user.id, !user.is_admin)
     toast.success('Роль пользователя обновлена')
@@ -154,13 +155,13 @@ async function toggleRole(user) {
   } catch (e) {
     toast.error(e?.response?.data?.detail || 'Не удалось изменить роль')
   } finally {
-    isBusy.value = false
+    busyUserId.value = null
   }
 }
 
 async function toggleActivation(user) {
-  if (isBusy.value) return
-  isBusy.value = true
+  if (isRowBusy(user.id)) return
+  busyUserId.value = user.id
   try {
     await store.updateUserActivation(user.id, !user.is_active)
     toast.success('Статус пользователя обновлен')
@@ -168,8 +169,12 @@ async function toggleActivation(user) {
   } catch (e) {
     toast.error(e?.response?.data?.detail || 'Не удалось изменить статус')
   } finally {
-    isBusy.value = false
+    busyUserId.value = null
   }
+}
+
+function isRowBusy(userId) {
+  return busyUserId.value === userId
 }
 
 function openWorkspace(user) {
