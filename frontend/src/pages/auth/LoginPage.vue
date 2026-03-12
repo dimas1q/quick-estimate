@@ -17,7 +17,6 @@ const code = ref('')
 const canResend = ref(false)
 const timer = ref(60)
 const lockoutSeconds = ref(0)
-const lastFailedCredentialsKey = ref(null)
 const googleClientId = appRuntimeConfig.googleClientId
 const googleButtonContainer = ref(null)
 const googleOauthReady = ref(false)
@@ -60,7 +59,6 @@ async function handleGoogleCredential(response) {
     try {
         error.value = null
         await auth.loginWithGoogle(credential)
-        lastFailedCredentialsKey.value = null
         router.push('/estimates')
     } catch (e) {
         error.value = e.response?.data?.detail || 'Не удалось войти через Google'
@@ -127,12 +125,6 @@ function startLockoutTimer(seconds) {
 
 async function handleLogin() {
     error.value = null
-    const credentialsKey = `${email.value}::${password.value}`
-
-    if (lastFailedCredentialsKey.value && lastFailedCredentialsKey.value === credentialsKey) {
-        error.value = 'Измените email/логин или пароль перед повторной попыткой'
-        return
-    }
 
     if (lockoutSeconds.value > 0) {
         setLockoutError(lockoutSeconds.value)
@@ -141,24 +133,20 @@ async function handleLogin() {
 
     try {
         await auth.login(email.value, password.value)
-        lastFailedCredentialsKey.value = null
         router.push('/estimates')
     } catch (e) {
         if (e.response?.status === 403 && e.response.data.verify_required) {
             verify.value = true
             email.value = e.response.data.email
-            lastFailedCredentialsKey.value = null
             toast.success('Код отправлен на email')
             startTimer()
         } else if (e.response?.status === 429) {
-            lastFailedCredentialsKey.value = credentialsKey
             const retryAfterSeconds = parseRetryAfterSeconds(e.response?.headers, e.response?.data)
             startLockoutTimer(retryAfterSeconds)
             if (!e.response?.data?.detail) {
                 setLockoutError(retryAfterSeconds)
             }
         } else {
-            lastFailedCredentialsKey.value = credentialsKey
             error.value = 'Неверный email или пароль'
         }
     }
