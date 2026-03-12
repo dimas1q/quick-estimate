@@ -161,5 +161,5 @@ if os.path.exists(index_file):
         if request.url.path.startswith("/api"):
             return JSONResponse(status_code=404, content={"detail": "API route not found"})
         if os.path.splitext(request.url.path)[1]:
-            return await app.default_exception_handler(request, exc)
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
         return FileResponse(index_file)
