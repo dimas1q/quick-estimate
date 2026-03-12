@@ -68,6 +68,7 @@ Primary configuration source is TOML.
 - Logging levels are TOML-driven; default allowlist is `INFO` and `ERROR` in both dev and prod.
 
 Environment variables are now overrides only (for example `APP_CONFIG_FILE`, `DATABASE_URL`, `APP_DOMAIN`, `GOOGLE_OAUTH_CLIENT_ID`).
+SMTP timeout is configurable via `[smtp].timeout_seconds` (or `SMTP_TIMEOUT_SECONDS` override).
 
 Security note:
 - Do not commit JWT secrets into git.

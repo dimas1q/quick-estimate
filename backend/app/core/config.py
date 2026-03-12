@@ -43,6 +43,7 @@ class Settings(BaseModel):
     SMTP_FROM: EmailStr = "noreply@example.com"
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
+    SMTP_TIMEOUT_SECONDS: int = 15
 
     SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8000
@@ -107,6 +108,7 @@ ENV_OVERRIDE_KEYS = {
     "SMTP_FROM",
     "SMTP_TLS",
     "SMTP_SSL",
+    "SMTP_TIMEOUT_SECONDS",
     "SERVER_HOST",
     "SERVER_PORT",
     "SERVER_RELOAD",
@@ -278,6 +280,8 @@ def _parse_toml_config(config_data: dict[str, Any], config_path: Path) -> dict[s
         parsed["SMTP_TLS"] = smtp_cfg["tls"]
     if "ssl" in smtp_cfg:
         parsed["SMTP_SSL"] = smtp_cfg["ssl"]
+    if "timeout_seconds" in smtp_cfg:
+        parsed["SMTP_TIMEOUT_SECONDS"] = smtp_cfg["timeout_seconds"]
 
     if "host" in server_cfg:
         parsed["SERVER_HOST"] = server_cfg["host"]
