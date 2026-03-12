@@ -116,6 +116,39 @@ def _check_export_subsystem() -> bool:
     return pdf_ready and excel_ready and wkhtmltopdf_ready
 
 
+async def _check_database_connection() -> bool:
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        logger.exception("Database connectivity check failed")
+        return False
+
+
+@app.get("/api/health/live")
+async def live_health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/api/health/ready")
+async def readiness_health() -> JSONResponse:
+    checks = {
+        "configuration": _check_configuration_loaded(),
+        "api": _check_api_initialized(),
+        "exports": _check_export_subsystem(),
+        "database": await _check_database_connection(),
+    }
+    ready = all(checks.values())
+    return JSONResponse(
+        status_code=200 if ready else 503,
+        content={
+            "status": "ready" if ready else "not_ready",
+            "checks": checks,
+        },
+    )
+
+
 @app.on_event("startup")
 async def on_startup() -> None:
     log_startup_banner(settings)
@@ -124,13 +157,7 @@ async def on_startup() -> None:
     api_ready = _check_api_initialized()
     export_ready = _check_export_subsystem()
 
-    db_ready = False
-    try:
-        async with engine.connect() as connection:
-            await connection.execute(text("SELECT 1"))
-        db_ready = True
-    except Exception:
-        logger.exception("Database connectivity check failed during startup")
+    db_ready = await _check_database_connection()
 
     checks = [
         ("Configuration loaded", config_ready),

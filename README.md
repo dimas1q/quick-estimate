@@ -94,6 +94,7 @@ Security note:
   npm run dev -- --host
   ```
 - API base path: `/api`. Authorization via `Authorization: Bearer <token>`.
+- Health endpoints: `/api/health/live` and `/api/health/ready`.
 
 ## Admin Panel
 - Administration routes:
