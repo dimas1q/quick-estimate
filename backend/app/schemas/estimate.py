@@ -1,10 +1,12 @@
 ## backend/app/schemas/estimate.py
-from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional, List
 from datetime import datetime
-from app.schemas.item import EstimateItemOut, EstimateItemCreate, EstimateItemUpdate
+from typing import List, Optional
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
 from app.models.estimate import EstimateStatus
 from app.schemas.client import ClientOut
+from app.schemas.item import EstimateItemCreate, EstimateItemOut, EstimateItemUpdate
 
 
 class EstimateBase(BaseModel):
@@ -21,43 +23,46 @@ class EstimateBase(BaseModel):
 
 
 class EstimateCreate(EstimateBase):
-    pass
-    items: Optional[List[EstimateItemCreate]] = []
+    items: Optional[List[EstimateItemCreate]] = Field(default_factory=list)
 
-    @validator("items")
-    def must_have_at_least_one_item(cls, v):
-        if not v:
+    @field_validator("items")
+    @classmethod
+    def must_have_at_least_one_item(cls, value):
+        if not value:
             raise ValueError("Смета должна содержать хотя бы одну услугу")
-        return v
+        return value
 
-    @validator("vat_rate")
-    def check_vat_rate(cls, v):
-        if not isinstance(v, int) or v < 0 or v > 100:
+    @field_validator("vat_rate")
+    @classmethod
+    def check_vat_rate(cls, value):
+        if not isinstance(value, int) or value < 0 or value > 100:
             raise ValueError("Ставка НДС должна быть целым числом от 0 до 100")
-        return v
+        return value
 
 
 class EstimateUpdate(EstimateBase):
-    items: Optional[List[EstimateItemUpdate]] = []
+    items: Optional[List[EstimateItemUpdate]] = Field(default_factory=list)
 
-    @validator("items")
-    def must_have_at_least_one_item(cls, v):
-        if not v:
+    @field_validator("items")
+    @classmethod
+    def must_have_at_least_one_item(cls, value):
+        if not value:
             raise ValueError("Смета должна содержать хотя бы одну услугу")
-        return v
+        return value
 
-    @validator("vat_rate")
-    def check_vat_rate(cls, v):
-        if not isinstance(v, int) or v < 0 or v > 100:
+    @field_validator("vat_rate")
+    @classmethod
+    def check_vat_rate(cls, value):
+        if not isinstance(value, int) or value < 0 or value > 100:
             raise ValueError("Ставка НДС должна быть целым числом от 0 до 100")
-        return v
+        return value
 
 
 class EstimateOut(EstimateBase):
     id: int
     date: datetime
     updated_at: Optional[datetime] = None
-    items: List[EstimateItemOut] = Field(..., min_items=1)
+    items: List[EstimateItemOut] = Field(..., min_length=1)
     vat_enabled: bool = True
     vat_rate: int
     use_internal_price: bool = True
