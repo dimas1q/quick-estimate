@@ -4,7 +4,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import HTTPException as FastAPIHTTPException
-from app.api import estimates, auth, user, templates, clients, versions, analytics, notes
+from app.api import (
+    admin,
+    analytics,
+    auth,
+    clients,
+    estimates,
+    notes,
+    templates,
+    user,
+    versions,
+)
 from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
@@ -25,6 +35,7 @@ app.add_middleware(
 # API
 app.include_router(auth.router, prefix="/api/auth")
 app.include_router(user.router, prefix="/api/users")    
+app.include_router(admin.router, prefix="/api/admin")
 app.include_router(estimates.router, prefix="/api/estimates")
 app.include_router(templates.router, prefix="/api/templates")
 app.include_router(clients.router, prefix="/api/clients")

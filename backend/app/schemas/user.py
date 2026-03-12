@@ -54,3 +54,10 @@ class AdminRoleUpdate(BaseModel):
 
 class AdminActivationUpdate(BaseModel):
     is_active: bool
+
+
+class AdminUserProfileUpdate(BaseModel):
+    login: str = Field(..., min_length=3)
+    email: EmailStr
+    name: str | None = None
+    company: str | None = None

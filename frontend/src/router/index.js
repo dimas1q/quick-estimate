@@ -23,6 +23,8 @@ import ClientCreatePage from '@/pages/client/ClientCreatePage.vue'
 import ClientDetailsPage from '@/pages/client/ClientDetailsPage.vue'
 import ClientEditPage from '@/pages/client/ClientEditPage.vue'
 import AnalyticsPage from '@/pages/analytics/AnalyticsPage.vue'
+import AdminUsersPage from '@/pages/admin/AdminUsersPage.vue'
+import AdminUserWorkspacePage from '@/pages/admin/AdminUserWorkspacePage.vue'
 import NotFoundPage from '@/pages/errors/NotFoundPage.vue'
 
 
@@ -73,6 +75,16 @@ const routes = [
     component: AnalyticsPage,
     meta: { layout: DefaultLayout }
   },
+  {
+    path: '/admin/users',
+    component: AdminUsersPage,
+    meta: { layout: DefaultLayout, requiresAdmin: true }
+  },
+  {
+    path: '/admin/users/:userId/workspace',
+    component: AdminUserWorkspacePage,
+    meta: { layout: DefaultLayout, requiresAdmin: true }
+  },
 
   // 404
   {
@@ -105,6 +117,10 @@ router.beforeEach(async (to, from, next) => {
       auth.logout()
       return next('/login')
     }
+  }
+
+  if (to.meta.requiresAdmin && !auth.user?.is_admin) {
+    return next('/estimates')
   }
 
   next()

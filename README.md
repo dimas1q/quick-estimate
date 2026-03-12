@@ -38,6 +38,11 @@ Notes:
 - Backend binds to 0.0.0.0:8000 and expects PostgreSQL at host `db` with user/password `postgres` / DB `quickestimate`.
 - CORS allows `http://localhost:5173`.
 - JWT secret is auto-created at `config/secret.key` (persisted via `data/` volume).
+- On the first `alembic upgrade head`, a bootstrap admin user is created (if missing):
+  - `login`: `admin`
+  - `email`: `admin@quickestimate.app`
+  - `password`: `admin12345`
+- New users created via register/OAuth are regular users by default (`is_admin=false`).
 
 ## Docker
 - Dev stack: `docker compose up --build` (services: `backend`, `frontend`, `db`)
@@ -75,6 +80,12 @@ Other config:
   npm run dev -- --host
   ```
 - API base path: `/api`. Authorization via `Authorization: Bearer <token>`.
+
+## Admin Panel
+- Administration routes:
+  - `/admin/users` - users list, role updates, activation/deactivation
+  - `/admin/users/:userId/workspace` - CRUD management of the selected user's clients, templates, and estimates
+- Access to `/admin/*` is restricted to admin users (enforced in backend and frontend router guards).
 
 
 ## Troubleshooting

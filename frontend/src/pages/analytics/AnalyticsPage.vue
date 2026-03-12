@@ -1,5 +1,5 @@
 <template>
-    <div class="py-10 max-w-5xl mx-auto space-y-8">
+    <div class="py-10 max-w-7xl mx-auto space-y-8">
         <h1 class="text-2xl font-bold">Аналитика</h1>
 
         <!-- Фильтры (аккордеон) -->

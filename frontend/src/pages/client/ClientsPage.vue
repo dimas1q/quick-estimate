@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col items-center from-gray-50 via-white to-gray-100 py-10">
     <!-- Хедер и бар фильтров -->
-    <div class="w-full max-w-5xl flex flex-col gap-4 mb-8">
+    <div class="w-full max-w-7xl flex flex-col gap-4 mb-8">
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-2xl font-bold">Клиенты</h2>
         <router-link to="/clients/create" class="qe-btn px-4">Добавить клиента</router-link>
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Список клиентов -->
-    <div class="w-full max-w-5xl">
+    <div class="w-full max-w-7xl">
       <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div v-for="n in 5" :key="n" class="rounded-2xl bg-white/60 shadow animate-pulse p-6 h-24" />
       </div>

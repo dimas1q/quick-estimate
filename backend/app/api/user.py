@@ -74,7 +74,7 @@ async def admin_list_users(
 ):
     total = await db.scalar(select(func.count()).select_from(User))
     result = await db.execute(
-        select(User).order_by(User.id.desc()).offset((page - 1) * limit).limit(limit)
+        select(User).order_by(User.id.asc()).offset((page - 1) * limit).limit(limit)
     )
     return {"items": result.scalars().all(), "total": total}
 

@@ -44,6 +44,6 @@ async def send_email(
 
 
 async def send_verification_code(email: str, code: str):
-    subject = "Подтверждение регистрации"
+    subject = "Подтверждение аккаунта"
     body = f"Ваш код подтверждения: {code}"
     await send_email(subject, body, email)

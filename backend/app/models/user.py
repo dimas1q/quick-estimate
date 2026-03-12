@@ -16,7 +16,7 @@ class User(Base):
     name = Column(String, nullable=True)
     company = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
-    is_admin = Column(Boolean, default=False)
+    is_admin = Column(Boolean, default=False, server_default="0")
     is_active = Column(Boolean, nullable=False, server_default="0")
     failed_login_attempts = Column(Integer, nullable=False, default=0, server_default="0")
     locked_until = Column(DateTime(timezone=True), nullable=True)

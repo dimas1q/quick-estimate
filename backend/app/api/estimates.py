@@ -600,6 +600,21 @@ async def list_estimates(
     user: User = Depends(get_current_user),
     favorite: Optional[bool] = Query(None),
 ):
+    # Direct function calls in tests may pass FastAPI Query objects as defaults.
+    # Normalize non-primitive placeholders to regular None values.
+    if not isinstance(name, str):
+        name = None
+    if not isinstance(client, int):
+        client = None
+    if not isinstance(date_from, str):
+        date_from = None
+    if not isinstance(date_to, str):
+        date_to = None
+    if not isinstance(status, str):
+        status = None
+    if not isinstance(favorite, bool):
+        favorite = None
+
     filters = [Estimate.user_id == user.id]
 
     if name:

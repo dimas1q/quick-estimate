@@ -1,7 +1,7 @@
 """seed development data only
 
 Revision ID: d1e2f3a4b5c6
-Revises: f0e1d2c3b4a5
+Revises: c2d3e4f5a6b7
 Create Date: 2026-03-11 23:50:00
 """
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "d1e2f3a4b5c6"
-down_revision: Union[str, None] = "f0e1d2c3b4a5"
+down_revision: Union[str, None] = "c2d3e4f5a6b7"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -73,8 +73,26 @@ def _get_or_create_user(conn) -> int:
     user_id = conn.execute(
         sa.text(
             """
-            INSERT INTO users (email, login, name, company, hashed_password, is_admin, is_active)
-            VALUES (:email, :login, :name, :company, :hashed_password, false, true)
+            INSERT INTO users (
+                email,
+                login,
+                name,
+                company,
+                hashed_password,
+                is_admin,
+                is_active,
+                failed_login_attempts
+            )
+            VALUES (
+                :email,
+                :login,
+                :name,
+                :company,
+                :hashed_password,
+                false,
+                true,
+                0
+            )
             RETURNING id
             """
         ),
@@ -198,9 +216,29 @@ def _ensure_estimate(
             sa.text(
                 """
                 INSERT INTO estimates
-                    (name, user_id, client_id, responsible, status, vat_enabled, vat_rate, use_internal_price)
+                    (
+                        name,
+                        user_id,
+                        client_id,
+                        responsible,
+                        status,
+                        vat_enabled,
+                        vat_rate,
+                        use_internal_price,
+                        read_only
+                    )
                 VALUES
-                    (:name, :user_id, :client_id, :responsible, :status, true, 20, :use_internal_price)
+                    (
+                        :name,
+                        :user_id,
+                        :client_id,
+                        :responsible,
+                        :status,
+                        true,
+                        20,
+                        :use_internal_price,
+                        false
+                    )
                 RETURNING id
                 """
             ),
