@@ -102,6 +102,7 @@ async def _register_failed_login(db: AsyncSession, user: User, now: datetime) ->
         return True
 
     user.failed_login_attempts = attempts
+    user.locked_until = None
     await db.commit()
     return False
 
@@ -161,16 +162,18 @@ async def login(
     db_user = await _find_user_by_identifier(db, identifier)
     now = _now_utc()
 
-    if db_user and db_user.locked_until and db_user.locked_until > now:
-        retry_after = _lock_retry_after_seconds(db_user.locked_until, now)
-        return JSONResponse(
-            status_code=429,
-            content={
-                "detail": "Слишком много попыток входа. Повторите позже.",
-                "retry_after": retry_after,
-            },
-            headers={"Retry-After": str(retry_after)},
-        )
+    if db_user and db_user.locked_until:
+        if db_user.locked_until > now:
+            retry_after = _lock_retry_after_seconds(db_user.locked_until, now)
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "detail": "Слишком много попыток входа. Повторите позже.",
+                    "retry_after": retry_after,
+                },
+                headers={"Retry-After": str(retry_after)},
+            )
+        db_user.locked_until = None
 
     authed_user = await authenticate_user(db, identifier, password)
     if not authed_user:
@@ -188,10 +191,9 @@ async def login(
                 )
         raise HTTPException(status_code=401, detail="Неверный логин/email или пароль")
 
+    await _clear_login_locks_if_needed(db, authed_user)
     if not authed_user.is_active:
         return JSONResponse(status_code=403, content={"verify_required": True, "email": authed_user.email})
-
-    await _clear_login_locks_if_needed(db, authed_user)
 
     token = create_access_token(data={"sub": str(authed_user.id)})
     return {"access_token": token, "token_type": "bearer"}
