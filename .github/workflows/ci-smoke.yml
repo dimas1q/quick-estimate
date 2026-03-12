@@ -9,6 +9,7 @@ jobs:
   smoke:
     name: Auth + Estimates Smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:
@@ -31,7 +32,6 @@ jobs:
 
     env:
       APP_ENV: test
-      CORS_ALLOW_ORIGINS: http://localhost:5173
       GOOGLE_OAUTH_CLIENT_ID: test-client-id
       JWT_SECRET_KEY: test-jwt-secret
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/quickestimate_ci
@@ -45,6 +45,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - name: Install dependencies
         run: |
@@ -85,3 +90,12 @@ jobs:
             tests/test_estimate_status_filter.py \
             tests/test_template_import_preview.py \
             tests/test_estimate_smoke.py
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          APP_CONFIG_FILE: ../config/app.dev.toml
+        run: |
+          npm ci
+          npm run generate:runtime-config
+          npm run build
