@@ -69,6 +69,7 @@ Primary configuration source is TOML.
 
 Environment variables are now overrides only (for example `APP_CONFIG_FILE`, `DATABASE_URL`, `APP_DOMAIN`, `GOOGLE_OAUTH_CLIENT_ID`).
 SMTP timeout is configurable via `[smtp].timeout_seconds` (or `SMTP_TIMEOUT_SECONDS` override).
+Startup strictness is configurable via `[server].startup_strict_checks` (or `STARTUP_STRICT_CHECKS` override).
 
 Security note:
 - Do not commit JWT secrets into git.

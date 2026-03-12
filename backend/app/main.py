@@ -66,6 +66,10 @@ def _is_test_env() -> bool:
     return str(settings.APP_ENV).strip().lower() in {"test", "testing"}
 
 
+def _startup_checks_strict() -> bool:
+    return bool(settings.STARTUP_STRICT_CHECKS) and not _is_test_env()
+
+
 def _check_configuration_loaded() -> bool:
     config_source_ok = (
         settings.CONFIG_FILE is None
@@ -146,10 +150,12 @@ async def readiness_health() -> JSONResponse:
         "database": True if skip_heavy_checks else await _check_database_connection(),
     }
     ready = all(checks.values())
+    strict_mode = _startup_checks_strict()
     return JSONResponse(
-        status_code=200 if ready else 503,
+        status_code=200 if ready or not strict_mode else 503,
         content={
-            "status": "ready" if ready else "not_ready",
+            "status": "ready" if ready else ("degraded" if not strict_mode else "not_ready"),
+            "strict": strict_mode,
             "checks": checks,
         },
     )
@@ -158,6 +164,7 @@ async def readiness_health() -> JSONResponse:
 async def _run_startup_checks() -> None:
     log_startup_banner(settings)
     skip_heavy_checks = _is_test_env()
+    strict_mode = _startup_checks_strict()
 
     config_ready = _check_configuration_loaded()
     api_ready = _check_api_initialized()
@@ -175,8 +182,13 @@ async def _run_startup_checks() -> None:
     log_startup_checks(checks, footer=None)
 
     failed_checks = [label for label, ok in checks if not ok]
-    if failed_checks:
+    if failed_checks and strict_mode:
         raise RuntimeError(f"Startup checks failed: {', '.join(failed_checks)}")
+    if failed_checks:
+        logger.warning(
+            "Startup checks failed in non-strict mode: %s",
+            ", ".join(failed_checks),
+        )
 
 
 @asynccontextmanager

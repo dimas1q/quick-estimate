@@ -48,6 +48,7 @@ class Settings(BaseModel):
     SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8000
     SERVER_RELOAD: bool = False
+    STARTUP_STRICT_CHECKS: bool = True
 
     DB_WAIT_HOST: str = "db"
     DB_WAIT_PORT: int = 5432
@@ -112,6 +113,7 @@ ENV_OVERRIDE_KEYS = {
     "SERVER_HOST",
     "SERVER_PORT",
     "SERVER_RELOAD",
+    "STARTUP_STRICT_CHECKS",
     "DB_WAIT_HOST",
     "DB_WAIT_PORT",
     "DB_WAIT_TIMEOUT",
@@ -289,6 +291,8 @@ def _parse_toml_config(config_data: dict[str, Any], config_path: Path) -> dict[s
         parsed["SERVER_PORT"] = server_cfg["port"]
     if "reload" in server_cfg:
         parsed["SERVER_RELOAD"] = server_cfg["reload"]
+    if "startup_strict_checks" in server_cfg:
+        parsed["STARTUP_STRICT_CHECKS"] = server_cfg["startup_strict_checks"]
     if "db_wait_host" in server_cfg:
         parsed["DB_WAIT_HOST"] = server_cfg["db_wait_host"]
     if "db_wait_port" in server_cfg:
