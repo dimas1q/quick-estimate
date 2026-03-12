@@ -6,7 +6,8 @@ import axios from '@/lib/axios'
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         token: localStorage.getItem('token') || null,
-        user: null
+        user: null,
+        loading: true
     }),
 
     actions: {
@@ -99,12 +100,14 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async restoreSession() {
-            if (this.token) {
-                try {
+            try {
+                if (this.token) {
                     await this.fetchUser()
-                } catch {
-                    this.logout()
                 }
+            } catch {
+                this.logout()
+            } finally {
+                this.loading = false
             }
         }
     }
