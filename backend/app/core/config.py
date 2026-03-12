@@ -30,6 +30,7 @@ class Settings(BaseModel):
     JWT_SECRET_KEY_PATH: str = "config/secret.key"
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    JWT_REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
 
     GOOGLE_OAUTH_CLIENT_ID: str = ""
     AUTH_MAX_FAILED_LOGIN_ATTEMPTS: int = 5
@@ -98,6 +99,7 @@ ENV_OVERRIDE_KEYS = {
     "JWT_SECRET_KEY_PATH",
     "JWT_ALGORITHM",
     "JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
+    "JWT_REFRESH_TOKEN_EXPIRE_MINUTES",
     "GOOGLE_OAUTH_CLIENT_ID",
     "AUTH_MAX_FAILED_LOGIN_ATTEMPTS",
     "AUTH_LOCK_MINUTES",
@@ -259,6 +261,10 @@ def _parse_toml_config(config_data: dict[str, Any], config_path: Path) -> dict[s
         parsed["JWT_ALGORITHM"] = auth_cfg["jwt_algorithm"]
     if "jwt_access_token_expire_minutes" in auth_cfg:
         parsed["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"] = auth_cfg["jwt_access_token_expire_minutes"]
+    if "jwt_refresh_token_expire_minutes" in auth_cfg:
+        parsed["JWT_REFRESH_TOKEN_EXPIRE_MINUTES"] = auth_cfg[
+            "jwt_refresh_token_expire_minutes"
+        ]
     if "google_oauth_client_id" in auth_cfg:
         parsed["GOOGLE_OAUTH_CLIENT_ID"] = str(auth_cfg["google_oauth_client_id"]).strip()
     if "max_failed_login_attempts" in auth_cfg:

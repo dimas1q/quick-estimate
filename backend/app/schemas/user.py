@@ -48,6 +48,10 @@ class GoogleOAuthRequest(BaseModel):
     credential: str
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=10)
+
+
 class AdminRoleUpdate(BaseModel):
     is_admin: bool
 

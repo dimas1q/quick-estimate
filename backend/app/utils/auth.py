@@ -1,17 +1,19 @@
 # utils/auth.py
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Optional
+
+import bcrypt
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.utils.secret_key import load_or_create_secret_key
-from sqlalchemy.future import select
 from sqlalchemy import or_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
-import bcrypt
+from app.utils.secret_key import load_or_create_secret_key
 
 # Конфигурация
 if settings.JWT_SECRET_KEY and settings.JWT_SECRET_KEY.strip():
@@ -20,6 +22,7 @@ else:
     SECRET_KEY = load_or_create_secret_key(settings.JWT_SECRET_KEY_PATH)
 ALGORITHM = settings.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_MINUTES = settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -48,15 +51,37 @@ async def authenticate_user(
     return user
 
 
-# 🔐 Токен
+def _create_token(
+    data: dict,
+    *,
+    token_type: str,
+    expires_delta: timedelta,
+) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + expires_delta
+    to_encode.update({"exp": expire, "type": token_type})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Generate a JWT access token."""
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    return _create_token(
+        data,
+        token_type="access",
+        expires_delta=expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    return _create_token(
+        data,
+        token_type="refresh",
+        expires_delta=expires_delta or timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
+    )
+
+
+def decode_jwt_token(token: str) -> dict[str, Any]:
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
 
 # 👤 Текущий пользователь
@@ -69,7 +94,10 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = decode_jwt_token(token)
+        token_type = payload.get("type")
+        if token_type and token_type != "access":
+            raise credentials_exception
         sub = payload.get("sub")
         if not sub:
             raise credentials_exception

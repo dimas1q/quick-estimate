@@ -9,6 +9,7 @@ url = "postgresql+asyncpg://postgres:postgres@db/quickestimate"
 jwt_secret_key_path = "/app/config-runtime/secret.key"
 jwt_algorithm = "HS256"
 jwt_access_token_expire_minutes = 60
+jwt_refresh_token_expire_minutes = 43200
 google_oauth_client_id = ""
 max_failed_login_attempts = 5
 lock_minutes = 15

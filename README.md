@@ -3,6 +3,7 @@ FastAPI + Vue 3 application for building and tracking estimates with clients, te
 
 ## Features
 - JWT authentication (login/register), profile update, and token persistence in `localStorage`
+- Access + refresh JWT tokens with `/api/auth/refresh` token rotation flow
 - Estimate lifecycle with items, VAT toggles, statuses, favorites, version history, and changelogs
 - Client and template management with shared item library; notes on estimates/clients/templates
 - Exports: PDF (wkhtmltopdf + Jinja2), Excel (openpyxl), CSV/PDF/Excel analytics

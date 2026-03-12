@@ -6,19 +6,33 @@ import axios from '@/lib/axios'
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         token: localStorage.getItem('token') || null,
+        refreshToken: localStorage.getItem('refresh_token') || null,
         user: null,
         loading: true
     }),
 
     actions: {
+        setTokens({ accessToken, refreshToken }) {
+            this.token = accessToken
+            this.refreshToken = refreshToken || null
+            localStorage.setItem('token', this.token)
+            if (this.refreshToken) {
+                localStorage.setItem('refresh_token', this.refreshToken)
+            } else {
+                localStorage.removeItem('refresh_token')
+            }
+            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        },
+
         async login(identifier, password) {
             const res = await axios.post('/auth/login',
                 new URLSearchParams({ username: identifier, password })
             )
 
-            this.token = res.data.access_token
-            localStorage.setItem('token', this.token)
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+            this.setTokens({
+                accessToken: res.data.access_token,
+                refreshToken: res.data.refresh_token
+            })
 
             await this.fetchUser()
         },
@@ -26,9 +40,10 @@ export const useAuthStore = defineStore('auth', {
         async loginWithGoogle(credential) {
             const res = await axios.post('/auth/oauth/google', { credential })
 
-            this.token = res.data.access_token
-            localStorage.setItem('token', this.token)
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+            this.setTokens({
+                accessToken: res.data.access_token,
+                refreshToken: res.data.refresh_token
+            })
 
             await this.fetchUser()
         },
@@ -43,14 +58,28 @@ export const useAuthStore = defineStore('auth', {
 
         async verifyCode(email, code) {
             const res = await axios.post('/auth/verify', { email, code })
-            this.token = res.data.access_token
-            localStorage.setItem('token', this.token)
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+            this.setTokens({
+                accessToken: res.data.access_token,
+                refreshToken: res.data.refresh_token
+            })
             await this.fetchUser()
         },
 
         async resendCode(email) {
             await axios.post('/auth/resend', { email })
+        },
+
+        async refreshAccessToken() {
+            if (!this.refreshToken) {
+                throw new Error('no_refresh_token')
+            }
+            const res = await axios.post('/auth/refresh', {
+                refresh_token: this.refreshToken
+            })
+            this.setTokens({
+                accessToken: res.data.access_token,
+                refreshToken: res.data.refresh_token
+            })
         },
 
         async fetchUser() {
@@ -90,8 +119,10 @@ export const useAuthStore = defineStore('auth', {
 
         logout() {
             this.token = null
+            this.refreshToken = null
             this.user = null
             localStorage.removeItem('token')
+            localStorage.removeItem('refresh_token')
 
             delete axios.defaults.headers.common['Authorization']
 
@@ -102,7 +133,16 @@ export const useAuthStore = defineStore('auth', {
         async restoreSession() {
             try {
                 if (this.token) {
-                    await this.fetchUser()
+                    try {
+                        await this.fetchUser()
+                    } catch (error) {
+                        if (error?.response?.status === 401 && this.refreshToken) {
+                            await this.refreshAccessToken()
+                            await this.fetchUser()
+                        } else {
+                            throw error
+                        }
+                    }
                 }
             } catch {
                 this.logout()

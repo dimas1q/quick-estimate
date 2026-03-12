@@ -10,6 +10,7 @@ from urllib.request import urlopen
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
+from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import or_
@@ -17,9 +18,22 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
-from app.schemas.user import EmailRequest, GoogleOAuthRequest, UserCreate, UserOut, VerifyCode
+from app.schemas.user import (
+    EmailRequest,
+    GoogleOAuthRequest,
+    RefreshTokenRequest,
+    UserCreate,
+    UserOut,
+    VerifyCode,
+)
 from app.utils.auth import authenticate_user
-from app.utils.auth import hash_password, verify_password, create_access_token
+from app.utils.auth import (
+    create_access_token,
+    create_refresh_token,
+    decode_jwt_token,
+    hash_password,
+    verify_password,
+)
 from app.utils.otp import generate_code
 from app.utils.email import send_verification_code
 
@@ -91,6 +105,16 @@ async def _find_user_by_identifier(db: AsyncSession, identifier: str) -> User | 
 
 def _lock_retry_after_seconds(locked_until: datetime, now: datetime) -> int:
     return max(1, int((locked_until - now).total_seconds()))
+
+
+def _issue_tokens(user_id: int) -> dict[str, str]:
+    access_token = create_access_token(data={"sub": str(user_id)})
+    refresh_token = create_refresh_token(data={"sub": str(user_id)})
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
 
 
 async def _register_failed_login(db: AsyncSession, user: User, now: datetime) -> bool:
@@ -195,8 +219,7 @@ async def login(
     if not authed_user.is_active:
         return JSONResponse(status_code=403, content={"verify_required": True, "email": authed_user.email})
 
-    token = create_access_token(data={"sub": str(authed_user.id)})
-    return {"access_token": token, "token_type": "bearer"}
+    return _issue_tokens(authed_user.id)
 
 
 @router.post("/verify")
@@ -218,8 +241,7 @@ async def verify_code(data: VerifyCode, db: AsyncSession = Depends(get_db)):
     user.otp_expires_at = None
     await db.commit()
 
-    token = create_access_token(data={"sub": str(user.id)})
-    return {"access_token": token, "token_type": "bearer"}
+    return _issue_tokens(user.id)
 
 
 @router.post("/resend")
@@ -299,5 +321,30 @@ async def google_oauth_login(
             await db.commit()
             await db.refresh(user)
 
-    token = create_access_token(data={"sub": str(user.id)})
-    return {"access_token": token, "token_type": "bearer"}
+    return _issue_tokens(user.id)
+
+
+@router.post("/refresh")
+async def refresh_tokens(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
+    credentials_exception = HTTPException(status_code=401, detail="Невалидный refresh token")
+    try:
+        payload = decode_jwt_token(data.refresh_token)
+    except JWTError:
+        raise credentials_exception
+
+    if payload.get("type") != "refresh":
+        raise credentials_exception
+
+    sub = payload.get("sub")
+    if not sub:
+        raise credentials_exception
+
+    if str(sub).isdigit():
+        result = await db.execute(select(User).where(User.id == int(sub)))
+    else:
+        result = await db.execute(select(User).where(User.email == str(sub)))
+    user = result.scalar_one_or_none()
+    if not user or not user.is_active:
+        raise credentials_exception
+
+    return _issue_tokens(user.id)
