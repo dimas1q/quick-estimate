@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { appRuntimeConfig } from '@/config/runtime'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -17,7 +18,7 @@ const canResend = ref(false)
 const timer = ref(60)
 const lockoutSeconds = ref(0)
 const lastFailedCredentialsKey = ref(null)
-const googleClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim()
+const googleClientId = appRuntimeConfig.googleClientId
 const googleButtonContainer = ref(null)
 const googleOauthReady = ref(false)
 let interval

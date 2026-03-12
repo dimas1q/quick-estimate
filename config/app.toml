@@ -1,0 +1,35 @@
+[app]
+env = "production"
+
+[database]
+url = "postgresql+asyncpg://postgres:postgres@localhost:5432/quickestimate"
+echo = false
+
+[auth]
+jwt_secret_key_path = "/etc/quickestimate/secret.key"
+jwt_algorithm = "HS256"
+jwt_access_token_expire_minutes = 60
+google_oauth_client_id = ""
+max_failed_login_attempts = 5
+lock_minutes = 15
+otp_expire_minutes = 10
+
+[cors]
+allow_origins = ["https://quickestimate.example.com"]
+
+[smtp]
+host = "smtp.example.com"
+port = 587
+user = ""
+password = ""
+from = "noreply@example.com"
+tls = true
+ssl = false
+
+[server]
+host = "0.0.0.0"
+port = 8000
+reload = false
+db_wait_host = "localhost"
+db_wait_port = 5432
+db_wait_timeout = 60

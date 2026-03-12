@@ -32,7 +32,7 @@ jobs:
     env:
       APP_ENV: test
       CORS_ALLOW_ORIGINS: http://localhost:5173
-      GOOGLE_OAUTH_CLIENT_IDS: test-client-id
+      GOOGLE_OAUTH_CLIENT_ID: test-client-id
       JWT_SECRET_KEY: test-jwt-secret
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/quickestimate_ci
       ALEMBIC_DATABASE_URL: postgresql+psycopg2://postgres:postgres@127.0.0.1:5432/quickestimate_ci

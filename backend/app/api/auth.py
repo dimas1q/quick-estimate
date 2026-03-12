@@ -31,12 +31,8 @@ def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _google_client_ids() -> set[str]:
-    return {
-        client_id.strip()
-        for client_id in settings.GOOGLE_OAUTH_CLIENT_IDS.split(",")
-        if client_id.strip()
-    }
+def _google_client_id() -> str:
+    return settings.GOOGLE_OAUTH_CLIENT_ID.strip()
 
 
 def _build_login_candidate(email: str) -> str:
@@ -60,7 +56,7 @@ async def _ensure_unique_login(db: AsyncSession, email: str) -> str:
     raise HTTPException(status_code=500, detail="Не удалось подобрать уникальный логин")
 
 
-def _verify_google_token(credential: str, allowed_client_ids: set[str]) -> dict:
+def _verify_google_token(credential: str, allowed_client_id: str) -> dict:
     if not credential:
         raise HTTPException(status_code=400, detail="Пустой OAuth credential")
 
@@ -78,7 +74,7 @@ def _verify_google_token(credential: str, allowed_client_ids: set[str]) -> dict:
 
     if issuer not in GOOGLE_ISSUERS:
         raise HTTPException(status_code=401, detail="Неверный издатель Google токена")
-    if audience not in allowed_client_ids:
+    if audience != allowed_client_id:
         raise HTTPException(status_code=401, detail="Google токен выдан для другого клиента")
     if not email or email_verified not in {True, "true", "True"}:
         raise HTTPException(status_code=401, detail="Google аккаунт не подтвержден")
@@ -246,12 +242,12 @@ async def google_oauth_login(
     data: GoogleOAuthRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    allowed_client_ids = _google_client_ids()
-    if not allowed_client_ids:
+    allowed_client_id = _google_client_id()
+    if not allowed_client_id:
         raise HTTPException(status_code=503, detail="Google OAuth не настроен")
 
     google_payload = await asyncio.to_thread(
-        _verify_google_token, data.credential, allowed_client_ids
+        _verify_google_token, data.credential, allowed_client_id
     )
     email = str(google_payload["email"]).lower()
     user_name = google_payload.get("name")

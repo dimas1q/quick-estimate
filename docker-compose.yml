@@ -1,59 +1,20 @@
 services:
-  backend:
-    build: ./backend
-    container_name: quickestimate-backend
-    volumes:
-      - ./backend:/app
-      - ./data:/app/config
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quickestimate-app
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
-      mailhog:
-        condition: service_started
     environment:
-      APP_ENV: development
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db/quickestimate
-      SQLALCHEMY_ECHO: "true"
-      CORS_ALLOW_ORIGINS: http://localhost:5173
-      GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
-      AUTH_MAX_FAILED_LOGIN_ATTEMPTS: 5
-      AUTH_LOCK_MINUTES: 15
-      POSTGRES_DB: quickestimate
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      SMTP_HOST: mailhog
-      SMTP_PORT: 1025
-      SMTP_TLS: "False"
-      SMTP_SSL: "False"
-    command: ./start.sh --reload
-
-  frontend:
-    build: ./frontend
-    container_name: quickestimate-frontend
-    working_dir: /app
+      APP_CONFIG_FILE: /app/config/app.toml
     volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
-    ports:
-      - "5173:5173"
-    environment:
-      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
-    command: >
-      sh -lc '
-        set -e;
-        npm ci --include=optional;
-        node -e "console.log(process.platform, process.arch)";
-        if [ "$(node -p process.arch)" = "arm64" ]; then
-          npm i --no-save @rollup/rollup-linux-arm64-gnu@4.39.0;
-        else
-          npm i --no-save @rollup/rollup-linux-x64-gnu@4.39.0;
-        fi;
-        npm run dev
-      '
-    stdin_open: true
-    tty: true
+      - ./config/app.prod.toml:/app/config/app.toml:ro
+      - app_runtime_state:/app/config-runtime
+    restart: unless-stopped
 
   db:
     image: postgres:14
@@ -62,23 +23,15 @@ services:
       POSTGRES_DB: quickestimate
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1"]
       interval: 2s
       timeout: 3s
       retries: 30
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: quickestimate-mailhog
-    ports:
-      - "1025:1025"
-      - "8025:8025"
-
 volumes:
   pgdata:
-  frontend_node_modules:
+  app_runtime_state:

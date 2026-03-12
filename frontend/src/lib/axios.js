@@ -1,6 +1,6 @@
-import axios from 'axios'       // ✅ Чистый импорт без цикла
+import axios from 'axios'
+import { appRuntimeConfig } from '@/config/runtime'
 
-// глобальная настройка базового URL
-axios.defaults.baseURL = import.meta.env.VITE_API_URL
+axios.defaults.baseURL = appRuntimeConfig.apiUrl
 
 export default axios

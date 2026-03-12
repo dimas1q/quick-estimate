@@ -16,8 +16,8 @@ FastAPI + Vue 3 application for building and tracking estimates with clients, te
   - `app/utils/` auth (bcrypt + jose), PDF (pdfkit/wkhtmltopdf), Excel exports, analytics Excel
   - `alembic/` migrations; `start.sh` applies migrations then runs Uvicorn
 - `frontend/` — Vue 3 + Vite SPA with Pinia stores (`src/store`), routed pages under `src/pages`, Tailwind styles in `src/assets/main.css`
-- Docker: separate `backend/Dockerfile` (Python 3.11 + wkhtmltopdf) and `frontend/Dockerfile` (Node 20); `docker-compose.yml` for dev stack
-- Data persistence: PostgreSQL 14 (service `db`), volume `pgdata`; JWT secret stored at `config/secret.key` (mounted from `data/`)
+- Docker: separate `backend/Dockerfile` (Python 3.11 + wkhtmltopdf) and `frontend/Dockerfile` (Node 20)
+- Configuration: TOML-first via `config/app.dev.toml` and `config/app.prod.toml`
 
 ## Requirements
 - Python 3.11, Node.js 20, npm
@@ -26,18 +26,19 @@ FastAPI + Vue 3 application for building and tracking estimates with clients, te
 - Docker + Docker Compose (recommended for dev/prod)
 
 ## Quick Start (local)
-Recommended path is the dev Docker Compose stack.
+Recommended path for local development is `docker-compose.dev.yml`.
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.dev.yml up --build
 # frontend: http://localhost:5173
 # api:      http://localhost:8000/api
 ```
 
 Notes:
-- Backend binds to 0.0.0.0:8000 and expects PostgreSQL at host `db` with user/password `postgres` / DB `quickestimate`.
-- CORS allows `http://localhost:5173`.
-- JWT secret is auto-created at `config/secret.key` (persisted via `data/` volume).
+- Backend runtime settings are loaded from TOML (`APP_CONFIG_FILE`), defaults are in `config/app.dev.toml`.
+- Frontend runtime settings are generated into `runtime-config.js` from the same TOML file.
+  - `apiUrl` is derived automatically from `[app].env` + `[server].port`
+  - `googleClientId` is derived from `[auth].google_oauth_client_id`
 - On the first `alembic upgrade head`, a bootstrap admin user is created (if missing):
   - `login`: `admin`
   - `email`: `admin@quickestimate.app`
@@ -45,38 +46,41 @@ Notes:
 - New users created via register/OAuth are regular users by default (`is_admin=false`).
 
 ## Docker
-- Dev stack: `docker compose up --build` (services: `backend`, `frontend`, `db`)
-- Prod compose: `docker compose -f docker-compose.prod.yml up --build -d`  
-  The prod file expects a monolithic `Dockerfile` at repo root (not present); either add one or point it to the existing `backend/Dockerfile` and ship built frontend assets into `backend/app/frontend`.
+- Prod stack (default): `docker compose up --build -d` (uses `docker-compose.yml`)
+- Dev stack: `docker compose -f docker-compose.dev.yml up --build`
+- Make shortcuts:
+  - `make up` - prod compose
+  - `make dev` - dev compose
+  - `make up dev` - dev compose (explicitly supported)
+  - if `config/app.dev.local.toml` exists, dev commands use it automatically
 
 ## Configuration
-Environment:
+Primary configuration source is TOML.
 
-| Variable | Default | Scope | Description |
-| --- | --- | --- | --- |
-| `POSTGRES_DB` | `quickestimate` | Docker compose | Database name |
-| `POSTGRES_USER` | `postgres` | Docker compose | Database user |
-| `POSTGRES_PASSWORD` | `postgres` | Docker compose | Database password |
-| `VITE_API_URL` | `http://localhost:8000/api` (dev), `/api` (prod) | frontend | API base URL used by Axios |
+- Dev config: `config/app.dev.toml`
+- Prod config: `config/app.prod.toml`
+- Default system path (non-Docker/service mode): `/etc/quickestimate/app.toml`
+- Repo fallback path: `config/app.toml`
+- Frontend section is not required in TOML; frontend runtime config is auto-generated.
 
-Other config:
-- Backend DB URL is hardcoded to `postgresql+asyncpg://postgres:postgres@db/quickestimate` (`backend/app/core/database.py`). If running without Docker, ensure the host `db` resolves or adjust that file.
-- JWT secret stored/read from `config/secret.key` (auto-generated if missing).
+Environment variables are now overrides only (for example `APP_CONFIG_FILE`, `DATABASE_URL`, `CORS_ALLOW_ORIGINS`).
 
 ## Usage
 - Backend (manual):  
   ```bash
   cd backend
-  python -m venv .venv && source .venv/bin/activate
+  python3 -m venv .venv && source .venv/bin/activate
   pip install -r requirements.txt
+  export APP_CONFIG_FILE=/etc/quickestimate/app.toml
   alembic upgrade head  
-  uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+  ./start.sh
   ```
 - Frontend (manual):  
   ```bash
   cd frontend
   npm install
-  cp .env.development .env 
+  export APP_CONFIG_FILE=/etc/quickestimate/app.toml
+  npm run generate:runtime-config
   npm run dev -- --host
   ```
 - API base path: `/api`. Authorization via `Authorization: Bearer <token>`.
@@ -89,10 +93,9 @@ Other config:
 
 
 ## Troubleshooting
-- Backend cannot connect to DB outside Docker: either run Postgres as `db` host or update `backend/app/core/database.py`.
+- Backend cannot connect to DB outside Docker: verify `/etc/quickestimate/app.toml` values (`[database]` and `[server]` sections).
 - PDF export fails: install `wkhtmltopdf` on host or run inside the backend Docker image.
-- CORS errors: ensure the frontend origin matches the allowed origin (`http://localhost:5173` by default) or adjust middleware in `app/main.py`.
-- Prod compose build fails: supply a root `Dockerfile` or point to existing backend Dockerfile and include built frontend assets under `backend/app/frontend`.
+- CORS errors: ensure `cors.allow_origins` in TOML contains the actual frontend origin.
 
 ## License
 PolyForm Noncommercial License 1.0.0 (see `LICENSE` and `NOTICE` for non-commercial and attribution terms).

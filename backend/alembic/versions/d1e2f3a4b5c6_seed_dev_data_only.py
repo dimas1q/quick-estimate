@@ -7,6 +7,8 @@ Create Date: 2026-03-11 23:50:00
 
 from typing import Sequence, Union
 import os
+import tomllib
+from pathlib import Path
 
 from alembic import op
 import sqlalchemy as sa
@@ -49,6 +51,33 @@ CLIENT_NAMES = [
 
 def _is_development() -> bool:
     env_name = (os.getenv("APP_ENV") or os.getenv("ENV") or "").lower()
+    if not env_name:
+        config_path = os.getenv("APP_CONFIG_FILE")
+        candidates: list[Path] = []
+        if config_path:
+            candidates.append(Path(config_path))
+
+        candidates.extend(
+            [
+                Path("/etc/quickestimate/app.toml"),
+                Path("/app/config/app.toml"),
+                Path(__file__).resolve().parents[3] / "config" / "app.toml",
+                Path(__file__).resolve().parents[3] / "config" / "app.dev.toml",
+            ]
+        )
+
+        for candidate in candidates:
+            try:
+                if not candidate.exists():
+                    continue
+                with candidate.open("rb") as file_obj:
+                    config_data = tomllib.load(file_obj)
+                env_name = str(config_data.get("app", {}).get("env", "")).lower()
+                if env_name:
+                    break
+            except (OSError, tomllib.TOMLDecodeError):
+                continue
+
     return env_name in {"dev", "development", "local"}
 
 

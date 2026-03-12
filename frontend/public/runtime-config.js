@@ -1,0 +1,1 @@
+window.__QE_CONFIG__ = Object.assign({}, window.__QE_CONFIG__ || {}, {"apiUrl":"http://localhost:8000/api","googleClientId":"262420909084-ai71h6tas9mn0m7c0k6haktuf3fd3j5s.apps.googleusercontent.com"});
