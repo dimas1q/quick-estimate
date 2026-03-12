@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -154,8 +155,7 @@ async def readiness_health() -> JSONResponse:
     )
 
 
-@app.on_event("startup")
-async def on_startup() -> None:
+async def _run_startup_checks() -> None:
     log_startup_banner(settings)
     skip_heavy_checks = _is_test_env()
 
@@ -177,6 +177,15 @@ async def on_startup() -> None:
     failed_checks = [label for label, ok in checks if not ok]
     if failed_checks:
         raise RuntimeError(f"Startup checks failed: {', '.join(failed_checks)}")
+
+
+@asynccontextmanager
+async def app_lifespan(_app: FastAPI):
+    await _run_startup_checks()
+    yield
+
+
+app.router.lifespan_context = app_lifespan
 
 
 # Path to built frontend (dist)
