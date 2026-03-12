@@ -459,18 +459,30 @@
         </div>
 
         <div v-if="versions.length" class="mt-2 pt-6 text-sm">
-          <h3 class="font-semibold mb-4">
-            <span class="flex items-center gap-2">
-              <GitCommitVertical class="w-5 h-5 text-blue-600" />
-              <span>История версий</span>
-            </span>
-
-          </h3>
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 class="font-semibold">
+              <span class="flex items-center gap-2">
+                <GitCommitVertical class="w-5 h-5 text-blue-600" />
+                <span>История версий</span>
+              </span>
+            </h3>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs text-gray-500 dark:text-gray-300">
+                Выберите версии A/B и нажмите сравнить
+              </span>
+              <button @click="openCompareModal" :disabled="!canCompareVersions"
+                class="qe-btn-secondary inline-flex items-center gap-1 px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                Сравнить
+              </button>
+            </div>
+          </div>
           <div
             class="overflow-x-auto rounded-xl shadow border border-gray-200 dark:border-gray-800 bg-white dark:bg-qe-black3">
             <table class="w-full text-sm qe-table">
               <thead>
                 <tr class="bg-gray-50 dark:bg-qe-black2">
+                  <th class="qe-table-th text-center">A</th>
+                  <th class="qe-table-th text-center">B</th>
                   <th class="qe-table-th text-left">Версия</th>
                   <th class="qe-table-th text-left">Дата создания</th>
                   <th class="qe-table-th text-right">Действия</th>
@@ -479,6 +491,30 @@
               <tbody>
                 <tr v-for="v in versions" :key="v.version"
                   class="hover:bg-gray-100 dark:hover:bg-gray-800 border-b last:border-b-0 transition dark:bg-qe-black3">
+                  <td class="qe-table-td text-center">
+                    <label class="inline-flex cursor-pointer items-center justify-center">
+                      <input type="radio" class="peer sr-only" :name="`compare-left-${estimate?.id || 'estimate'}`"
+                        :checked="compareLeftVersion === v.version" @change="setCompareVersion('left', v.version)" />
+                      <span class="inline-flex h-7 min-w-7 items-center justify-center rounded-full border text-[11px] font-semibold transition"
+                        :class="compareLeftVersion === v.version
+                          ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/30'
+                          : 'border-gray-300 bg-white text-gray-500 hover:border-blue-300 hover:text-blue-600 dark:border-qe-black2 dark:bg-qe-black2 dark:text-gray-300 dark:hover:border-blue-500'">
+                        A
+                      </span>
+                    </label>
+                  </td>
+                  <td class="qe-table-td text-center">
+                    <label class="inline-flex cursor-pointer items-center justify-center">
+                      <input type="radio" class="peer sr-only" :name="`compare-right-${estimate?.id || 'estimate'}`"
+                        :checked="compareRightVersion === v.version" @change="setCompareVersion('right', v.version)" />
+                      <span class="inline-flex h-7 min-w-7 items-center justify-center rounded-full border text-[11px] font-semibold transition"
+                        :class="compareRightVersion === v.version
+                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                          : 'border-gray-300 bg-white text-gray-500 hover:border-indigo-300 hover:text-indigo-600 dark:border-qe-black2 dark:bg-qe-black2 dark:text-gray-300 dark:hover:border-indigo-500'">
+                        B
+                      </span>
+                    </label>
+                  </td>
                   <td class="qe-table-td">№{{ v.version }}</td>
                   <td class="qe-table-td">
                     {{ new Date(v.created_at).toLocaleString() }}
@@ -502,6 +538,8 @@
         </div>
       </div>
     </div>
+    <EstimateVersionCompareModal v-model="showCompareModal" :left-version="selectedLeftVersion"
+      :right-version="selectedRightVersion" />
     <transition name="modal-fade">
       <div v-if="showSendModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeSendModal" />
@@ -562,6 +600,7 @@ import { useToast } from "vue-toastification";
 import QeModal from "@/components/QeModal.vue";
 import QePagination from "@/components/QePagination.vue";
 import NotesBlock from "@/components/NotesBlock.vue";
+import EstimateVersionCompareModal from "@/components/EstimateVersionCompareModal.vue";
 import fileDownload from "js-file-download";
 
 import {
@@ -627,6 +666,9 @@ const logTotal = ref(0);
 const versionTotal = ref(0);
 const logPage = ref(1);
 const versionPage = ref(1);
+const compareLeftVersion = ref(null);
+const compareRightVersion = ref(null);
+const showCompareModal = ref(false);
 const error = ref(null);
 
 const activeTab = ref("details");
@@ -644,6 +686,7 @@ function formatDate(dateStr) {
 
 async function loadAll() {
   const id = route.params.id;
+  showCompareModal.value = false;
   try {
     if (versionParam.value) {
       const ver = await store.getEstimateVersion(versionParam.value, id);
@@ -663,6 +706,7 @@ async function loadAll() {
     const verRes = await store.getEstimateVersions(id, { page: versionPage.value, limit: 10 });
     versions.value = verRes.items;
     versionTotal.value = verRes.total;
+    syncCompareSelections();
     notes.value = await notesStore.fetchEstimateNotes(id);
     error.value = null;
   } catch (e) {
@@ -739,6 +783,23 @@ const canSendEstimate = computed(
     (sendForm.value.attach_pdf || sendForm.value.attach_excel),
 );
 
+const selectedLeftVersion = computed(
+  () =>
+    versions.value.find((version) => version.version === compareLeftVersion.value) ||
+    null,
+);
+const selectedRightVersion = computed(
+  () =>
+    versions.value.find((version) => version.version === compareRightVersion.value) ||
+    null,
+);
+const canCompareVersions = computed(
+  () =>
+    !!selectedLeftVersion.value &&
+    !!selectedRightVersion.value &&
+    selectedLeftVersion.value.version !== selectedRightVersion.value.version,
+);
+
 function openSendModal() {
   if (!estimate.value) return;
   sendForm.value = {
@@ -768,6 +829,42 @@ async function changeVersionPage(p) {
   const res = await store.getEstimateVersions(route.params.id, { page: p, limit: 10 });
   versions.value = res.items;
   versionTotal.value = res.total;
+  syncCompareSelections();
+}
+
+function syncCompareSelections() {
+  const versionNumbers = new Set(versions.value.map((version) => version.version));
+  if (!versionNumbers.has(compareLeftVersion.value)) {
+    compareLeftVersion.value = null;
+  }
+  if (!versionNumbers.has(compareRightVersion.value)) {
+    compareRightVersion.value = null;
+  }
+  if (compareLeftVersion.value === compareRightVersion.value) {
+    compareRightVersion.value = null;
+  }
+}
+
+function setCompareVersion(side, version) {
+  if (side === "left") {
+    compareLeftVersion.value = version;
+    if (compareRightVersion.value === version) {
+      compareRightVersion.value = null;
+    }
+    return;
+  }
+  compareRightVersion.value = version;
+  if (compareLeftVersion.value === version) {
+    compareLeftVersion.value = null;
+  }
+}
+
+function openCompareModal() {
+  if (!canCompareVersions.value) {
+    toast.error("Выберите две разные версии для сравнения");
+    return;
+  }
+  showCompareModal.value = true;
 }
 
 async function toggleReadOnly() {
