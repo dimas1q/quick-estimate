@@ -69,6 +69,11 @@ Primary configuration source is TOML.
 
 Environment variables are now overrides only (for example `APP_CONFIG_FILE`, `DATABASE_URL`, `APP_DOMAIN`, `GOOGLE_OAUTH_CLIENT_ID`).
 
+Security note:
+- Do not commit JWT secrets into git.
+- By default, backend stores generated JWT secret in the path from `auth.jwt_secret_key_path` (dev/prod defaults: `/app/config-runtime/secret.key` in Docker volumes).
+- You can provide `JWT_SECRET_KEY` explicitly via environment for managed secret stores.
+
 ## Usage
 - Backend (manual):  
   ```bash
