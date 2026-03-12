@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+  <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Управление данными пользователя</h1>
@@ -176,7 +176,7 @@
     <transition name="modal-fade">
       <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
         <div class="absolute inset-0 bg-black/50" @click="closeTemplateModal" />
-        <div class="relative z-10 w-full max-w-7xl max-h-[90vh] overflow-auto bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
+        <div class="relative z-10 w-full max-w-6xl max-h-[90vh] overflow-auto bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
           <h3 class="text-lg font-bold">{{ editingTemplateId ? 'Редактирование шаблона' : 'Создание шаблона' }}</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -206,7 +206,7 @@
     <transition name="modal-fade">
       <div v-if="showEstimateModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
         <div class="absolute inset-0 bg-black/50" @click="closeEstimateModal" />
-        <div class="relative z-10 w-full max-w-7xl max-h-[90vh] overflow-auto bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
+        <div class="relative z-10 w-full max-w-6xl max-h-[90vh] overflow-auto bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
           <h3 class="text-lg font-bold">{{ editingEstimateId ? 'Редактирование сметы' : 'Создание сметы' }}</h3>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

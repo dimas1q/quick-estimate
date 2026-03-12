@@ -1,8 +1,16 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const configPath = process.env.APP_CONFIG_FILE || '/app/config/app.toml'
-const outputPath = process.env.RUNTIME_CONFIG_OUT || '/app/public/runtime-config.js'
+const cwd = process.cwd()
+const configCandidates = [
+  process.env.APP_CONFIG_FILE,
+  path.resolve(cwd, '../config/app.dev.toml'),
+  path.resolve(cwd, '../config/app.toml'),
+  '/app/config/app.toml'
+].filter(Boolean)
+
+const configPath = configCandidates.find((candidate) => fs.existsSync(candidate))
+const outputPath = process.env.RUNTIME_CONFIG_OUT || path.resolve(cwd, 'public/runtime-config.js')
 
 function parseValue(raw) {
   const value = raw.trim()
@@ -76,8 +84,8 @@ function renderRuntimeConfig({ apiUrl, googleClientId }) {
   return `window.__QE_CONFIG__ = Object.assign({}, window.__QE_CONFIG__ || {}, ${JSON.stringify(payload)});\n`
 }
 
-if (!fs.existsSync(configPath)) {
-  throw new Error(`Config file not found: ${configPath}`)
+if (!configPath) {
+  throw new Error(`Config file not found. Checked: ${configCandidates.join(', ')}`)
 }
 
 const tomlContent = fs.readFileSync(configPath, 'utf8')

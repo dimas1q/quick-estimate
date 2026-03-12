@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col items-center from-gray-50 via-white to-gray-100 px-2 py-10">
     <!-- Хедер и бар фильтров -->
-    <div class="w-full max-w-7xl flex flex-col gap-4 mb-8">
+    <div class="w-full max-w-6xl flex flex-col gap-4 mb-8">
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-2xl font-bold">Шаблоны смет</h2>
         <div class="flex gap-2">
@@ -19,7 +19,7 @@
     </div>
 
     <!-- Список шаблонов -->
-    <div class="w-full max-w-7xl">
+    <div class="w-full max-w-6xl">
       <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div v-for="n in 5" :key="n" class="rounded-2xl bg-white/60 shadow animate-pulse p-6 h-24" />
       </div>

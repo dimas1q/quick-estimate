@@ -4,7 +4,7 @@
         <div v-if="error" class="text-red-500 text-center text-lg font-medium mt-10">
             {{ error }}
         </div>
-        <div v-if="estimate" class="space-y-6 max-w-7xl mx-auto px-16 py-8">
+        <div v-if="estimate" class="space-y-6 max-w-6xl mx-auto px-16 py-8">
             <template v-if="estimate.read_only">
                 <h1 class="text-2xl font-bold mb-3 text-center py-2">Смета в режиме только чтение</h1>
                 <p class="text-center text-gray-500 mb-6">Редактирование запрещено до снятия режима read-only.</p>

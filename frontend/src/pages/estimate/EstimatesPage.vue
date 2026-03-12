@@ -2,7 +2,7 @@
 <template>
   <div class="flex flex-col items-center from-gray-50 via-white to-gray-100 px-2 py-10">
     <!-- Хедер и бар управления -->
-    <div class="w-full max-w-7xl flex flex-col gap-4 mb-8">
+    <div class="w-full max-w-6xl flex flex-col gap-4 mb-8">
       <!-- Навигационный переключатель -->
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-1 bg-gray-100 dark:bg-qe-black2 rounded-xl p-1">
@@ -37,7 +37,7 @@
     </div>
 
     <!-- Список смет -->
-    <div class="w-full max-w-7xl space-y-5">
+    <div class="w-full max-w-6xl space-y-5">
       <div v-if="isLoading" class="space-y-3">
         <div v-for="n in 3" :key="n" class="rounded-2xl bg-white/60 shadow animate-pulse p-6 h-24" />
       </div>

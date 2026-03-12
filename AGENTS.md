@@ -49,7 +49,7 @@ QuickEstimate is a modern web application for fast, convenient estimate manageme
 * **Styling:** Use only **Tailwind CSS** utility classes for styling. Stick to the established color palette, spacing, and rounded corners. Do not use custom CSS unless absolutely required. All UI must be consistent with existing pages (look at `EstimateDetailsPage.vue`, `Sidebar.vue`, `TemplateForm.vue`, etc.).
 * **Dark mode:** Respect dark mode in all components. Use classes like `dark:bg-gray-900` and `dark:text-white`.
 * **Forms:** Use floating labels or clean, modern label-input stacks. Avoid legacy or material design unless already in use.
-* **Mobile:** All layouts/pages/components must be **responsive** (flex/grid, `max-w-7xl mx-auto` for content, etc.).
+* **Mobile:** All layouts/pages/components must be **responsive** (flex/grid, `max-w-6xl mx-auto` for content, etc.).
 * **Transitions/UX:** Use Tailwind and Vue transitions for modals, toasts, and route/page changes. For toasts, use `vue-toastification`.
 * **Routing:** All routes/pages must be registered in `src/router/index.js` and use explicit layout wrappers (`DefaultLayout`, `AuthLayout`).
 
