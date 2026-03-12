@@ -1,9 +1,9 @@
 [app]
 env = "production"
+domain = "https://quickestimate.example.com"
 
 [database]
 url = "postgresql+asyncpg://postgres:postgres@db/quickestimate"
-echo = false
 
 [auth]
 jwt_secret_key_path = "/app/config-runtime/secret.key"
@@ -13,9 +13,6 @@ google_oauth_client_id = ""
 max_failed_login_attempts = 5
 lock_minutes = 15
 otp_expire_minutes = 10
-
-[cors]
-allow_origins = ["https://quickestimate.example.com"]
 
 [smtp]
 host = "smtp.example.com"
@@ -33,3 +30,14 @@ reload = false
 db_wait_host = "db"
 db_wait_port = 5432
 db_wait_timeout = 60
+
+[logging]
+levels = ["INFO", "ERROR"]
+use_color = true
+date_format = "%Y-%m-%d %H:%M:%S"
+
+[logging.module_levels]
+uvicorn.access = "ERROR"
+uvicorn.error = "INFO"
+sqlalchemy.engine = "ERROR"
+alembic = "INFO"

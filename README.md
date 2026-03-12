@@ -36,8 +36,11 @@ docker compose -f docker-compose.dev.yml up --build
 
 Notes:
 - Backend runtime settings are loaded from TOML (`APP_CONFIG_FILE`), defaults are in `config/app.dev.toml`.
+- Backend logging is configured in TOML (`[logging]`, `[logging.module_levels]`), startup emits Matrix-style boot banner with app name/version/mode.
 - Frontend runtime settings are generated into `runtime-config.js` from the same TOML file.
-  - `apiUrl` is derived automatically from `[app].env` + `[server].port`
+  - `apiUrl` is derived automatically:
+    - `development`: from `[server].port`
+    - `production`: from `[app].domain`
   - `googleClientId` is derived from `[auth].google_oauth_client_id`
 - On the first `alembic upgrade head`, a bootstrap admin user is created (if missing):
   - `login`: `admin`
@@ -62,8 +65,9 @@ Primary configuration source is TOML.
 - Default system path (non-Docker/service mode): `/etc/quickestimate/app.toml`
 - Repo fallback path: `config/app.toml`
 - Frontend section is not required in TOML; frontend runtime config is auto-generated.
+- Logging levels are TOML-driven; default allowlist is `INFO` and `ERROR` in both dev and prod.
 
-Environment variables are now overrides only (for example `APP_CONFIG_FILE`, `DATABASE_URL`, `CORS_ALLOW_ORIGINS`).
+Environment variables are now overrides only (for example `APP_CONFIG_FILE`, `DATABASE_URL`, `APP_DOMAIN`, `GOOGLE_OAUTH_CLIENT_ID`).
 
 ## Usage
 - Backend (manual):  
@@ -95,7 +99,9 @@ Environment variables are now overrides only (for example `APP_CONFIG_FILE`, `DA
 ## Troubleshooting
 - Backend cannot connect to DB outside Docker: verify `/etc/quickestimate/app.toml` values (`[database]` and `[server]` sections).
 - PDF export fails: install `wkhtmltopdf` on host or run inside the backend Docker image.
-- CORS errors: ensure `cors.allow_origins` in TOML contains the actual frontend origin.
+- CORS behavior is automatic:
+  - `development`: `http://localhost:5173` and `http://127.0.0.1:5173`
+  - origin from `[app].domain` is also allowed (if configured)
 
 ## License
 PolyForm Noncommercial License 1.0.0 (see `LICENSE` and `NOTICE` for non-commercial and attribution terms).

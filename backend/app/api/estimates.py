@@ -3,6 +3,7 @@
 import re
 from typing import Optional, List
 from urllib.parse import quote
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.encoders import jsonable_encoder
@@ -38,7 +39,8 @@ from app.schemas.paginated import Paginated
 
 from datetime import datetime
 from datetime import timezone
-import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["estimates"], dependencies=[Depends(get_current_user)])
 
@@ -263,7 +265,7 @@ async def update_estimate(
                     "new": STATUS_LABELS_RU.get(new_v, new_v),
                 }
             )
-            logging.info(
+            logger.info(
                 f"Status changed from '{STATUS_LABELS_RU.get(old_v, old_v)}' to '{STATUS_LABELS_RU.get(new_v, new_v)}' for estimate {estimate_id} by user {user.id}"
             )
 

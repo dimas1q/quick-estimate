@@ -42,8 +42,6 @@ services:
         npm run generate:runtime-config;
         npm run dev
       '
-    stdin_open: true
-    tty: true
 
   db:
     image: postgres:14
