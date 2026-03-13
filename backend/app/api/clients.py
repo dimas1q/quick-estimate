@@ -3,7 +3,7 @@
 from collections import defaultdict
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -25,6 +25,7 @@ from app.schemas.client import (
 )
 from app.schemas.paginated import Paginated
 from app.schemas.client_changelog import ClientChangeLogOut
+from app.services.audit_ledger import append_audit_ledger_entry
 from app.utils.auth import get_current_user
 
 router = APIRouter(tags=["clients"], dependencies=[Depends(get_current_user)])
@@ -418,6 +419,7 @@ async def update_client(
 async def update_client_pipeline(
     client_id: int,
     payload: ClientPipelineUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -466,6 +468,18 @@ async def update_client_pipeline(
                 details=details,
             )
         )
+        await append_audit_ledger_entry(
+            db,
+            actor_user_id=user.id,
+            action="client.pipeline.updated",
+            entity_type="client",
+            entity_id=str(client.id),
+            details={
+                "client_name": client.name,
+                "changes": details,
+            },
+            request=request,
+        )
 
     await db.commit()
     await db.refresh(client)
@@ -475,6 +489,7 @@ async def update_client_pipeline(
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_client(
     client_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -505,6 +520,18 @@ async def delete_client(
             action="Удаление",
             description="Клиент удален",
         )
+    )
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="client.deleted",
+        entity_type="client",
+        entity_id=str(client.id),
+        details={
+            "client_name": client.name,
+            "client_company": client.company,
+        },
+        request=request,
     )
     await db.commit()
     return

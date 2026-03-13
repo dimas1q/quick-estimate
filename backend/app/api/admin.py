@@ -1,18 +1,20 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import delete, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.models.audit_ledger import AuditLedgerEntry
 from app.models.client import Client
 from app.models.estimate import Estimate, EstimateStatus
 from app.models.item import EstimateItem
 from app.models.template import EstimateTemplate
 from app.models.user import User
+from app.schemas.audit_ledger import AuditLedgerOut, AuditLedgerVerifyOut
 from app.schemas.client import ClientCreate, ClientOut, ClientUpdate
 from app.schemas.estimate import EstimateCreate, EstimateOut, EstimateUpdate
 from app.schemas.paginated import Paginated
@@ -23,6 +25,7 @@ from app.schemas.user import (
     AdminUserProfileUpdate,
     UserOut,
 )
+from app.services.audit_ledger import append_audit_ledger_entry, verify_audit_chain
 from app.utils.auth import get_current_admin
 
 router = APIRouter(tags=["admin"], dependencies=[Depends(get_current_admin)])
@@ -155,10 +158,12 @@ async def admin_update_user_profile(
 async def admin_update_user_role(
     user_id: int,
     data: AdminRoleUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_admin: User = Depends(get_current_admin),
 ):
     target_user = await _get_user_or_404(db, user_id)
+    old_role = target_user.is_admin
     if current_admin.id == user_id and not data.is_admin:
         raise HTTPException(
             status_code=400,
@@ -166,6 +171,21 @@ async def admin_update_user_role(
         )
 
     target_user.is_admin = data.is_admin
+    if old_role != data.is_admin:
+        await append_audit_ledger_entry(
+            db,
+            actor_user_id=current_admin.id,
+            action="admin.user.role.changed",
+            entity_type="user",
+            entity_id=str(target_user.id),
+            details={
+                "old_is_admin": old_role,
+                "new_is_admin": data.is_admin,
+                "target_login": target_user.login,
+                "target_email": target_user.email,
+            },
+            request=request,
+        )
     await db.commit()
     await db.refresh(target_user)
     return target_user
@@ -175,14 +195,31 @@ async def admin_update_user_role(
 async def admin_update_user_activation(
     user_id: int,
     data: AdminActivationUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_admin: User = Depends(get_current_admin),
 ):
     target_user = await _get_user_or_404(db, user_id)
+    old_activation = target_user.is_active
     if current_admin.id == user_id and not data.is_active:
         raise HTTPException(status_code=400, detail="Нельзя деактивировать самого себя")
 
     target_user.is_active = data.is_active
+    if old_activation != data.is_active:
+        await append_audit_ledger_entry(
+            db,
+            actor_user_id=current_admin.id,
+            action="admin.user.activation.changed",
+            entity_type="user",
+            entity_id=str(target_user.id),
+            details={
+                "old_is_active": old_activation,
+                "new_is_active": data.is_active,
+                "target_login": target_user.login,
+                "target_email": target_user.email,
+            },
+            request=request,
+        )
     await db.commit()
     await db.refresh(target_user)
     return target_user
@@ -250,7 +287,9 @@ async def admin_update_user_client(
 async def admin_delete_user_client(
     user_id: int,
     client_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     client = await _get_client_or_404(db, user_id, client_id)
 
@@ -266,6 +305,19 @@ async def admin_delete_user_client(
         )
 
     await db.delete(client)
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=current_admin.id,
+        action="admin.user.client.deleted",
+        entity_type="client",
+        entity_id=str(client.id),
+        details={
+            "user_id": user_id,
+            "client_name": client.name,
+            "client_company": client.company,
+        },
+        request=request,
+    )
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -370,12 +422,26 @@ async def admin_update_user_template(
 async def admin_delete_user_template(
     user_id: int,
     template_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     template = await _get_template_or_404(db, user_id, template_id)
 
     await db.execute(delete(EstimateItem).where(EstimateItem.template_id == template.id))
     await db.delete(template)
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=current_admin.id,
+        action="admin.user.template.deleted",
+        entity_type="template",
+        entity_id=str(template.id),
+        details={
+            "user_id": user_id,
+            "template_name": template.name,
+        },
+        request=request,
+    )
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -462,10 +528,13 @@ async def admin_update_user_estimate(
     user_id: int,
     estimate_id: int,
     estimate_in: EstimateUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     estimate = await _get_estimate_or_404(db, user_id, estimate_id)
     await _ensure_client_owned(db, user_id, estimate_in.client_id)
+    old_read_only = estimate.read_only
 
     for field, value in estimate_in.model_dump(exclude={"items"}).items():
         setattr(estimate, field, value)
@@ -476,6 +545,22 @@ async def admin_update_user_estimate(
         item_payload.pop("id", None)
         db.add(EstimateItem(**item_payload, estimate_id=estimate.id))
 
+    if old_read_only != estimate.read_only:
+        await append_audit_ledger_entry(
+            db,
+            actor_user_id=current_admin.id,
+            action="admin.estimate.read_only.changed",
+            entity_type="estimate",
+            entity_id=str(estimate.id),
+            details={
+                "user_id": user_id,
+                "estimate_name": estimate.name,
+                "old_read_only": old_read_only,
+                "new_read_only": estimate.read_only,
+            },
+            request=request,
+        )
+
     await db.commit()
     return await _get_estimate_or_404(db, user_id, estimate.id)
 
@@ -484,9 +569,106 @@ async def admin_update_user_estimate(
 async def admin_delete_user_estimate(
     user_id: int,
     estimate_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     estimate = await _get_estimate_or_404(db, user_id, estimate_id)
     await db.delete(estimate)
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=current_admin.id,
+        action="admin.user.estimate.deleted",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={
+            "user_id": user_id,
+            "estimate_name": estimate.name,
+            "estimate_status": estimate.status.value if estimate.status else None,
+        },
+        request=request,
+    )
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/audit/ledger", response_model=Paginated[AuditLedgerOut])
+async def admin_list_audit_ledger(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    action: Optional[str] = Query(None),
+    entity_type: Optional[str] = Query(None),
+    entity_id: Optional[str] = Query(None),
+    actor_user_id: Optional[int] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    filters = []
+    if action:
+        filters.append(AuditLedgerEntry.action == action)
+    if entity_type:
+        filters.append(AuditLedgerEntry.entity_type == entity_type)
+    if entity_id:
+        filters.append(AuditLedgerEntry.entity_id == entity_id)
+    if actor_user_id is not None:
+        filters.append(AuditLedgerEntry.actor_user_id == actor_user_id)
+
+    if date_from:
+        try:
+            filters.append(AuditLedgerEntry.occurred_at >= datetime.fromisoformat(date_from))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            filters.append(AuditLedgerEntry.occurred_at <= datetime.fromisoformat(date_to))
+        except ValueError:
+            pass
+
+    total = await db.scalar(
+        select(func.count()).select_from(AuditLedgerEntry).where(*filters)
+    )
+    result = await db.execute(
+        select(AuditLedgerEntry)
+        .options(selectinload(AuditLedgerEntry.user))
+        .where(*filters)
+        .order_by(AuditLedgerEntry.id.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    entries = result.scalars().all()
+    items = [
+        AuditLedgerOut(
+            id=entry.id,
+            occurred_at=entry.occurred_at,
+            actor_user_id=entry.actor_user_id,
+            actor_login=entry.user.login if entry.user else None,
+            actor_email=entry.user.email if entry.user else None,
+            action=entry.action,
+            entity_type=entry.entity_type,
+            entity_id=entry.entity_id,
+            request_method=entry.request_method,
+            request_path=entry.request_path,
+            ip_address=entry.ip_address,
+            user_agent=entry.user_agent,
+            details=entry.details,
+            prev_hash=entry.prev_hash,
+            entry_hash=entry.entry_hash,
+        )
+        for entry in entries
+    ]
+    return {"items": items, "total": total}
+
+
+@router.get("/audit/ledger/verify", response_model=AuditLedgerVerifyOut)
+async def admin_verify_audit_ledger(db: AsyncSession = Depends(get_db)):
+    verification = await verify_audit_chain(db)
+    return AuditLedgerVerifyOut(
+        is_valid=verification.is_valid,
+        checked_entries=verification.checked_entries,
+        broken_entry_id=verification.broken_entry_id,
+        reason=verification.reason,
+        expected_hash=verification.expected_hash,
+        actual_hash=verification.actual_hash,
+        latest_hash=verification.latest_hash,
+    )

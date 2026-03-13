@@ -90,6 +90,16 @@ export const useAdminStore = defineStore('admin', {
 
     async deleteUserEstimate(userId, estimateId) {
       await axios.delete(`/admin/users/${userId}/estimates/${estimateId}`)
+    },
+
+    async fetchAuditLedger(params = {}) {
+      const res = await axios.get('/admin/audit/ledger', { params })
+      return res.data
+    },
+
+    async verifyAuditLedger() {
+      const res = await axios.get('/admin/audit/ledger/verify')
+      return res.data
     }
   }
 })

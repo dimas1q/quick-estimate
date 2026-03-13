@@ -5,7 +5,7 @@ import re
 from typing import List, Optional
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from sqlalchemy import delete, func, or_
@@ -39,6 +39,7 @@ from app.utils.auth import get_current_user
 from app.utils.email import EmailAttachment, send_email
 from app.utils.excel import generate_excel
 from app.utils.pdf import render_pdf
+from app.services.audit_ledger import append_audit_ledger_entry
 from app.schemas.paginated import Paginated
 
 from datetime import datetime
@@ -651,6 +652,7 @@ async def autosave_estimate(
 async def set_estimate_read_only(
     estimate_id: int,
     payload: EstimateReadOnlyUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -692,6 +694,18 @@ async def set_estimate_read_only(
                     details=details,
                 )
             )
+        await append_audit_ledger_entry(
+            db,
+            actor_user_id=user.id,
+            action="estimate.read_only.changed",
+            entity_type="estimate",
+            entity_id=str(estimate.id),
+            details={
+                "estimate_name": estimate.name,
+                "read_only": payload.read_only,
+            },
+            request=request,
+        )
         await db.commit()
 
     result = await db.execute(
@@ -705,6 +719,7 @@ async def set_estimate_read_only(
 @router.delete("/{estimate_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_estimate(
     estimate_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -718,6 +733,18 @@ async def delete_estimate(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     ensure_estimate_not_read_only(estimate)
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="estimate.deleted",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={
+            "estimate_name": estimate.name,
+            "status": estimate.status.value if estimate.status else None,
+        },
+        request=request,
+    )
     await db.delete(estimate)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -930,6 +957,7 @@ async def get_logs(
 @router.get("/{estimate_id}/export/pdf")
 async def export_estimate_pdf(
     estimate_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -943,6 +971,16 @@ async def export_estimate_pdf(
             **totals,
         },
     )
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="estimate.export.pdf",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={"estimate_name": estimate.name},
+        request=request,
+    )
+    await db.commit()
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
@@ -955,6 +993,7 @@ async def export_estimate_pdf(
 @router.get("/{estimate_id}/export/invoice-pdf")
 async def export_estimate_invoice_pdf(
     estimate_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -973,6 +1012,19 @@ async def export_estimate_invoice_pdf(
             **totals,
         },
     )
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="estimate.export.invoice_pdf",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={
+            "estimate_name": estimate.name,
+            "invoice_number": invoice_number,
+        },
+        request=request,
+    )
+    await db.commit()
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
@@ -985,6 +1037,7 @@ async def export_estimate_invoice_pdf(
 @router.get("/{estimate_id}/export/act-pdf")
 async def export_estimate_act_pdf(
     estimate_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -1003,6 +1056,19 @@ async def export_estimate_act_pdf(
             **totals,
         },
     )
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="estimate.export.act_pdf",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={
+            "estimate_name": estimate.name,
+            "act_number": act_number,
+        },
+        request=request,
+    )
+    await db.commit()
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
@@ -1014,6 +1080,7 @@ async def export_estimate_act_pdf(
 async def send_estimate_email(
     estimate_id: int,
     payload: EstimateSendEmail,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -1081,6 +1148,19 @@ async def send_estimate_email(
             ],
         )
     )
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="estimate.send_email",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={
+            "estimate_name": estimate.name,
+            "to": payload.to,
+            "attachments": [a["filename"] for a in attachments],
+        },
+        request=request,
+    )
     await db.commit()
 
     return {"detail": "Смета успешно отправлена"}
@@ -1089,6 +1169,7 @@ async def send_estimate_email(
 @router.get("/{estimate_id}/export/excel")
 async def export_estimate_excel(
     estimate_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -1111,6 +1192,16 @@ async def export_estimate_excel(
     utf8_filename = quote(filename)
 
     excel_file = generate_excel(estimate)
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="estimate.export.excel",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={"estimate_name": estimate.name, "filename": filename},
+        request=request,
+    )
+    await db.commit()
     return StreamingResponse(
         excel_file,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

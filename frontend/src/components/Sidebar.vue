@@ -72,14 +72,25 @@ function isActive(path) {
       </RouterLink>
       <RouterLink v-if="auth.user?.is_admin" to="/admin/users" class="flex items-center rounded transition-all rounded-lg" :class="[
         collapsed ? 'justify-center h-9 w-full' : ' px-3 py-2',
-        isActive('/admin')
+        isActive('/admin/users')
           ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
           : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
       ]">
         <Shield class="w-5 h-5 shrink-0" />
         <span class="inline-block transition-all duration-300"
           :class="collapsed ? 'opacity-0 max-w-0 ml-0' : 'opacity-100 max-w-xs ml-2'"
-          style="overflow:hidden; white-space:nowrap;">Админка</span>
+          style="overflow:hidden; white-space:nowrap;">Админ панель</span>
+      </RouterLink>
+      <RouterLink v-if="auth.user?.is_admin" to="/admin/audit" class="flex items-center rounded transition-all rounded-lg" :class="[
+        collapsed ? 'justify-center h-9 w-full' : ' px-3 py-2',
+        isActive('/admin/audit')
+          ? 'bg-blue-100 dark:bg-qe-black2 text-blue-700 dark:text-blue-600 font-semibold'
+          : 'hover:bg-blue-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100'
+      ]">
+        <Shield class="w-5 h-5 shrink-0" />
+        <span class="inline-block transition-all duration-300"
+          :class="collapsed ? 'opacity-0 max-w-0 ml-0' : 'opacity-100 max-w-xs ml-2'"
+          style="overflow:hidden; white-space:nowrap;">Аудит</span>
       </RouterLink>
     </nav>
     <button @click="toggleSidebar"

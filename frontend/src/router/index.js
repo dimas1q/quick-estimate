@@ -24,6 +24,7 @@ const ClientEditPage = () => import('@/pages/client/ClientEditPage.vue')
 const AnalyticsPage = () => import('@/pages/analytics/AnalyticsPage.vue')
 const AdminUsersPage = () => import('@/pages/admin/AdminUsersPage.vue')
 const AdminUserWorkspacePage = () => import('@/pages/admin/AdminUserWorkspacePage.vue')
+const AdminAuditLedgerPage = () => import('@/pages/admin/AdminAuditLedgerPage.vue')
 const NotFoundPage = () => import('@/pages/errors/NotFoundPage.vue')
 
 
@@ -82,6 +83,11 @@ const routes = [
   {
     path: '/admin/users/:userId/workspace',
     component: AdminUserWorkspacePage,
+    meta: { layout: DefaultLayout, requiresAdmin: true }
+  },
+  {
+    path: '/admin/audit',
+    component: AdminAuditLedgerPage,
     meta: { layout: DefaultLayout, requiresAdmin: true }
   },
 

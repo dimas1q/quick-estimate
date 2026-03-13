@@ -3,7 +3,7 @@
 
 from typing import Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import ValidationError
 from sqlalchemy import delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +22,7 @@ from app.schemas.template import (
     TemplateImportRequest,
     TemplateImportSummary,
 )
+from app.services.audit_ledger import append_audit_ledger_entry
 from app.utils.auth import get_current_user
 
 router = APIRouter(tags=["templates"], dependencies=[Depends(get_current_user)])
@@ -337,6 +338,7 @@ async def update_template(
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
     template_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -351,6 +353,17 @@ async def delete_template(
 
     await db.execute(
         delete(EstimateItem).where(EstimateItem.template_id == template_id)
+    )
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="template.deleted",
+        entity_type="template",
+        entity_id=str(template.id),
+        details={
+            "template_name": template.name,
+        },
+        request=request,
     )
     await db.delete(template)
     await db.commit()
