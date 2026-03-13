@@ -48,6 +48,7 @@ class Settings(BaseModel):
 
     PROFIT_GUARD_ENABLED: bool = True
     PROFIT_GUARD_MIN_MARGIN_PERCENT: float = 15.0
+    ORGANIZATIONS_AUTO_DOMAIN_ENABLED: bool = False
 
     SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8000
@@ -117,6 +118,7 @@ ENV_OVERRIDE_KEYS = {
     "SMTP_TIMEOUT_SECONDS",
     "PROFIT_GUARD_ENABLED",
     "PROFIT_GUARD_MIN_MARGIN_PERCENT",
+    "ORGANIZATIONS_AUTO_DOMAIN_ENABLED",
     "SERVER_HOST",
     "SERVER_PORT",
     "SERVER_RELOAD",
@@ -301,6 +303,12 @@ def _parse_toml_config(config_data: dict[str, Any], config_path: Path) -> dict[s
         parsed["PROFIT_GUARD_ENABLED"] = profit_guard_cfg["enabled"]
     if "min_margin_percent" in profit_guard_cfg:
         parsed["PROFIT_GUARD_MIN_MARGIN_PERCENT"] = profit_guard_cfg["min_margin_percent"]
+
+    organizations_cfg = config_data.get("organizations", {})
+    if "auto_domain_enabled" in organizations_cfg:
+        parsed["ORGANIZATIONS_AUTO_DOMAIN_ENABLED"] = organizations_cfg[
+            "auto_domain_enabled"
+        ]
 
     if "host" in server_cfg:
         parsed["SERVER_HOST"] = server_cfg["host"]

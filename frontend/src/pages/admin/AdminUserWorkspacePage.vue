@@ -142,129 +142,141 @@
       <div v-if="estimates.length === 0" class="text-sm text-gray-500 dark:text-gray-400">Сметы отсутствуют.</div>
     </section>
 
-    <transition name="modal-fade">
-      <div v-if="showClientModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="absolute inset-0 bg-black/50" @click="closeClientModal" />
-        <div class="relative z-10 w-full max-w-2xl bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
-          <h3 class="text-lg font-bold">{{ editingClientId ? 'Редактирование клиента' : 'Создание клиента' }}</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold mb-1">Имя</label>
-              <input v-model="clientForm.name" class="qe-input w-full" type="text" />
+    <Teleport to="body">
+      <transition name="modal-fade">
+        <div v-if="showClientModal" class="fixed inset-0 z-[80]">
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeClientModal" />
+          <div class="relative flex min-h-full items-center justify-center px-4 py-6">
+            <div class="w-full max-w-2xl bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
+              <h3 class="text-lg font-bold">{{ editingClientId ? 'Редактирование клиента' : 'Создание клиента' }}</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Имя</label>
+                  <input v-model="clientForm.name" class="qe-input w-full" type="text" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Компания</label>
+                  <input v-model="clientForm.company" class="qe-input w-full" type="text" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Email</label>
+                  <input v-model="clientForm.email" class="qe-input w-full" type="email" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Телефон</label>
+                  <input v-model="clientForm.phone" class="qe-input w-full" type="text" />
+                </div>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button class="qe-btn-secondary px-4" @click="closeClientModal">Отмена</button>
+                <button class="qe-btn px-4" :disabled="saving" @click="saveClient">Сохранить</button>
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Компания</label>
-              <input v-model="clientForm.company" class="qe-input w-full" type="text" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Email</label>
-              <input v-model="clientForm.email" class="qe-input w-full" type="email" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Телефон</label>
-              <input v-model="clientForm.phone" class="qe-input w-full" type="text" />
-            </div>
-          </div>
-          <div class="flex justify-end gap-2">
-            <button class="qe-btn-secondary px-4" @click="closeClientModal">Отмена</button>
-            <button class="qe-btn px-4" :disabled="saving" @click="saveClient">Сохранить</button>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </Teleport>
 
-    <transition name="modal-fade">
-      <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-        <div class="absolute inset-0 bg-black/50" @click="closeTemplateModal" />
-        <div class="relative z-10 w-full max-w-6xl max-h-[90vh] overflow-auto bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
-          <h3 class="text-lg font-bold">{{ editingTemplateId ? 'Редактирование шаблона' : 'Создание шаблона' }}</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold mb-1">Название</label>
-              <input v-model="templateForm.name" class="qe-input w-full" type="text" />
+    <Teleport to="body">
+      <transition name="modal-fade">
+        <div v-if="showTemplateModal" class="fixed inset-0 z-[80]">
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeTemplateModal" />
+          <div class="relative flex min-h-full items-center justify-center px-4 py-6">
+            <div class="w-full max-w-6xl max-h-[90vh] overflow-auto bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
+              <h3 class="text-lg font-bold">{{ editingTemplateId ? 'Редактирование шаблона' : 'Создание шаблона' }}</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Название</label>
+                  <input v-model="templateForm.name" class="qe-input w-full" type="text" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Описание</label>
+                  <input v-model="templateForm.description" class="qe-input w-full" type="text" />
+                </div>
+              </div>
+              <label class="inline-flex items-center gap-2 text-sm font-medium">
+                <input v-model="templateForm.use_internal_price" type="checkbox" class="h-4 w-4 accent-blue-600" />
+                Использовать внутреннюю цену
+              </label>
+
+              <AdminItemsTable v-model="templateForm.items" :show-internal-price="templateForm.use_internal_price" />
+
+              <div class="flex justify-end gap-2">
+                <button class="qe-btn-secondary px-4" @click="closeTemplateModal">Отмена</button>
+                <button class="qe-btn px-4" :disabled="saving" @click="saveTemplate">Сохранить</button>
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Описание</label>
-              <input v-model="templateForm.description" class="qe-input w-full" type="text" />
-            </div>
-          </div>
-          <label class="inline-flex items-center gap-2 text-sm font-medium">
-            <input v-model="templateForm.use_internal_price" type="checkbox" class="h-4 w-4 accent-blue-600" />
-            Использовать внутреннюю цену
-          </label>
-
-          <AdminItemsTable v-model="templateForm.items" :show-internal-price="templateForm.use_internal_price" />
-
-          <div class="flex justify-end gap-2">
-            <button class="qe-btn-secondary px-4" @click="closeTemplateModal">Отмена</button>
-            <button class="qe-btn px-4" :disabled="saving" @click="saveTemplate">Сохранить</button>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </Teleport>
 
-    <transition name="modal-fade">
-      <div v-if="showEstimateModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-        <div class="absolute inset-0 bg-black/50" @click="closeEstimateModal" />
-        <div class="relative z-10 w-full max-w-6xl max-h-[90vh] overflow-auto bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
-          <h3 class="text-lg font-bold">{{ editingEstimateId ? 'Редактирование сметы' : 'Создание сметы' }}</h3>
+    <Teleport to="body">
+      <transition name="modal-fade">
+        <div v-if="showEstimateModal" class="fixed inset-0 z-[80]">
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeEstimateModal" />
+          <div class="relative flex min-h-full items-center justify-center px-4 py-6">
+            <div class="w-full max-w-6xl max-h-[90vh] overflow-auto bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-qe-black3">
+              <h3 class="text-lg font-bold">{{ editingEstimateId ? 'Редактирование сметы' : 'Создание сметы' }}</h3>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold mb-1">Название</label>
-              <input v-model="estimateForm.name" class="qe-input w-full" type="text" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Ответственный</label>
-              <input v-model="estimateForm.responsible" class="qe-input w-full" type="text" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Клиент</label>
-              <select v-model="estimateForm.client_id" class="qe-input w-full">
-                <option :value="null">Без клиента</option>
-                <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Статус</label>
-              <select v-model="estimateForm.status" class="qe-input w-full">
-                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Дата и время</label>
-              <input v-model="estimateForm.event_datetime" class="qe-input w-full" type="datetime-local" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Место проведения</label>
-              <input v-model="estimateForm.event_place" class="qe-input w-full" type="text" />
-            </div>
-          </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Название</label>
+                  <input v-model="estimateForm.name" class="qe-input w-full" type="text" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Ответственный</label>
+                  <input v-model="estimateForm.responsible" class="qe-input w-full" type="text" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Клиент</label>
+                  <select v-model="estimateForm.client_id" class="qe-input w-full">
+                    <option :value="null">Без клиента</option>
+                    <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Статус</label>
+                  <select v-model="estimateForm.status" class="qe-input w-full">
+                    <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Дата и время</label>
+                  <input v-model="estimateForm.event_datetime" class="qe-input w-full" type="datetime-local" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Место проведения</label>
+                  <input v-model="estimateForm.event_place" class="qe-input w-full" type="text" />
+                </div>
+              </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <label class="inline-flex items-center gap-2 text-sm font-medium">
-              <input v-model="estimateForm.vat_enabled" type="checkbox" class="h-4 w-4 accent-blue-600" />
-              НДС включен
-            </label>
-            <label class="inline-flex items-center gap-2 text-sm font-medium">
-              <span>Ставка НДС</span>
-              <input v-model.number="estimateForm.vat_rate" type="number" min="0" max="100" class="qe-input w-20" />
-            </label>
-            <label class="inline-flex items-center gap-2 text-sm font-medium">
-              <input v-model="estimateForm.use_internal_price" type="checkbox" class="h-4 w-4 accent-blue-600" />
-              Использовать внутреннюю цену
-            </label>
-          </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label class="inline-flex items-center gap-2 text-sm font-medium">
+                  <input v-model="estimateForm.vat_enabled" type="checkbox" class="h-4 w-4 accent-blue-600" />
+                  НДС включен
+                </label>
+                <label class="inline-flex items-center gap-2 text-sm font-medium">
+                  <span>Ставка НДС</span>
+                  <input v-model.number="estimateForm.vat_rate" type="number" min="0" max="100" class="qe-input w-20" />
+                </label>
+                <label class="inline-flex items-center gap-2 text-sm font-medium">
+                  <input v-model="estimateForm.use_internal_price" type="checkbox" class="h-4 w-4 accent-blue-600" />
+                  Использовать внутреннюю цену
+                </label>
+              </div>
 
-          <AdminItemsTable v-model="estimateForm.items" :show-internal-price="estimateForm.use_internal_price" />
+              <AdminItemsTable v-model="estimateForm.items" :show-internal-price="estimateForm.use_internal_price" />
 
-          <div class="flex justify-end gap-2">
-            <button class="qe-btn-secondary px-4" @click="closeEstimateModal">Отмена</button>
-            <button class="qe-btn px-4" :disabled="saving" @click="saveEstimate">Сохранить</button>
+              <div class="flex justify-end gap-2">
+                <button class="qe-btn-secondary px-4" @click="closeEstimateModal">Отмена</button>
+                <button class="qe-btn px-4" :disabled="saving" @click="saveEstimate">Сохранить</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </Teleport>
   </div>
 </template>
 

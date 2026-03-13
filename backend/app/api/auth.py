@@ -18,6 +18,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
+from app.models.organization import OrganizationMembership
 from app.schemas.user import (
     EmailRequest,
     GoogleOAuthRequest,
@@ -36,6 +37,10 @@ from app.utils.auth import (
 )
 from app.utils.otp import generate_code
 from app.utils.email import send_verification_code
+from app.services.organizations import (
+    ensure_user_in_workspace,
+    resolve_workspace_for_new_user,
+)
 
 router = APIRouter(tags=["auth"])
 GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
@@ -162,15 +167,28 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
         otp_expires_at=now + timedelta(minutes=settings.OTP_EXPIRE_MINUTES),
         otp_sent_at=now,
     )
-
-    db.add(new_user)
-    await db.commit()
     try:
+        workspace, membership_role = await resolve_workspace_for_new_user(
+            db,
+            email=user.email,
+            login=user.login,
+        )
+        db.add(new_user)
+        await db.flush()
+        ensure_user_in_workspace(
+            db,
+            user=new_user,
+            organization=workspace,
+            role=membership_role,
+        )
         await send_verification_code(user.email, otp)
-    except RuntimeError:
-        await db.delete(new_user)
         await db.commit()
+    except RuntimeError:
+        await db.rollback()
         raise HTTPException(status_code=502, detail="Не удалось отправить код подтверждения")
+    except Exception:
+        await db.rollback()
+        raise
     await db.refresh(new_user)
     return new_user
 
@@ -300,7 +318,20 @@ async def google_oauth_login(
             failed_login_attempts=0,
             locked_until=None,
         )
+        workspace, membership_role = await resolve_workspace_for_new_user(
+            db,
+            email=email,
+            login=login,
+            company=None,
+        )
         db.add(user)
+        await db.flush()
+        ensure_user_in_workspace(
+            db,
+            user=user,
+            organization=workspace,
+            role=membership_role,
+        )
         await db.commit()
         await db.refresh(user)
     else:
@@ -317,6 +348,30 @@ async def google_oauth_login(
         if not user.name and user_name:
             user.name = user_name
             changed = True
+        if user.current_organization_id is None:
+            existing_membership_result = await db.execute(
+                select(OrganizationMembership).where(
+                    OrganizationMembership.user_id == user.id
+                )
+            )
+            existing_membership = existing_membership_result.scalar_one_or_none()
+            if existing_membership:
+                user.current_organization_id = existing_membership.organization_id
+                changed = True
+            else:
+                workspace, membership_role = await resolve_workspace_for_new_user(
+                    db,
+                    email=user.email,
+                    login=user.login,
+                    company=user.company,
+                )
+                ensure_user_in_workspace(
+                    db,
+                    user=user,
+                    organization=workspace,
+                    role=membership_role,
+                )
+                changed = True
         if changed:
             await db.commit()
             await db.refresh(user)

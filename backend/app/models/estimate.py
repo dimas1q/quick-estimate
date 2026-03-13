@@ -79,6 +79,12 @@ class Estimate(Base):
         cascade="all, delete-orphan",
         order_by="EstimateVersion.version.desc()",
     )
+    approval_workflow = relationship(
+        "EstimateApprovalWorkflow",
+        back_populates="estimate",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
     vat_enabled = Column(Boolean, default=True)
     vat_rate = Column(Integer, default=20, nullable=False)

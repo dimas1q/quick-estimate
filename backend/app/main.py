@@ -40,6 +40,7 @@ app.add_middleware(
 from app.api import (
     admin,
     analytics,
+    approvals,
     auth,
     clients,
     estimates,
@@ -55,6 +56,7 @@ app.include_router(auth.router, prefix="/api/auth")
 app.include_router(user.router, prefix="/api/users")
 app.include_router(admin.router, prefix="/api/admin")
 app.include_router(estimates.router, prefix="/api/estimates")
+app.include_router(approvals.router, prefix="/api/approvals")
 app.include_router(templates.router, prefix="/api/templates")
 app.include_router(clients.router, prefix="/api/clients")
 app.include_router(versions.router, prefix="/api/versions")

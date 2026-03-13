@@ -18,11 +18,14 @@ from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
 from app.models.client_changelog import ClientChangeLog
 from app.models.estimate import Estimate, EstimateStatus
+from app.models.estimate_approval import EstimateApprovalStep, EstimateApprovalWorkflow
 from app.models.estimate_favorite import EstimateFavorite
 from app.models.item import EstimateItem
 from app.models.user import User
+from app.models.organization import OrganizationMembership
 from app.models.client import Client
 from app.models.version import EstimateVersion
+from app.schemas.approval import ApprovalWorkflowOut, ApprovalWorkflowUpsertIn
 from app.schemas.changelog import ChangeLogOut
 from app.schemas.estimate import (
     EstimateAutosave,
@@ -39,6 +42,12 @@ from app.utils.auth import get_current_user
 from app.utils.email import EmailAttachment, send_email
 from app.utils.excel import generate_excel
 from app.utils.pdf import render_pdf
+from app.services.approval_workflow import (
+    STEP_STATUS_PENDING,
+    WORKFLOW_STATUS_DRAFT,
+    WORKFLOW_STATUS_IN_REVIEW,
+    to_workflow_out,
+)
 from app.services.audit_ledger import append_audit_ledger_entry
 from app.schemas.paginated import Paginated
 
@@ -161,7 +170,7 @@ def _build_profit_guard_result(
             risks.append(
                 ProfitGuardRisk(
                     index=index,
-                    name=(item.name or f"Позиция #{index + 1}").strip(),
+                    name=(item.name or f"Позиция №{index + 1}").strip(),
                     category=(item.category or "").strip(),
                     margin_percent=_round_percent(margin_percent),
                     margin_amount=_round_currency(margin_amount),
@@ -233,6 +242,19 @@ def ensure_estimate_not_read_only(estimate: Estimate):
         raise HTTPException(
             status_code=409,
             detail="Смета находится в режиме только чтение",
+        )
+
+
+async def ensure_estimate_not_in_active_approval(db: AsyncSession, estimate_id: int):
+    workflow_status = await db.scalar(
+        select(EstimateApprovalWorkflow.status).where(
+            EstimateApprovalWorkflow.estimate_id == estimate_id
+        )
+    )
+    if workflow_status == WORKFLOW_STATUS_IN_REVIEW:
+        raise HTTPException(
+            status_code=409,
+            detail="Смета находится в процессе согласования и недоступна для редактирования",
         )
 
 
@@ -311,6 +333,36 @@ async def load_estimate_with_relations(
     return estimate
 
 
+async def load_owner_estimate(
+    db: AsyncSession,
+    estimate_id: int,
+    user_id: int,
+) -> Estimate:
+    result = await db.execute(
+        select(Estimate).where(Estimate.id == estimate_id, Estimate.user_id == user_id)
+    )
+    estimate = result.scalar_one_or_none()
+    if not estimate:
+        raise HTTPException(status_code=404, detail="Смета не найдена")
+    return estimate
+
+
+async def load_estimate_approval_workflow(
+    db: AsyncSession,
+    estimate_id: int,
+) -> EstimateApprovalWorkflow | None:
+    result = await db.execute(
+        select(EstimateApprovalWorkflow)
+        .options(
+            selectinload(EstimateApprovalWorkflow.steps).selectinload(
+                EstimateApprovalStep.approver
+            )
+        )
+        .where(EstimateApprovalWorkflow.estimate_id == estimate_id)
+    )
+    return result.scalar_one_or_none()
+
+
 @router.post("/", response_model=EstimateOut)
 async def create_estimate(
     estimate: EstimateCreate,
@@ -381,6 +433,7 @@ async def update_estimate(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     ensure_estimate_not_read_only(estimate)
+    await ensure_estimate_not_in_active_approval(db, estimate.id)
     await ensure_client_belongs_to_user(db, updated_data.client_id, user.id)
 
     old_out = EstimateOut.from_orm(old_estimate)
@@ -606,6 +659,7 @@ async def autosave_estimate(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     ensure_estimate_not_read_only(estimate)
+    await ensure_estimate_not_in_active_approval(db, estimate.id)
     data = payload.dict(exclude_unset=True)
 
     if "client_id" in data:
@@ -663,6 +717,7 @@ async def set_estimate_read_only(
     if estimate.user_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
+    await ensure_estimate_not_in_active_approval(db, estimate.id)
     if estimate.read_only != payload.read_only:
         estimate.read_only = payload.read_only
         details = [
@@ -733,6 +788,7 @@ async def delete_estimate(
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     ensure_estimate_not_read_only(estimate)
+    await ensure_estimate_not_in_active_approval(db, estimate.id)
     await append_audit_ledger_entry(
         db,
         actor_user_id=user.id,
@@ -952,6 +1008,228 @@ async def get_logs(
     ]
 
     return {"items": items, "total": total}
+
+
+@router.get("/{estimate_id}/approval-workflow", response_model=ApprovalWorkflowOut | None)
+async def get_estimate_approval_workflow(
+    estimate_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    await load_owner_estimate(db, estimate_id, user.id)
+    workflow = await load_estimate_approval_workflow(db, estimate_id)
+    if not workflow:
+        return None
+    return to_workflow_out(workflow)
+
+
+@router.put("/{estimate_id}/approval-workflow", response_model=ApprovalWorkflowOut)
+async def upsert_estimate_approval_workflow(
+    estimate_id: int,
+    payload: ApprovalWorkflowUpsertIn,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    estimate = await load_owner_estimate(db, estimate_id, user.id)
+    ensure_estimate_not_read_only(estimate)
+
+    workflow = await load_estimate_approval_workflow(db, estimate_id)
+    if workflow and workflow.status == WORKFLOW_STATUS_IN_REVIEW:
+        raise HTTPException(
+            status_code=409,
+            detail="Нельзя менять маршрут согласования, пока смета находится на согласовании",
+        )
+    if user.current_organization_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Пользователь не привязан к рабочему пространству",
+        )
+
+    approver_ids = sorted({step.approver_user_id for step in payload.steps})
+    approvers_result = await db.execute(
+        select(User.id, User.login, User.email, User.is_active)
+        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
+        .where(
+            User.id.in_(approver_ids),
+            OrganizationMembership.organization_id == user.current_organization_id,
+        )
+    )
+    approver_rows = approvers_result.all()
+    approvers_by_id = {row.id: row for row in approver_rows}
+
+    for approver_id in approver_ids:
+        row = approvers_by_id.get(approver_id)
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Согласующий пользователь №{approver_id} не найден")
+        if not row.is_active:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Согласующий пользователь №{approver_id} деактивирован",
+            )
+
+    if not workflow:
+        workflow = EstimateApprovalWorkflow(
+            estimate_id=estimate.id,
+            owner_user_id=user.id,
+            status=WORKFLOW_STATUS_DRAFT,
+        )
+        db.add(workflow)
+        await db.flush()
+    else:
+        await db.execute(
+            delete(EstimateApprovalStep).where(EstimateApprovalStep.workflow_id == workflow.id)
+        )
+
+    for step in payload.steps:
+        db.add(
+            EstimateApprovalStep(
+                workflow_id=workflow.id,
+                step_order=step.step_order,
+                stage_key=step.stage_key,
+                stage_label=step.stage_label,
+                approver_user_id=step.approver_user_id,
+                status=STEP_STATUS_PENDING,
+            )
+        )
+
+    workflow.status = WORKFLOW_STATUS_DRAFT
+    workflow.current_step_order = None
+    workflow.started_at = None
+    workflow.completed_at = None
+
+    step_details = []
+    for step in payload.steps:
+        approver = approvers_by_id.get(step.approver_user_id)
+        step_details.append(
+            {
+                "label": f"Шаг №{step.step_order}: {step.stage_label}",
+                "new": f"{approver.login} ({approver.email})" if approver else str(step.approver_user_id),
+            }
+        )
+
+    db.add(
+        EstimateChangeLog(
+            estimate_id=estimate.id,
+            user_id=user.id,
+            action="Маршрут согласования",
+            description="Маршрут согласования обновлен",
+            details=step_details,
+        )
+    )
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="estimate.approval.workflow.updated",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={"estimate_name": estimate.name, "steps": step_details},
+        request=request,
+    )
+    await db.commit()
+
+    refreshed = await load_estimate_approval_workflow(db, estimate_id)
+    return to_workflow_out(refreshed)
+
+
+@router.post("/{estimate_id}/approval-workflow/start", response_model=ApprovalWorkflowOut)
+async def start_estimate_approval_workflow(
+    estimate_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    estimate = await load_owner_estimate(db, estimate_id, user.id)
+    ensure_estimate_not_read_only(estimate)
+
+    workflow = await load_estimate_approval_workflow(db, estimate_id)
+    if not workflow or not workflow.steps:
+        raise HTTPException(status_code=400, detail="Сначала настройте маршрут согласования")
+    if workflow.status == WORKFLOW_STATUS_IN_REVIEW:
+        raise HTTPException(status_code=409, detail="Согласование уже запущено")
+    if user.current_organization_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Пользователь не привязан к рабочему пространству",
+        )
+    if any(step.approver_user_id is None for step in workflow.steps):
+        raise HTTPException(
+            status_code=409,
+            detail="Для каждого шага согласования должен быть указан согласующий",
+        )
+
+    approver_ids = sorted(
+        {step.approver_user_id for step in workflow.steps if step.approver_user_id is not None}
+    )
+    approvers_result = await db.execute(
+        select(User.id, User.is_active)
+        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
+        .where(
+            User.id.in_(approver_ids),
+            OrganizationMembership.organization_id == user.current_organization_id,
+        )
+    )
+    approver_state = {
+        row.id: {
+            "is_active": row.is_active,
+        }
+        for row in approvers_result.all()
+    }
+    for approver_id in approver_ids:
+        approver = approver_state.get(approver_id)
+        if not approver or not approver["is_active"]:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Согласующий пользователь №{approver_id} недоступен",
+            )
+
+    for step in workflow.steps:
+        step.status = STEP_STATUS_PENDING
+        step.signed_at = None
+        step.signature_name = None
+        step.signature_hash = None
+        step.decision = None
+        step.decision_comment = None
+        step.decided_by_user_id = None
+
+    first_step = min(workflow.steps, key=lambda step: step.step_order)
+    workflow.status = WORKFLOW_STATUS_IN_REVIEW
+    workflow.current_step_order = first_step.step_order
+    workflow.started_at = datetime.now(timezone.utc)
+    workflow.completed_at = None
+    if estimate.status == EstimateStatus.DRAFT:
+        estimate.status = EstimateStatus.SENT
+
+    db.add(
+        EstimateChangeLog(
+            estimate_id=estimate.id,
+            user_id=user.id,
+            action="Согласование",
+            description="Запущен процесс согласования сметы",
+            details=[
+                {
+                    "label": "Текущий шаг",
+                    "new": f"{first_step.step_order}. {first_step.stage_label}",
+                }
+            ],
+        )
+    )
+    await append_audit_ledger_entry(
+        db,
+        actor_user_id=user.id,
+        action="estimate.approval.workflow.started",
+        entity_type="estimate",
+        entity_id=str(estimate.id),
+        details={
+            "estimate_name": estimate.name,
+            "current_step_order": workflow.current_step_order,
+        },
+        request=request,
+    )
+    await db.commit()
+
+    refreshed = await load_estimate_approval_workflow(db, estimate_id)
+    return to_workflow_out(refreshed)
 
 
 @router.get("/{estimate_id}/export/pdf")

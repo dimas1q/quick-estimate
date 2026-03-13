@@ -8,6 +8,8 @@ export const useAuthStore = defineStore('auth', {
         token: localStorage.getItem('token') || null,
         refreshToken: localStorage.getItem('refresh_token') || null,
         user: null,
+        workspaces: [],
+        switchingWorkspace: false,
         loading: true
     }),
 
@@ -92,6 +94,31 @@ export const useAuthStore = defineStore('auth', {
 
             // Восстановим дефолтный токен, если вдруг axios сбросился
             axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+
+            try {
+                await this.fetchWorkspaces()
+            } catch {
+                this.workspaces = []
+            }
+        },
+
+        async fetchWorkspaces() {
+            const res = await axios.get('/users/me/workspaces')
+            this.workspaces = res.data || []
+            return this.workspaces
+        },
+
+        async switchWorkspace(organizationId) {
+            this.switchingWorkspace = true
+            try {
+                await axios.post('/users/me/workspaces/switch', {
+                    organization_id: organizationId
+                })
+                await this.fetchUser()
+                return this.user
+            } finally {
+                this.switchingWorkspace = false
+            }
         },
 
         async updateProfile({ login, email, name, company }) {
@@ -121,6 +148,8 @@ export const useAuthStore = defineStore('auth', {
             this.token = null
             this.refreshToken = null
             this.user = null
+            this.workspaces = []
+            this.switchingWorkspace = false
             localStorage.removeItem('token')
             localStorage.removeItem('refresh_token')
 

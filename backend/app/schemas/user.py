@@ -18,6 +18,7 @@ class UserOut(UserBase):
     id: int
     is_admin: bool
     is_active: bool
+    current_organization_id: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -65,3 +66,25 @@ class AdminUserProfileUpdate(BaseModel):
     email: EmailStr
     name: str | None = None
     company: str | None = None
+
+
+class ApproverUserOut(BaseModel):
+    id: int
+    login: str
+    email: EmailStr
+    name: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class WorkspaceMembershipOut(BaseModel):
+    organization_id: int
+    organization_name: str
+    organization_slug: str
+    organization_domain: str | None = None
+    role: str
+    is_current: bool
+
+
+class WorkspaceSwitchIn(BaseModel):
+    organization_id: int = Field(..., ge=1)

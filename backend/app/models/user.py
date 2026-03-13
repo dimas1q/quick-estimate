@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.template import EstimateTemplate
@@ -23,6 +23,12 @@ class User(Base):
     hashed_otp = Column(String, nullable=True)
     otp_expires_at = Column(DateTime(timezone=True), nullable=True)
     otp_sent_at = Column(DateTime(timezone=True), nullable=True)
+    current_organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     from app.models.estimate_favorite import EstimateFavorite
 
@@ -41,3 +47,24 @@ class User(Base):
     clients = relationship(Client, back_populates="user", cascade="all, delete-orphan")
 
     notes = relationship("Note", back_populates="user", cascade="all, delete-orphan")
+    current_organization = relationship("Organization", foreign_keys=[current_organization_id])
+    organization_memberships = relationship(
+        "OrganizationMembership",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    approval_workflows_owned = relationship(
+        "EstimateApprovalWorkflow",
+        foreign_keys="EstimateApprovalWorkflow.owner_user_id",
+        back_populates="owner",
+    )
+    approval_steps_assigned = relationship(
+        "EstimateApprovalStep",
+        foreign_keys="EstimateApprovalStep.approver_user_id",
+        back_populates="approver",
+    )
+    approval_steps_decided = relationship(
+        "EstimateApprovalStep",
+        foreign_keys="EstimateApprovalStep.decided_by_user_id",
+        back_populates="decided_by",
+    )

@@ -149,6 +149,26 @@ export const useEstimatesStore = defineStore('estimates', {
       return res.data
     },
 
+    async fetchApprovers() {
+      const res = await axios.get('/users/approvers')
+      return res.data
+    },
+
+    async getApprovalWorkflow(id) {
+      const res = await axios.get(`/estimates/${id}/approval-workflow`)
+      return res.data
+    },
+
+    async saveApprovalWorkflow(id, payload) {
+      const res = await axios.put(`/estimates/${id}/approval-workflow`, payload)
+      return res.data
+    },
+
+    async startApprovalWorkflow(id) {
+      const res = await axios.post(`/estimates/${id}/approval-workflow/start`)
+      return res.data
+    },
+
 
     setCopiedEstimate(estimate) {
       this.copiedEstimate = estimate

@@ -29,6 +29,9 @@ timeout_seconds = 15
 enabled = true
 min_margin_percent = 15
 
+[organizations]
+auto_domain_enabled = true
+
 [server]
 host = "0.0.0.0"
 port = 8000

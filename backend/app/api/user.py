@@ -4,11 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.database import get_db
 from app.models.user import User
+from app.models.organization import Organization, OrganizationMembership
 from app.utils.auth import get_current_admin, get_current_user, hash_password, verify_password
 from app.schemas.user import UserUpdate, PasswordUpdate
 from app.schemas.user import (
     AdminActivationUpdate,
     AdminRoleUpdate,
+    ApproverUserOut,
+    WorkspaceMembershipOut,
+    WorkspaceSwitchIn,
     UserOut,
 )
 from app.schemas.paginated import Paginated
@@ -19,6 +23,87 @@ router = APIRouter(tags=["users"])
 @router.get("/me", response_model=UserOut)
 async def get_me(user: User = Depends(get_current_user)):
     return user
+
+
+@router.get("/me/workspaces", response_model=list[WorkspaceMembershipOut])
+async def list_my_workspaces(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(OrganizationMembership, Organization)
+        .join(Organization, Organization.id == OrganizationMembership.organization_id)
+        .where(OrganizationMembership.user_id == current_user.id)
+        .order_by(Organization.name.asc())
+    )
+    rows = result.all()
+
+    workspaces = [
+        WorkspaceMembershipOut(
+            organization_id=organization.id,
+            organization_name=organization.name,
+            organization_slug=organization.slug,
+            organization_domain=organization.domain,
+            role=membership.role,
+            is_current=organization.id == current_user.current_organization_id,
+        )
+        for membership, organization in rows
+    ]
+    workspaces.sort(
+        key=lambda workspace: (
+            0 if workspace.is_current else 1,
+            workspace.organization_name.lower(),
+        )
+    )
+    return workspaces
+
+
+@router.post("/me/workspaces/switch", response_model=UserOut)
+async def switch_current_workspace(
+    payload: WorkspaceSwitchIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.current_organization_id == payload.organization_id:
+        return current_user
+
+    membership_result = await db.execute(
+        select(OrganizationMembership).where(
+            OrganizationMembership.user_id == current_user.id,
+            OrganizationMembership.organization_id == payload.organization_id,
+        )
+    )
+    membership = membership_result.scalar_one_or_none()
+    if not membership:
+        raise HTTPException(
+            status_code=403,
+            detail="Нет доступа к выбранному рабочему пространству",
+        )
+
+    current_user.current_organization_id = payload.organization_id
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+
+
+@router.get("/approvers", response_model=list[ApproverUserOut])
+async def list_approvers(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.current_organization_id is None:
+        return [current_user]
+
+    result = await db.execute(
+        select(User)
+        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
+        .where(
+            OrganizationMembership.organization_id == current_user.current_organization_id,
+            User.is_active.is_(True),
+        )
+        .order_by(User.name.asc(), User.login.asc())
+    )
+    return result.scalars().all()
 
 
 @router.put("/me")

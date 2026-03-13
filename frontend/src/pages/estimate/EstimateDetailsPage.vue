@@ -292,6 +292,13 @@
           </div>
         </div>
 
+        <EstimateApprovalWorkflowCard
+          v-if="!isVersionView"
+          :estimate-id="estimate.id"
+          :read-only="estimate.read_only"
+          @workflow-updated="loadAll"
+        />
+
         <!-- Примечания -->
         <NotesBlock class="mt-8" :notes="notes" :read-only="estimate.read_only" @add="addNote" @update="updateNote"
           @delete="deleteNote" />
@@ -601,6 +608,7 @@ import QeModal from "@/components/QeModal.vue";
 import QePagination from "@/components/QePagination.vue";
 import NotesBlock from "@/components/NotesBlock.vue";
 import EstimateVersionCompareModal from "@/components/EstimateVersionCompareModal.vue";
+import EstimateApprovalWorkflowCard from "@/components/EstimateApprovalWorkflowCard.vue";
 import fileDownload from "js-file-download";
 
 import {
