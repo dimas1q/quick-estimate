@@ -12,6 +12,7 @@ from app.models.audit_ledger import AuditLedgerEntry
 from app.models.client import Client
 from app.models.estimate import Estimate, EstimateStatus
 from app.models.item import EstimateItem
+from app.models.organization import OrganizationMembership
 from app.models.template import EstimateTemplate
 from app.models.user import User
 from app.schemas.audit_ledger import AuditLedgerOut, AuditLedgerVerifyOut
@@ -79,6 +80,27 @@ async def _get_estimate_or_404(db: AsyncSession, user_id: int, estimate_id: int)
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
     return estimate
+
+
+async def _resolve_user_workspace_id(db: AsyncSession, user: User) -> int:
+    if user.current_organization_id is not None:
+        return int(user.current_organization_id)
+    if user.default_organization_id is not None:
+        return int(user.default_organization_id)
+
+    membership_query = (
+        select(OrganizationMembership.organization_id)
+        .where(OrganizationMembership.user_id == user.id)
+        .order_by(OrganizationMembership.created_at.asc(), OrganizationMembership.id.asc())
+        .limit(1)
+    )
+    organization_id = await db.scalar(membership_query)
+    if organization_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail="У пользователя отсутствует рабочее пространство",
+        )
+    return int(organization_id)
 
 
 @router.get("/users", response_model=Paginated[UserOut])
@@ -259,8 +281,9 @@ async def admin_create_user_client(
     client_in: ClientCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_user_or_404(db, user_id)
-    client = Client(**client_in.model_dump(), user_id=user_id)
+    user = await _get_user_or_404(db, user_id)
+    organization_id = await _resolve_user_workspace_id(db, user)
+    client = Client(**client_in.model_dump(), user_id=user_id, organization_id=organization_id)
     db.add(client)
     await db.commit()
     await db.refresh(client)
@@ -360,13 +383,15 @@ async def admin_create_user_template(
     template_in: EstimateTemplateCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_user_or_404(db, user_id)
+    user = await _get_user_or_404(db, user_id)
+    organization_id = await _resolve_user_workspace_id(db, user)
 
     template = EstimateTemplate(
         name=template_in.name,
         description=template_in.description,
         use_internal_price=template_in.use_internal_price,
         user_id=user_id,
+        organization_id=organization_id,
     )
     db.add(template)
     await db.flush()
@@ -500,10 +525,15 @@ async def admin_create_user_estimate(
     estimate_in: EstimateCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_user_or_404(db, user_id)
+    user = await _get_user_or_404(db, user_id)
     await _ensure_client_owned(db, user_id, estimate_in.client_id)
+    organization_id = await _resolve_user_workspace_id(db, user)
 
-    estimate = Estimate(**estimate_in.model_dump(exclude={"items"}), user_id=user_id)
+    estimate = Estimate(
+        **estimate_in.model_dump(exclude={"items"}),
+        user_id=user_id,
+        organization_id=organization_id,
+    )
     db.add(estimate)
     await db.flush()
 

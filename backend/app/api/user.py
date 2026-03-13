@@ -46,6 +46,7 @@ async def list_my_workspaces(
             organization_domain=organization.domain,
             role=membership.role,
             is_current=organization.id == current_user.current_organization_id,
+            is_default=organization.id == current_user.default_organization_id,
         )
         for membership, organization in rows
     ]

@@ -148,24 +148,32 @@ const template = ref(null)
 const error = ref(null)
 const notes = ref([])
 
-onMounted(async () => {
+async function loadTemplateData() {
+  error.value = null
   try {
     template.value = await store.getTemplateById(route.params.id)
     notes.value = await notesStore.fetchTemplateNotes(route.params.id)
   } catch (e) {
+    template.value = null
+    notes.value = []
     if (e.response?.status === 403) {
       error.value = '🚫 У вас нет доступа к этому шаблону.'
+    } else if (e.response?.status === 409) {
+      error.value = 'Не выбрано рабочее пространство.'
     } else if (e.response?.status === 404) {
       error.value = '❌ Шаблон не найден.'
     } else {
       error.value = '⚠️ Ошибка при загрузке шаблона.'
     }
   }
+}
+
+onMounted(async () => {
+  await loadTemplateData()
 })
 
 watch(() => route.params.id, async () => {
-  template.value = await store.getTemplateById(route.params.id)
-  notes.value = await notesStore.fetchTemplateNotes(route.params.id)
+  await loadTemplateData()
 })
 
 

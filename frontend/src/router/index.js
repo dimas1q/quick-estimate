@@ -23,6 +23,7 @@ const ClientDetailsPage = () => import('@/pages/client/ClientDetailsPage.vue')
 const ClientEditPage = () => import('@/pages/client/ClientEditPage.vue')
 const AnalyticsPage = () => import('@/pages/analytics/AnalyticsPage.vue')
 const MyApprovalsPage = () => import('@/pages/approval/MyApprovalsPage.vue')
+const WorkspaceSettingsPage = () => import('@/pages/workspace/WorkspaceSettingsPage.vue')
 const AdminUsersPage = () => import('@/pages/admin/AdminUsersPage.vue')
 const AdminUserWorkspacePage = () => import('@/pages/admin/AdminUserWorkspacePage.vue')
 const AdminAuditLedgerPage = () => import('@/pages/admin/AdminAuditLedgerPage.vue')
@@ -79,6 +80,11 @@ const routes = [
   {
     path: '/approvals',
     component: MyApprovalsPage,
+    meta: { layout: DefaultLayout }
+  },
+  {
+    path: '/workspace/settings',
+    component: WorkspaceSettingsPage,
     meta: { layout: DefaultLayout }
   },
   {

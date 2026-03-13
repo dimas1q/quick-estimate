@@ -91,5 +91,12 @@ class Estimate(Base):
     use_internal_price = Column(Boolean, default=True, nullable=False)
     read_only = Column(Boolean, default=False, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"))
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     user = relationship("User", back_populates="estimates")
+    organization = relationship("Organization")

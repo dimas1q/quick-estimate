@@ -13,7 +13,6 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models.item import EstimateItem
 from app.models.template import EstimateTemplate
-from app.models.user import User
 from app.schemas.paginated import Paginated
 from app.schemas.template import (
     EstimateTemplateCreate,
@@ -24,6 +23,12 @@ from app.schemas.template import (
 )
 from app.services.audit_ledger import append_audit_ledger_entry
 from app.utils.auth import get_current_user
+from app.utils.workspace import (
+    WORKSPACE_PERMISSION_DATA_EDIT,
+    WORKSPACE_PERMISSION_DATA_VIEW,
+    WorkspaceContext,
+    require_workspace_permission,
+)
 
 router = APIRouter(tags=["templates"], dependencies=[Depends(get_current_user)])
 
@@ -127,7 +132,7 @@ def _validate_units(payload: dict[str, Any]) -> list[dict[str, str]]:
 async def _build_import_preview(
     payload: dict[str, Any],
     db: AsyncSession,
-    user: User,
+    context: WorkspaceContext | Any,
 ) -> TemplateImportPreviewOut:
     if not isinstance(payload, dict):
         return TemplateImportPreviewOut(
@@ -152,14 +157,20 @@ async def _build_import_preview(
     if errors or template_data is None:
         return TemplateImportPreviewOut(valid=False, errors=errors, warnings=warnings)
 
+    org_id = getattr(context, "organization_id", None)
+    user_id = getattr(context, "id", None)
+    uniqueness_filters = [EstimateTemplate.name == template_data.name]
+    if org_id is not None:
+        uniqueness_filters.append(EstimateTemplate.organization_id == org_id)
+    elif user_id is not None:
+        # Backward compatibility for legacy tests that pass plain user object.
+        uniqueness_filters.append(EstimateTemplate.user_id == user_id)
+
     name_exists = bool(
         await db.scalar(
             select(func.count())
             .select_from(EstimateTemplate)
-            .where(
-                EstimateTemplate.user_id == user.id,
-                EstimateTemplate.name == template_data.name,
-            )
+            .where(*uniqueness_filters)
         )
     )
     if name_exists:
@@ -187,13 +198,15 @@ async def _build_import_preview(
 async def _create_template_from_payload(
     template: EstimateTemplateCreate,
     db: AsyncSession,
-    user: User,
+    context: WorkspaceContext,
 ) -> EstimateTemplate:
+    user = context.user
     new_template = EstimateTemplate(
         name=template.name,
         description=template.description,
         use_internal_price=template.use_internal_price,
         user_id=user.id,
+        organization_id=context.organization_id,
     )
     db.add(new_template)
     await db.flush()
@@ -215,9 +228,11 @@ async def _create_template_from_payload(
 async def create_template(
     template: EstimateTemplateCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
-    return await _create_template_from_payload(template, db, user)
+    return await _create_template_from_payload(template, db, context)
 
 
 @router.get("/", response_model=Paginated[EstimateTemplateOut])
@@ -226,9 +241,11 @@ async def list_templates(
     page: int = Query(1, ge=1),
     limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
-    filters = [EstimateTemplate.user_id == user.id]
+    filters = [EstimateTemplate.organization_id == context.organization_id]
 
     if name:
         filters.append(EstimateTemplate.name.ilike(f"%{name}%"))
@@ -251,18 +268,22 @@ async def list_templates(
 async def preview_template_import(
     request: TemplateImportRequest,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
-    return await _build_import_preview(request.payload, db, user)
+    return await _build_import_preview(request.payload, db, context)
 
 
 @router.post("/import", response_model=EstimateTemplateOut, status_code=status.HTTP_201_CREATED)
 async def import_template(
     request: TemplateImportRequest,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
-    preview = await _build_import_preview(request.payload, db, user)
+    preview = await _build_import_preview(request.payload, db, context)
     if not preview.valid or not preview.preview:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -273,25 +294,28 @@ async def import_template(
             },
         )
 
-    return await _create_template_from_payload(preview.preview, db, user)
+    return await _create_template_from_payload(preview.preview, db, context)
 
 
 @router.get("/{template_id}", response_model=EstimateTemplateOut)
 async def get_template(
     template_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
     result = await db.execute(
         select(EstimateTemplate)
         .options(selectinload(EstimateTemplate.items))
-        .where(EstimateTemplate.id == template_id)
+        .where(
+            EstimateTemplate.id == template_id,
+            EstimateTemplate.organization_id == context.organization_id,
+        )
     )
     template = result.scalar_one_or_none()
     if not template:
         raise HTTPException(status_code=404, detail="Шаблон не найден")
-    if template.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этому шаблону")
     return template
 
 
@@ -300,16 +324,19 @@ async def update_template(
     template_id: int,
     updated_data: EstimateTemplateCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
     result = await db.execute(
-        select(EstimateTemplate).where(EstimateTemplate.id == template_id)
+        select(EstimateTemplate).where(
+            EstimateTemplate.id == template_id,
+            EstimateTemplate.organization_id == context.organization_id,
+        )
     )
     template = result.scalar_one_or_none()
     if not template:
         raise HTTPException(status_code=404, detail="Шаблон не найден")
-    if template.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этому шаблону")
 
     # Обновление основных полей
     template.name = updated_data.name
@@ -340,16 +367,20 @@ async def delete_template(
     template_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     result = await db.execute(
-        select(EstimateTemplate).where(EstimateTemplate.id == template_id)
+        select(EstimateTemplate).where(
+            EstimateTemplate.id == template_id,
+            EstimateTemplate.organization_id == context.organization_id,
+        )
     )
     template = result.scalar_one_or_none()
     if not template:
         raise HTTPException(status_code=404, detail="Шаблон не найден")
-    if template.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этому шаблону")
 
     await db.execute(
         delete(EstimateItem).where(EstimateItem.template_id == template_id)

@@ -40,7 +40,7 @@
         </div>
         <div v-if="store.templates.length === 0"
           class="text-center text-gray-400 border border-gray-200 dark:border-qe-black2 p-6 rounded-2xl bg-white/70 dark:bg-qe-black2/80 mt-4">
-          Шаблоны смет отсутствуют.
+          {{ hasCurrentWorkspace ? 'Шаблоны смет отсутствуют.' : 'Не выбрано рабочее пространство.' }}
         </div>
         <QePagination :total="totalTemplates" :per-page="perPage" :page="currentPage" @update:page="changePage"
           class="mt-6" />
@@ -118,9 +118,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useTemplatesStore } from '@/store/templates'
+import { useAuthStore } from '@/store/auth'
+import { isWorkspaceNotSelectedError } from '@/lib/workspace-state'
 import QePagination from '@/components/QePagination.vue'
 
 const fileInput = ref(null)
@@ -132,6 +134,7 @@ const pendingImportPayload = ref(null)
 const isImporting = ref(false)
 
 const store = useTemplatesStore()
+const auth = useAuthStore()
 
 const filters = ref({
   name: ''
@@ -141,39 +144,126 @@ const perPage = 5
 const currentPage = ref(1)
 const currentFilters = ref({})
 const totalTemplates = computed(() => store.total)
+const currentWorkspaceId = computed(() => {
+  const current = (auth.workspaces || []).find((workspace) => workspace.is_current)
+  return current?.organization_id ?? null
+})
+const hasCurrentWorkspace = computed(() => Boolean(currentWorkspaceId.value))
+
+function resetWorkspaceBoundState() {
+  store.templates = []
+  store.total = 0
+}
+
+async function loadInitialData() {
+  try {
+    await auth.fetchWorkspaces()
+  } catch {
+    auth.workspaces = []
+  }
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    isLoading.value = false
+    return
+  }
+  isLoading.value = true
+  try {
+    await store.fetchTemplates({ page: currentPage.value, limit: perPage })
+    currentFilters.value = {}
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      try {
+        await auth.fetchUser()
+      } catch {
+        auth.workspaces = []
+      }
+      resetWorkspaceBoundState()
+    } else {
+      toast.error('Не удалось загрузить список шаблонов')
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
 
 onMounted(async () => {
-  isLoading.value = true
-  await store.fetchTemplates({ page: currentPage.value, limit: perPage })
-  currentFilters.value = {}
-  isLoading.value = false
+  await loadInitialData()
 })
 
+watch(
+  () => currentWorkspaceId.value,
+  async () => {
+    currentPage.value = 1
+    currentFilters.value = {}
+    await loadInitialData()
+  }
+)
+
 async function applyFilters() {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    return
+  }
   isLoading.value = true
   const query = { name: filters.value.name }
   currentFilters.value = query
   currentPage.value = 1
-  await store.fetchTemplates({ ...query, page: currentPage.value, limit: perPage })
+  try {
+    await store.fetchTemplates({ ...query, page: currentPage.value, limit: perPage })
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось применить фильтры')
+  }
   isLoading.value = false
 }
 
 async function resetFilters() {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    return
+  }
   isLoading.value = true
   filters.value.name = ''
   currentFilters.value = {}
   currentPage.value = 1
-  await store.fetchTemplates({ page: currentPage.value, limit: perPage })
+  try {
+    await store.fetchTemplates({ page: currentPage.value, limit: perPage })
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось сбросить фильтры')
+  }
   isLoading.value = false
 }
 
 async function changePage(p) {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    return
+  }
   currentPage.value = p
-  await store.fetchTemplates({ ...currentFilters.value, page: p, limit: perPage })
+  try {
+    await store.fetchTemplates({ ...currentFilters.value, page: p, limit: perPage })
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось загрузить страницу шаблонов')
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function triggerFileInput() {
+  if (!hasCurrentWorkspace.value) {
+    toast.warning('Сначала выберите рабочее пространство')
+    return
+  }
   fileInput.value.click()
 }
 
@@ -209,6 +299,10 @@ function closeImportPreviewModal() {
 }
 
 async function confirmImportTemplate() {
+  if (!hasCurrentWorkspace.value) {
+    toast.warning('Сначала выберите рабочее пространство')
+    return
+  }
   if (!importPreview.value?.valid || !pendingImportPayload.value || isImporting.value) return
   try {
     isImporting.value = true

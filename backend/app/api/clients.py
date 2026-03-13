@@ -13,7 +13,6 @@ from app.core.database import get_db
 from app.models.client import Client, ClientPipelineStage
 from app.models.client_changelog import ClientChangeLog
 from app.models.estimate import Estimate, EstimateStatus
-from app.models.user import User
 from app.schemas.client import (
     ClientCreate,
     ClientOut,
@@ -27,6 +26,12 @@ from app.schemas.paginated import Paginated
 from app.schemas.client_changelog import ClientChangeLogOut
 from app.services.audit_ledger import append_audit_ledger_entry
 from app.utils.auth import get_current_user
+from app.utils.workspace import (
+    WORKSPACE_PERMISSION_DATA_EDIT,
+    WORKSPACE_PERMISSION_DATA_VIEW,
+    WorkspaceContext,
+    require_workspace_permission,
+)
 
 router = APIRouter(tags=["clients"], dependencies=[Depends(get_current_user)])
 
@@ -111,9 +116,16 @@ def _estimate_total_with_vat(estimate: Estimate) -> float:
 async def create_client(
     client_in: ClientCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
-    new = Client(**client_in.dict(), user_id=user.id)
+    user = context.user
+    new = Client(
+        **client_in.dict(),
+        user_id=user.id,
+        organization_id=context.organization_id,
+    )
     db.add(new)
     await db.flush()
     db.add(
@@ -138,9 +150,11 @@ async def list_clients(
     page: int = Query(1, ge=1),
     limit: int = Query(5, ge=1),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
-    filters = [Client.user_id == user.id]
+    filters = [Client.organization_id == context.organization_id]
     if name:
         filters.append(Client.name.ilike(f"%{name}%"))
     if company:
@@ -171,9 +185,11 @@ async def get_clients_pipeline(
     email: Optional[str] = Query(None),
     pipeline_stage: Optional[ClientPipelineStage] = Query(None),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
-    filters = [Client.user_id == user.id]
+    filters = [Client.organization_id == context.organization_id]
     if name:
         filters.append(Client.name.ilike(f"%{name}%"))
     if company:
@@ -203,7 +219,7 @@ async def get_clients_pipeline(
         select(Estimate)
         .options(selectinload(Estimate.items))
         .where(
-            Estimate.user_id == user.id,
+            Estimate.organization_id == context.organization_id,
             Estimate.client_id.in_(client_ids),
         )
         .order_by(Estimate.date.desc())
@@ -300,10 +316,15 @@ async def get_clients_pipeline(
 async def get_client(
     client_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
     result = await db.execute(
-        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+        select(Client).where(
+            Client.id == client_id,
+            Client.organization_id == context.organization_id,
+        )
     )
     client = result.scalar_one_or_none()
     if not client:
@@ -317,10 +338,15 @@ async def get_client_logs(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
     result = await db.execute(
-        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+        select(Client).where(
+            Client.id == client_id,
+            Client.organization_id == context.organization_id,
+        )
     )
     client = result.scalar_one_or_none()
     if not client:
@@ -360,10 +386,16 @@ async def update_client(
     client_id: int,
     client_in: ClientUpdate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     result = await db.execute(
-        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+        select(Client).where(
+            Client.id == client_id,
+            Client.organization_id == context.organization_id,
+        )
     )
     client = result.scalar_one_or_none()
     if not client:
@@ -421,10 +453,16 @@ async def update_client_pipeline(
     payload: ClientPipelineUpdate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     result = await db.execute(
-        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+        select(Client).where(
+            Client.id == client_id,
+            Client.organization_id == context.organization_id,
+        )
     )
     client = result.scalar_one_or_none()
     if not client:
@@ -491,10 +529,16 @@ async def delete_client(
     client_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     result = await db.execute(
-        select(Client).where(Client.id == client_id, Client.user_id == user.id)
+        select(Client).where(
+            Client.id == client_id,
+            Client.organization_id == context.organization_id,
+        )
     )
     client = result.scalar_one_or_none()
     if not client:
@@ -503,7 +547,10 @@ async def delete_client(
     estimates_count = await db.scalar(
         select(func.count())
         .select_from(Estimate)
-        .where(Estimate.client_id == client_id)
+        .where(
+            Estimate.client_id == client_id,
+            Estimate.organization_id == context.organization_id,
+        )
     )
 
     if estimates_count > 0:

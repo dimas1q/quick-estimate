@@ -66,7 +66,7 @@
         </div>
         <div v-if="store.clients.length === 0"
           class="text-center text-gray-400 border border-gray-200 dark:border-qe-black2 p-6 rounded-2xl bg-white/70 dark:bg-qe-black2/80 mt-4">
-          Клиенты отсутствуют.
+          {{ hasCurrentWorkspace ? 'Клиенты отсутствуют.' : 'Не выбрано рабочее пространство.' }}
         </div>
         <QePagination :total="totalClients" :per-page="perPage" :page="currentPage" @update:page="changePage"
           class="mt-6" />
@@ -80,14 +80,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useClientsStore } from '@/store/clients'
+import { useAuthStore } from '@/store/auth'
+import { useToast } from 'vue-toastification'
+import { isWorkspaceNotSelectedError } from '@/lib/workspace-state'
 import QePagination from '@/components/QePagination.vue'
 import ClientPipelineBoard from '@/components/ClientPipelineBoard.vue'
 
 import { LucideUser } from 'lucide-vue-next'
 
 const store = useClientsStore()
+const auth = useAuthStore()
+const toast = useToast()
 const isLoading = ref(true)
 const pipelineLoading = ref(true)
 const viewMode = ref('list')
@@ -112,19 +117,78 @@ const perPage = 5
 const currentPage = ref(1)
 const currentFilters = ref({})
 const totalClients = computed(() => store.total)
+const currentWorkspaceId = computed(() => {
+  const current = (auth.workspaces || []).find((workspace) => workspace.is_current)
+  return current?.organization_id ?? null
+})
+const hasCurrentWorkspace = computed(() => Boolean(currentWorkspaceId.value))
 
-onMounted(async () => {
+function resetWorkspaceBoundState() {
+  store.clients = []
+  store.total = 0
+  pipelineData.value = {
+    summary: {
+      lead_count: 0,
+      quote_count: 0,
+      approved_count: 0,
+      paid_count: 0,
+      total_expected_revenue: 0,
+      weighted_forecast: 0
+    },
+    items: []
+  }
+}
+
+async function loadInitialData() {
+  try {
+    await auth.fetchWorkspaces()
+  } catch {
+    auth.workspaces = []
+  }
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    isLoading.value = false
+    pipelineLoading.value = false
+    return
+  }
   isLoading.value = true
   pipelineLoading.value = true
-  const query = buildFilterQuery()
-  await Promise.all([
-    store.fetchClients({ ...query, page: currentPage.value, limit: perPage }),
-    fetchPipeline(query)
-  ])
-  currentFilters.value = {}
-  isLoading.value = false
-  pipelineLoading.value = false
+  try {
+    const query = buildFilterQuery()
+    await Promise.all([
+      store.fetchClients({ ...query, page: currentPage.value, limit: perPage }),
+      fetchPipeline(query)
+    ])
+    currentFilters.value = {}
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      try {
+        await auth.fetchUser()
+      } catch {
+        auth.workspaces = []
+      }
+      resetWorkspaceBoundState()
+    } else {
+      toast.error('Не удалось загрузить список клиентов')
+    }
+  } finally {
+    isLoading.value = false
+    pipelineLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  await loadInitialData()
 })
+
+watch(
+  () => currentWorkspaceId.value,
+  async () => {
+    currentPage.value = 1
+    currentFilters.value = {}
+    await loadInitialData()
+  }
+)
 
 function buildFilterQuery() {
   return {
@@ -135,38 +199,88 @@ function buildFilterQuery() {
 }
 
 async function fetchPipeline(query = {}) {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    pipelineLoading.value = false
+    return
+  }
   pipelineLoading.value = true
-  pipelineData.value = await store.fetchClientsPipeline(query)
-  pipelineLoading.value = false
+  try {
+    pipelineData.value = await store.fetchClientsPipeline(query)
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      resetWorkspaceBoundState()
+      return
+    }
+    throw error
+  } finally {
+    pipelineLoading.value = false
+  }
 }
 
 async function applyFilters() {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    return
+  }
   isLoading.value = true
   const query = buildFilterQuery()
   currentFilters.value = query
   currentPage.value = 1
-  await Promise.all([
-    store.fetchClients({ ...query, page: currentPage.value, limit: perPage }),
-    fetchPipeline(query)
-  ])
+  try {
+    await Promise.all([
+      store.fetchClients({ ...query, page: currentPage.value, limit: perPage }),
+      fetchPipeline(query)
+    ])
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось применить фильтры')
+  }
   isLoading.value = false
 }
 
 async function resetFilters() {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    return
+  }
   isLoading.value = true
   filters.value = { name: '', company: '', email: '' }
   currentFilters.value = {}
   currentPage.value = 1
-  await Promise.all([
-    store.fetchClients({ page: currentPage.value, limit: perPage }),
-    fetchPipeline()
-  ])
+  try {
+    await Promise.all([
+      store.fetchClients({ page: currentPage.value, limit: perPage }),
+      fetchPipeline()
+    ])
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось сбросить фильтры')
+  }
   isLoading.value = false
 }
 
 async function changePage(p) {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    return
+  }
   currentPage.value = p
-  await store.fetchClients({ ...currentFilters.value, page: p, limit: perPage })
+  try {
+    await store.fetchClients({ ...currentFilters.value, page: p, limit: perPage })
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось загрузить страницу клиентов')
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 

@@ -19,7 +19,6 @@ from app.utils.auth import get_current_user
 from app.models.client import Client
 from app.models.estimate import Estimate, EstimateStatus
 from app.models.item import EstimateItem
-from app.models.user import User
 from app.schemas.analytics import (
     ClientAnalytics,
     GlobalAnalytics,
@@ -29,6 +28,11 @@ from app.schemas.analytics import (
     GranularityEnum,
 )
 from app.utils.analytics_excel import generate_analytics_excel
+from app.utils.workspace import (
+    WORKSPACE_PERMISSION_DATA_VIEW,
+    WorkspaceContext,
+    require_workspace_permission,
+)
 
 router = APIRouter(tags=["analytics"], dependencies=[Depends(get_current_user)])
 
@@ -143,11 +147,27 @@ async def get_client_analytics(
     categories: Optional[List[str]] = Query(
         None, description="Фильтр по названиям категорий услуг"
     ),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
     db: AsyncSession = Depends(get_db),
 ):
+    client_in_workspace = await db.scalar(
+        select(func.count())
+        .select_from(Client)
+        .where(
+            Client.id == client_id,
+            Client.organization_id == context.organization_id,
+        )
+    )
+    if not client_in_workspace:
+        raise HTTPException(404, "Клиент не найден")
+
     # составляем общий фильтр
-    filters = [Estimate.client_id == client_id, Estimate.user_id == user.id]
+    filters = [
+        Estimate.client_id == client_id,
+        Estimate.organization_id == context.organization_id,
+    ]
     if start_date:
         filters.append(Estimate.date >= start_date)
     if end_date:
@@ -295,11 +315,13 @@ async def get_global_analytics(
     categories: Optional[List[str]] = Query(
         None, description="Фильтр по названиям категорий услуг"
     ),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     # общий фильтр
-    filters = [Estimate.user_id == user.id]
+    filters = [Estimate.organization_id == context.organization_id]
     if start_date:
         filters.append(Estimate.date >= start_date)
     if end_date:
@@ -473,7 +495,9 @@ async def export_analytics(
     granularity: GranularityEnum = Query(GranularityEnum.month),
     categories: Optional[List[str]] = Query(None, description="Категории услуг"),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
     # 1) получаем те же данные, что и в /api/analytics/
     ga: GlobalAnalytics = await get_global_analytics(
@@ -483,7 +507,7 @@ async def export_analytics(
         vat_enabled=vat_enabled,
         granularity=granularity,
         categories=categories,
-        user=user,
+        context=context,
         db=db,
     )
 

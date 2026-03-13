@@ -158,6 +158,9 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
     otp = generate_code()
     now = datetime.now(timezone.utc)
+    rollback = getattr(db, "rollback", None)
+    flush = getattr(db, "flush", None)
+    has_rollback = callable(rollback)
     new_user = User(
         login=user.login,
         email=user.email,
@@ -174,20 +177,31 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
             login=user.login,
         )
         db.add(new_user)
-        await db.flush()
+        if callable(flush):
+            await flush()
         ensure_user_in_workspace(
             db,
             user=new_user,
             organization=workspace,
             role=membership_role,
+            set_default_if_missing=True,
         )
+        # Legacy in-memory test DBs don't support rollback; persist before SMTP call
+        # so cleanup path can delete user and commit.
+        if not has_rollback:
+            await db.commit()
         await send_verification_code(user.email, otp)
         await db.commit()
     except RuntimeError:
-        await db.rollback()
+        if has_rollback:
+            await rollback()
+        else:
+            await db.delete(new_user)
+            await db.commit()
         raise HTTPException(status_code=502, detail="Не удалось отправить код подтверждения")
     except Exception:
-        await db.rollback()
+        if has_rollback:
+            await rollback()
         raise
     await db.refresh(new_user)
     return new_user
@@ -331,6 +345,7 @@ async def google_oauth_login(
             user=user,
             organization=workspace,
             role=membership_role,
+            set_default_if_missing=True,
         )
         await db.commit()
         await db.refresh(user)
@@ -348,29 +363,35 @@ async def google_oauth_login(
         if not user.name and user_name:
             user.name = user_name
             changed = True
-        if user.current_organization_id is None:
-            existing_membership_result = await db.execute(
-                select(OrganizationMembership).where(
-                    OrganizationMembership.user_id == user.id
-                )
+        existing_membership_result = await db.execute(
+            select(OrganizationMembership).where(
+                OrganizationMembership.user_id == user.id
             )
-            existing_membership = existing_membership_result.scalar_one_or_none()
+        )
+        existing_membership = existing_membership_result.scalar_one_or_none()
+
+        if user.current_organization_id is None and not existing_membership:
+            workspace, membership_role = await resolve_workspace_for_new_user(
+                db,
+                email=user.email,
+                login=user.login,
+                company=user.company,
+            )
+            ensure_user_in_workspace(
+                db,
+                user=user,
+                organization=workspace,
+                role=membership_role,
+                set_default_if_missing=True,
+            )
+            changed = True
+
+        if user.default_organization_id is None:
             if existing_membership:
-                user.current_organization_id = existing_membership.organization_id
+                user.default_organization_id = existing_membership.organization_id
                 changed = True
-            else:
-                workspace, membership_role = await resolve_workspace_for_new_user(
-                    db,
-                    email=user.email,
-                    login=user.login,
-                    company=user.company,
-                )
-                ensure_user_in_workspace(
-                    db,
-                    user=user,
-                    organization=workspace,
-                    role=membership_role,
-                )
+            elif user.current_organization_id is not None:
+                user.default_organization_id = user.current_organization_id
                 changed = True
         if changed:
             await db.commit()

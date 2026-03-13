@@ -1,9 +1,12 @@
 <template>
   <div class="py-10 max-w-6xl mx-auto">
-    <div v-if="!client" class="text-center py-10 text-lg text-gray-500 dark:text-gray-400">
+    <div v-if="pageError" class="text-center py-10 text-lg text-red-500 dark:text-red-400">
+      {{ pageError }}
+    </div>
+    <div v-else-if="!client" class="text-center py-10 text-lg text-gray-500 dark:text-gray-400">
       Загрузка…
     </div>
-    <div v-else class="space-y-7">
+    <div v-else-if="!pageError" class="space-y-7">
       <!-- Шапка -->
       <div class="flex flex-wrap justify-between items-center gap-4 pb-1 mb-7">
         <div class="flex items-center gap-2">
@@ -357,6 +360,7 @@ const notesStore = useNotesStore();
 const toast = useToast();
 const showDetails = ref({})
 const notes = ref([])
+const pageError = ref("")
 const isSavingPipeline = ref(false)
 const pipelineForm = ref({
   pipeline_stage: "lead",
@@ -407,35 +411,52 @@ function syncPipelineForm() {
   }
 }
 
-onMounted(async () => {
-  const { client: c, estimates: e, total } = await store.getClientWithEstimates(
-    route.params.id,
-    { page: estimatesPage.value, limit: 5 }
-  );
-  client.value = c;
-  syncPipelineForm();
-  estimates.value = e;
-  estimatesTotal.value = total;
-  const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
-  logs.value = logRes.items;
-  logTotal.value = logRes.total;
-  notes.value = await notesStore.fetchClientNotes(route.params.id);
-});
+function resolvePageError(error) {
+  const status = error?.response?.status
+  if (status === 409) return "Не выбрано рабочее пространство."
+  if (status === 403) return "🚫 Нет доступа к клиенту."
+  if (status === 404) return "❌ Клиент не найден."
+  return "⚠️ Ошибка при загрузке клиента."
+}
 
-watch(() => route.params.id, async () => {
-  const { client: c, estimates: e, total } = await store.getClientWithEstimates(
-    route.params.id,
-    { page: estimatesPage.value, limit: 5 }
-  );
-  client.value = c;
-  syncPipelineForm();
-  estimates.value = e;
-  estimatesTotal.value = total;
-  const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 });
-  logs.value = logRes.items;
-  logTotal.value = logRes.total;
-  notes.value = await notesStore.fetchClientNotes(route.params.id);
+async function loadClientPageData() {
+  pageError.value = ""
+  try {
+    const { client: c, estimates: e, total } = await store.getClientWithEstimates(
+      route.params.id,
+      { page: estimatesPage.value, limit: 5 }
+    )
+    client.value = c
+    syncPipelineForm()
+    estimates.value = e
+    estimatesTotal.value = total
+    const logRes = await store.getClientLogs(route.params.id, { page: logPage.value, limit: 10 })
+    logs.value = logRes.items
+    logTotal.value = logRes.total
+    notes.value = await notesStore.fetchClientNotes(route.params.id)
+  } catch (error) {
+    client.value = null
+    estimates.value = []
+    estimatesTotal.value = 0
+    logs.value = []
+    logTotal.value = 0
+    notes.value = []
+    pageError.value = resolvePageError(error)
+  }
+}
+
+onMounted(async () => {
+  await loadClientPageData()
 })
+
+watch(
+  () => route.params.id,
+  async () => {
+    estimatesPage.value = 1
+    logPage.value = 1
+    await loadClientPageData()
+  }
+)
 
 function confirmDelete() {
   showConfirm.value = true;
@@ -446,17 +467,27 @@ function toggleDetails(id) {
 }
 
 async function changeEstimatesPage(p) {
+  if (!client.value || pageError.value) return
   estimatesPage.value = p
-  const res = await store.getClientWithEstimates(route.params.id, { page: p, limit: 5 })
-  estimates.value = res.estimates
-  estimatesTotal.value = res.total
+  try {
+    const res = await store.getClientWithEstimates(route.params.id, { page: p, limit: 5 })
+    estimates.value = res.estimates
+    estimatesTotal.value = res.total
+  } catch (error) {
+    toast.error(resolvePageError(error))
+  }
 }
 
 async function changeLogPage(p) {
+  if (!client.value || pageError.value) return
   logPage.value = p
-  const res = await store.getClientLogs(route.params.id, { page: p, limit: 10 })
-  logs.value = res.items
-  logTotal.value = res.total
+  try {
+    const res = await store.getClientLogs(route.params.id, { page: p, limit: 10 })
+    logs.value = res.items
+    logTotal.value = res.total
+  } catch (error) {
+    toast.error(resolvePageError(error))
+  }
 }
 
 async function addNote(text) {

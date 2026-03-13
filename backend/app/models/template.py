@@ -20,4 +20,11 @@ class EstimateTemplate(Base):
     use_internal_price = Column(Boolean, default=True, nullable=False)
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     user = relationship("User", back_populates="templates")
+    organization = relationship("Organization")

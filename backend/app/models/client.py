@@ -47,7 +47,14 @@ class Client(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     user = relationship("User", back_populates="clients")
+    organization = relationship("Organization")
 
     estimates = relationship(
         "Estimate", back_populates="client", passive_deletes=True, cascade="save-update"

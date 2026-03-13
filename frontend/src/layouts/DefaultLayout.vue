@@ -1,10 +1,10 @@
 <!-- frontend/src/layouts/DefaultLayout.vue -->
 <script setup>
-import { computed, ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRoute, useRouter } from 'vue-router'
 import { onClickOutside } from '@vueuse/core'
-import { Building2, Check, ChevronDown, LogOut, Settings } from 'lucide-vue-next'
+import { ChevronDown, LogOut, Settings } from 'lucide-vue-next'
 import Sidebar from '@/components/Sidebar.vue'
 import ThemeSlider from '@/components/ThemeSlider.vue'
 
@@ -14,15 +14,7 @@ const route = useRoute()
 
 const showMenu = ref(false)
 const menuRef = ref(null)
-const showWorkspaceMenu = ref(false)
-const workspaceRef = ref(null)
-const switchingWorkspaceId = ref(null)
 const showSidebar = ref(false)
-
-const currentWorkspace = computed(() => {
-  const list = Array.isArray(auth.workspaces) ? auth.workspaces : []
-  return list.find((workspace) => workspace.is_current) || list[0] || null
-})
 
 watch(
   () => auth.user,
@@ -45,7 +37,6 @@ watch(
 
 async function logout() {
   showMenu.value = false
-  showWorkspaceMenu.value = false
   await router.push('/login')
   await nextTick()
   auth.logout()
@@ -53,30 +44,11 @@ async function logout() {
 
 watch(() => route.path, () => {
   showMenu.value = false
-  showWorkspaceMenu.value = false
 })
 
 onClickOutside(menuRef, () => {
   showMenu.value = false
 })
-
-onClickOutside(workspaceRef, () => {
-  showWorkspaceMenu.value = false
-})
-
-async function selectWorkspace(workspace) {
-  if (!workspace || workspace.is_current || !workspace.organization_id) return
-  if (switchingWorkspaceId.value) return
-
-  switchingWorkspaceId.value = workspace.organization_id
-  try {
-    await auth.switchWorkspace(workspace.organization_id)
-    showWorkspaceMenu.value = false
-    window.location.assign('/estimates')
-  } finally {
-    switchingWorkspaceId.value = null
-  }
-}
 </script>
 
 <template>
@@ -92,63 +64,11 @@ async function selectWorkspace(workspace) {
       </div>
 
       <div class="flex items-center gap-4">
-        <div v-if="auth.user" class="relative" ref="workspaceRef">
-          <button
-            @click="showWorkspaceMenu = !showWorkspaceMenu; showMenu = false"
-            class="flex items-center gap-2 px-3 py-1 text-sm rounded-xl bg-gray-100 dark:bg-qe-black2 border border-gray-200 dark:border-qe-black2 hover:bg-blue-50 dark:hover:bg-blue-900 transition-all min-w-[210px] max-w-[280px]"
-          >
-            <Building2 class="w-4 h-4 text-blue-600 shrink-0" />
-            <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">
-              {{ currentWorkspace?.organization_name || 'Рабочее пространство' }}
-            </span>
-            <ChevronDown class="w-4 h-4 text-gray-500 transition-transform duration-200 shrink-0"
-              :class="{ 'rotate-180': showWorkspaceMenu }" />
-          </button>
-
-          <div
-            v-show="showWorkspaceMenu"
-            class="absolute right-0 mt-2 min-w-[280px] bg-white dark:bg-qe-black2 rounded-2xl shadow-2xl ring-1 ring-black/10 dark:ring-white/10 z-50 text-sm animate-fade-in py-2 border border-gray-100 dark:border-qe-black2"
-          >
-            <div class="px-4 pb-2 mb-2 border-b border-gray-100 dark:border-qe-black2">
-              <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Рабочее пространство
-              </p>
-            </div>
-
-            <button
-              v-for="workspace in auth.workspaces"
-              :key="workspace.organization_id"
-              class="w-full flex items-center justify-between gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-blue-950 transition"
-              :class="{ 'opacity-70 cursor-default': auth.switchingWorkspace || switchingWorkspaceId === workspace.organization_id }"
-              :disabled="auth.switchingWorkspace || switchingWorkspaceId === workspace.organization_id"
-              @click="selectWorkspace(workspace)"
-            >
-              <span class="min-w-0">
-                <span class="block font-semibold text-gray-800 dark:text-gray-200 truncate">
-                  {{ workspace.organization_name }}
-                </span>
-                <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {{ workspace.role === 'owner' ? 'Владелец' : 'Участник' }}
-                  <template v-if="workspace.organization_domain"> · {{ workspace.organization_domain }}</template>
-                </span>
-              </span>
-              <Check
-                v-if="workspace.is_current"
-                class="w-4 h-4 text-green-600 shrink-0"
-              />
-            </button>
-
-            <div v-if="!auth.workspaces.length" class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
-              Рабочие пространства не найдены.
-            </div>
-          </div>
-        </div>
-
         <ThemeSlider />
 
         <div class="relative" ref="menuRef">
           <!-- Кнопка вызова меню -->
-          <button @click="showMenu = !showMenu; showWorkspaceMenu = false"
+          <button @click="showMenu = !showMenu"
             class="flex items-center gap-3 px-3 py-1 text-sm rounded-xl bg-gray-100 dark:bg-qe-black2 border border-gray-200 dark:border-qe-black2 hover:bg-blue-50 dark:hover:bg-blue-900 transition-all min-w-[140px]">
             <div
               class="w-6 h-6 rounded-full flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold text-base uppercase select-none">

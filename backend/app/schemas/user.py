@@ -19,6 +19,7 @@ class UserOut(UserBase):
     is_admin: bool
     is_active: bool
     current_organization_id: int | None = None
+    default_organization_id: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -84,6 +85,7 @@ class WorkspaceMembershipOut(BaseModel):
     organization_domain: str | None = None
     role: str
     is_current: bool
+    is_default: bool = False
 
 
 class WorkspaceSwitchIn(BaseModel):

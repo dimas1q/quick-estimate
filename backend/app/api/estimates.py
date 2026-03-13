@@ -8,12 +8,11 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
-from sqlalchemy import delete, func, or_
+from sqlalchemy import delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
 from app.models.client_changelog import ClientChangeLog
@@ -21,8 +20,8 @@ from app.models.estimate import Estimate, EstimateStatus
 from app.models.estimate_approval import EstimateApprovalStep, EstimateApprovalWorkflow
 from app.models.estimate_favorite import EstimateFavorite
 from app.models.item import EstimateItem
-from app.models.user import User
 from app.models.organization import OrganizationMembership
+from app.models.user import User
 from app.models.client import Client
 from app.models.version import EstimateVersion
 from app.schemas.approval import ApprovalWorkflowOut, ApprovalWorkflowUpsertIn
@@ -42,6 +41,13 @@ from app.utils.auth import get_current_user
 from app.utils.email import EmailAttachment, send_email
 from app.utils.excel import generate_excel
 from app.utils.pdf import render_pdf
+from app.utils.workspace import (
+    WORKSPACE_PERMISSION_APPROVAL_MANAGE,
+    WORKSPACE_PERMISSION_DATA_EDIT,
+    WORKSPACE_PERMISSION_DATA_VIEW,
+    WorkspaceContext,
+    require_workspace_permission,
+)
 from app.services.approval_workflow import (
     STEP_STATUS_PENDING,
     WORKFLOW_STATUS_DRAFT,
@@ -223,9 +229,31 @@ def prettify_number(val):
         return str(val)
 
 
-async def ensure_client_belongs_to_user(
-    db: AsyncSession, client_id: Optional[int], user_id: int
+async def ensure_client_in_workspace(
+    db: AsyncSession,
+    client_id: Optional[int],
+    organization_id: int,
 ):
+    if client_id is None:
+        return None
+
+    client = await db.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+    if client.organization_id != organization_id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этому клиенту")
+    return client
+
+
+async def ensure_client_belongs_to_user(
+    db: AsyncSession,
+    client_id: Optional[int],
+    user_id: int,
+):
+    """
+    Backward-compatible helper kept for legacy tests and direct imports.
+    New runtime access control uses workspace-scoped ensure_client_in_workspace().
+    """
     if client_id is None:
         return None
 
@@ -261,7 +289,9 @@ async def ensure_estimate_not_in_active_approval(db: AsyncSession, estimate_id: 
 @router.post("/profit-guard/check", response_model=EstimateProfitGuardCheckOut)
 async def check_profit_guard(
     payload: EstimateProfitGuardCheckIn,
-    _user: User = Depends(get_current_user),
+    _context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
     return _build_profit_guard_result(
         payload,
@@ -315,7 +345,7 @@ def calculate_estimate_totals(estimate: Estimate) -> dict[str, float]:
 async def load_estimate_with_relations(
     db: AsyncSession,
     estimate_id: int,
-    user_id: int,
+    organization_id: int,
 ) -> Estimate:
     result = await db.execute(
         select(Estimate)
@@ -328,18 +358,21 @@ async def load_estimate_with_relations(
         .where(Estimate.id == estimate_id)
     )
     estimate = result.scalar_one_or_none()
-    if not estimate or estimate.user_id != user_id:
+    if not estimate or estimate.organization_id != organization_id:
         raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
     return estimate
 
 
-async def load_owner_estimate(
+async def load_workspace_estimate(
     db: AsyncSession,
     estimate_id: int,
-    user_id: int,
+    organization_id: int,
 ) -> Estimate:
     result = await db.execute(
-        select(Estimate).where(Estimate.id == estimate_id, Estimate.user_id == user_id)
+        select(Estimate).where(
+            Estimate.id == estimate_id,
+            Estimate.organization_id == organization_id,
+        )
     )
     estimate = result.scalar_one_or_none()
     if not estimate:
@@ -363,16 +396,47 @@ async def load_estimate_approval_workflow(
     return result.scalar_one_or_none()
 
 
+async def load_approvers_for_workflow(
+    db: AsyncSession,
+    approver_ids: list[int],
+    organization_id: int,
+):
+    if not approver_ids:
+        return {}
+
+    query = (
+        select(User.id, User.login, User.email, User.is_active)
+        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
+        .where(
+            User.id.in_(approver_ids),
+            OrganizationMembership.organization_id == organization_id,
+        )
+    )
+    approvers_result = await db.execute(query)
+    return {row.id: row for row in approvers_result.all()}
+
+
 @router.post("/", response_model=EstimateOut)
 async def create_estimate(
     estimate: EstimateCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
-    await ensure_client_belongs_to_user(db, estimate.client_id, user.id)
+    user = context.user
+    await ensure_client_in_workspace(
+        db,
+        estimate.client_id,
+        context.organization_id,
+    )
 
     items_data = estimate.items or []
-    new_estimate = Estimate(**estimate.dict(exclude={"items"}), user_id=user.id)
+    new_estimate = Estimate(
+        **estimate.dict(exclude={"items"}),
+        user_id=user.id,
+        organization_id=context.organization_id,
+    )
     db.add(new_estimate)
     await db.flush()
 
@@ -413,8 +477,11 @@ async def update_estimate(
     estimate_id: int,
     updated_data: EstimateUpdate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
 
@@ -429,12 +496,16 @@ async def update_estimate(
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
 
-    if estimate.user_id != user.id:
+    if estimate.organization_id != context.organization_id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     ensure_estimate_not_read_only(estimate)
     await ensure_estimate_not_in_active_approval(db, estimate.id)
-    await ensure_client_belongs_to_user(db, updated_data.client_id, user.id)
+    await ensure_client_in_workspace(
+        db,
+        updated_data.client_id,
+        context.organization_id,
+    )
 
     old_out = EstimateOut.from_orm(old_estimate)
     old_payload = jsonable_encoder(old_out)
@@ -649,13 +720,16 @@ async def autosave_estimate(
     estimate_id: int,
     payload: EstimateAutosave,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
-    if estimate.user_id != user.id:
+    if estimate.organization_id != context.organization_id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     ensure_estimate_not_read_only(estimate)
@@ -663,7 +737,11 @@ async def autosave_estimate(
     data = payload.dict(exclude_unset=True)
 
     if "client_id" in data:
-        await ensure_client_belongs_to_user(db, data["client_id"], user.id)
+        await ensure_client_in_workspace(
+            db,
+            data["client_id"],
+            context.organization_id,
+        )
         estimate.client_id = data["client_id"]
 
     for field in (
@@ -708,13 +786,16 @@ async def set_estimate_read_only(
     payload: EstimateReadOnlyUpdate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
-    if estimate.user_id != user.id:
+    if estimate.organization_id != context.organization_id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     await ensure_estimate_not_in_active_approval(db, estimate.id)
@@ -776,15 +857,18 @@ async def delete_estimate(
     estimate_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
 
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
 
-    if estimate.user_id != user.id:
+    if estimate.organization_id != context.organization_id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     ensure_estimate_not_read_only(estimate)
@@ -810,12 +894,15 @@ async def delete_estimate(
 async def add_favorite(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
+    user = context.user
     # Проверяем, что смета существует и принадлежит этому пользователю
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
-    if not estimate or estimate.user_id != user.id:
+    if not estimate or estimate.organization_id != context.organization_id:
         raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
 
     # Проверяем, есть ли уже избранное
@@ -836,8 +923,11 @@ async def add_favorite(
 async def remove_favorite(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
+    user = context.user
     res = await db.execute(
         select(EstimateFavorite).where(
             EstimateFavorite.user_id == user.id,
@@ -851,7 +941,6 @@ async def remove_favorite(
     return Response(status_code=204)
 
 
-@router.get("/", response_model=Paginated[EstimateOut])
 async def list_estimates(
     name: str = Query(None),
     client: Optional[int] = Query(None),  # Change type to Optional[int]
@@ -860,10 +949,25 @@ async def list_estimates(
     status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(5, ge=1),
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    db: AsyncSession | None = None,
+    context: WorkspaceContext | None = None,
+    user=None,
     favorite: Optional[bool] = Query(None),
 ):
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database session is required")
+
+    if context is not None:
+        user_obj = context.user
+        filters = [Estimate.organization_id == context.organization_id]
+    else:
+        # Backward compatibility for direct test calls.
+        user_obj = user
+        user_id = getattr(user_obj, "id", None)
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Пользователь не аутентифицирован")
+        filters = [Estimate.user_id == user_id]
+
     # Direct function calls in tests may pass FastAPI Query objects as defaults.
     # Normalize non-primitive placeholders to regular None values.
     if not isinstance(name, str):
@@ -878,8 +982,6 @@ async def list_estimates(
         status = None
     if not isinstance(favorite, bool):
         favorite = None
-
-    filters = [Estimate.user_id == user.id]
 
     if name:
         filters.append(Estimate.name.ilike(f"%{name}%"))
@@ -909,9 +1011,9 @@ async def list_estimates(
     )
     count_query = select(func.count()).select_from(Estimate).where(*filters)
     if favorite:
-        query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user.id)
+        query = query.join(EstimateFavorite).where(EstimateFavorite.user_id == user_obj.id)
         count_query = count_query.join(EstimateFavorite).where(
-            EstimateFavorite.user_id == user.id
+            EstimateFavorite.user_id == user_obj.id
         )
 
     total = await db.scalar(count_query)
@@ -924,7 +1026,7 @@ async def list_estimates(
 
     # Получаем id всех избранных смет для текущего пользователя
     fav_result = await db.execute(
-        select(EstimateFavorite.estimate_id).where(EstimateFavorite.user_id == user.id)
+        select(EstimateFavorite.estimate_id).where(EstimateFavorite.user_id == user_obj.id)
     )
     favorite_ids = set(fav_result.scalars().all())
 
@@ -934,12 +1036,44 @@ async def list_estimates(
     return {"items": estimates, "total": total}
 
 
+@router.get("/", response_model=Paginated[EstimateOut])
+async def list_estimates_endpoint(
+    name: str = Query(None),
+    client: Optional[int] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(5, ge=1),
+    db: AsyncSession = Depends(get_db),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
+    favorite: Optional[bool] = Query(None),
+):
+    return await list_estimates(
+        name=name,
+        client=client,
+        date_from=date_from,
+        date_to=date_to,
+        status=status,
+        page=page,
+        limit=limit,
+        db=db,
+        context=context,
+        favorite=favorite,
+    )
+
+
 @router.get("/{estimate_id}", response_model=EstimateOut)
 async def get_estimate(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
+    user = context.user
     result = await db.execute(
         select(Estimate)
         .options(selectinload(Estimate.items), selectinload(Estimate.client))
@@ -949,7 +1083,7 @@ async def get_estimate(
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
 
-    if estimate.user_id != user.id:
+    if estimate.organization_id != context.organization_id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     fav = await db.execute(
@@ -968,14 +1102,17 @@ async def get_logs(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
+    user = context.user
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
 
-    if estimate.user_id != user.id:
+    if estimate.organization_id != context.organization_id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой смете")
 
     count_q = (
@@ -1014,9 +1151,11 @@ async def get_logs(
 async def get_estimate_approval_workflow(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
-    await load_owner_estimate(db, estimate_id, user.id)
+    await load_workspace_estimate(db, estimate_id, context.organization_id)
     workflow = await load_estimate_approval_workflow(db, estimate_id)
     if not workflow:
         return None
@@ -1029,9 +1168,12 @@ async def upsert_estimate_approval_workflow(
     payload: ApprovalWorkflowUpsertIn,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_APPROVAL_MANAGE)
+    ),
 ):
-    estimate = await load_owner_estimate(db, estimate_id, user.id)
+    user = context.user
+    estimate = await load_workspace_estimate(db, estimate_id, context.organization_id)
     ensure_estimate_not_read_only(estimate)
 
     workflow = await load_estimate_approval_workflow(db, estimate_id)
@@ -1040,23 +1182,12 @@ async def upsert_estimate_approval_workflow(
             status_code=409,
             detail="Нельзя менять маршрут согласования, пока смета находится на согласовании",
         )
-    if user.current_organization_id is None:
-        raise HTTPException(
-            status_code=409,
-            detail="Пользователь не привязан к рабочему пространству",
-        )
-
     approver_ids = sorted({step.approver_user_id for step in payload.steps})
-    approvers_result = await db.execute(
-        select(User.id, User.login, User.email, User.is_active)
-        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
-        .where(
-            User.id.in_(approver_ids),
-            OrganizationMembership.organization_id == user.current_organization_id,
-        )
+    approvers_by_id = await load_approvers_for_workflow(
+        db,
+        approver_ids,
+        context.organization_id,
     )
-    approver_rows = approvers_result.all()
-    approvers_by_id = {row.id: row for row in approver_rows}
 
     for approver_id in approver_ids:
         row = approvers_by_id.get(approver_id)
@@ -1137,9 +1268,12 @@ async def start_estimate_approval_workflow(
     estimate_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_APPROVAL_MANAGE)
+    ),
 ):
-    estimate = await load_owner_estimate(db, estimate_id, user.id)
+    user = context.user
+    estimate = await load_workspace_estimate(db, estimate_id, context.organization_id)
     ensure_estimate_not_read_only(estimate)
 
     workflow = await load_estimate_approval_workflow(db, estimate_id)
@@ -1147,11 +1281,6 @@ async def start_estimate_approval_workflow(
         raise HTTPException(status_code=400, detail="Сначала настройте маршрут согласования")
     if workflow.status == WORKFLOW_STATUS_IN_REVIEW:
         raise HTTPException(status_code=409, detail="Согласование уже запущено")
-    if user.current_organization_id is None:
-        raise HTTPException(
-            status_code=409,
-            detail="Пользователь не привязан к рабочему пространству",
-        )
     if any(step.approver_user_id is None for step in workflow.steps):
         raise HTTPException(
             status_code=409,
@@ -1161,23 +1290,14 @@ async def start_estimate_approval_workflow(
     approver_ids = sorted(
         {step.approver_user_id for step in workflow.steps if step.approver_user_id is not None}
     )
-    approvers_result = await db.execute(
-        select(User.id, User.is_active)
-        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
-        .where(
-            User.id.in_(approver_ids),
-            OrganizationMembership.organization_id == user.current_organization_id,
-        )
+    approver_state = await load_approvers_for_workflow(
+        db,
+        approver_ids,
+        context.organization_id,
     )
-    approver_state = {
-        row.id: {
-            "is_active": row.is_active,
-        }
-        for row in approvers_result.all()
-    }
     for approver_id in approver_ids:
         approver = approver_state.get(approver_id)
-        if not approver or not approver["is_active"]:
+        if not approver or not approver.is_active:
             raise HTTPException(
                 status_code=409,
                 detail=f"Согласующий пользователь №{approver_id} недоступен",
@@ -1237,9 +1357,16 @@ async def export_estimate_pdf(
     estimate_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
-    estimate = await load_estimate_with_relations(db, estimate_id, user.id)
+    user = context.user
+    estimate = await load_estimate_with_relations(
+        db,
+        estimate_id,
+        context.organization_id,
+    )
     totals = calculate_estimate_totals(estimate)
 
     pdf_bytes = render_pdf(
@@ -1273,9 +1400,16 @@ async def export_estimate_invoice_pdf(
     estimate_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
-    estimate = await load_estimate_with_relations(db, estimate_id, user.id)
+    user = context.user
+    estimate = await load_estimate_with_relations(
+        db,
+        estimate_id,
+        context.organization_id,
+    )
     ensure_financial_documents_allowed(estimate)
     totals = calculate_estimate_totals(estimate)
     issued_at = datetime.now(timezone.utc)
@@ -1317,9 +1451,16 @@ async def export_estimate_act_pdf(
     estimate_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
-    estimate = await load_estimate_with_relations(db, estimate_id, user.id)
+    user = context.user
+    estimate = await load_estimate_with_relations(
+        db,
+        estimate_id,
+        context.organization_id,
+    )
     ensure_financial_documents_allowed(estimate)
     totals = calculate_estimate_totals(estimate)
     issued_at = datetime.now(timezone.utc)
@@ -1360,15 +1501,22 @@ async def send_estimate_email(
     payload: EstimateSendEmail,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     if not payload.attach_pdf and not payload.attach_excel:
         raise HTTPException(
             status_code=422,
             detail="Необходимо выбрать хотя бы один формат вложения (PDF или Excel)",
         )
 
-    estimate = await load_estimate_with_relations(db, estimate_id, user.id)
+    estimate = await load_estimate_with_relations(
+        db,
+        estimate_id,
+        context.organization_id,
+    )
 
     attachments: List[EmailAttachment] = []
     if payload.attach_pdf:
@@ -1449,8 +1597,11 @@ async def export_estimate_excel(
     estimate_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
+    user = context.user
     result = await db.execute(
         select(Estimate)
         .options(
@@ -1462,7 +1613,7 @@ async def export_estimate_excel(
     )
     estimate = result.scalar_one_or_none()
 
-    if not estimate or estimate.user_id != user.id:
+    if not estimate or estimate.organization_id != context.organization_id:
         raise HTTPException(status_code=404, detail="Смета не найдена или нет доступа")
 
     filename = f"{estimate.name}.xlsx"

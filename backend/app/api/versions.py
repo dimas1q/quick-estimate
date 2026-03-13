@@ -18,6 +18,12 @@ from app.schemas.estimate import EstimateOut
 from app.schemas.version import VersionOut
 from app.schemas.paginated import Paginated
 from app.utils.auth import get_current_user
+from app.utils.workspace import (
+    WORKSPACE_PERMISSION_DATA_EDIT,
+    WORKSPACE_PERMISSION_DATA_VIEW,
+    WorkspaceContext,
+    require_workspace_permission,
+)
 
 router = APIRouter(
     tags=["versions"],
@@ -47,11 +53,13 @@ async def list_versions(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1),
     db: AsyncSession = Depends(get_db),
-    user=Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
     # проверяем, что смета принадлежит пользователю
     est = await db.get(Estimate, estimate_id)
-    if not est or est.user_id != user.id:
+    if not est or est.organization_id != context.organization_id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
 
     count_q = (
@@ -76,10 +84,12 @@ async def get_version(
     estimate_id: int,
     version: int,
     db: AsyncSession = Depends(get_db),
-    user=Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_VIEW)
+    ),
 ):
     est = await db.get(Estimate, estimate_id)
-    if not est or est.user_id != user.id:
+    if not est or est.organization_id != context.organization_id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
 
     q = await db.execute(
@@ -99,8 +109,11 @@ async def restore_version(
     estimate_id: int,
     version: int,
     db: AsyncSession = Depends(get_db),
-    user=Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     # 1) взять версию
     q = await db.execute(
         select(EstimateVersion).where(
@@ -122,7 +135,7 @@ async def restore_version(
 
     est = q_est.scalar_one_or_none()
 
-    if not est or est.user_id != user.id:
+    if not est or est.organization_id != context.organization_id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
     _ensure_estimate_not_read_only(est)
 
@@ -142,7 +155,7 @@ async def restore_version(
     new_client_id = data.get("client_id")
     if new_client_id is not None:
         client = await db.get(Client, new_client_id)
-        if not client or client.user_id != user.id:
+        if not client or client.organization_id != context.organization_id:
             raise HTTPException(403, "Нет доступа к клиенту из сохраненной версии")
 
     for field in restore_fields:
@@ -195,11 +208,14 @@ async def delete_version(
     estimate_id: int,
     version: int,
     db: AsyncSession = Depends(get_db),
-    user=Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_DATA_EDIT)
+    ),
 ):
+    user = context.user
     # 1) проверка прав
     est = await db.get(Estimate, estimate_id)
-    if not est or est.user_id != user.id:
+    if not est or est.organization_id != context.organization_id:
         raise HTTPException(404, "Смета не найдена или нет доступа")
     _ensure_estimate_not_read_only(est)
     # 2) найти сам снимок

@@ -187,6 +187,8 @@ import { computed, ref, reactive, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useClientsStore } from '@/store/clients'
 import { useAnalyticsStore } from '@/store/analytics'
+import { useAuthStore } from '@/store/auth'
+import { isWorkspaceNotSelectedError } from '@/lib/workspace-state'
 
 import QeSingleSelect from '@/components/QeSingleSelect.vue'
 import QeDatePicker from '@/components/QeDatePicker.vue'
@@ -209,8 +211,14 @@ import {
 
 const clientsStore = useClientsStore()
 const analyticsStore = useAnalyticsStore()
+const auth = useAuthStore()
 
 const clients = ref([]) 
+const currentWorkspaceId = computed(() => {
+    const current = (auth.workspaces || []).find((workspace) => workspace.is_current)
+    return current?.organization_id ?? null
+})
+const hasCurrentWorkspace = computed(() => Boolean(currentWorkspaceId.value))
 
 const clientOptions = computed(() => [
     { value: null, label: 'Все клиенты' },
@@ -304,13 +312,55 @@ const chartOptionsWithTitles = ref({
 })
 const series = ref([{ name: 'Выручка', data: [] }])
 
+async function loadInitialData() {
+    try {
+        await auth.fetchWorkspaces()
+    } catch {
+        auth.workspaces = []
+    }
+
+    if (!hasCurrentWorkspace.value) {
+        clients.value = []
+        data.value = null
+        errorMessage.value = 'Не выбрано рабочее пространство'
+        return
+    }
+
+    try {
+        await clientsStore.fetchClients()
+        clients.value = clientsStore.clients
+        await applyFilters()
+    } catch (error) {
+        if (isWorkspaceNotSelectedError(error)) {
+            try {
+                await auth.fetchUser()
+            } catch {
+                auth.workspaces = []
+            }
+            clients.value = []
+            data.value = null
+            errorMessage.value = 'Не выбрано рабочее пространство'
+            return
+        }
+        throw error
+    }
+}
+
 onMounted(async () => {
-    await clientsStore.fetchClients()
-    clients.value = clientsStore.clients
-    await applyFilters()
+    try {
+        await loadInitialData()
+    } catch (error) {
+        console.error(error)
+        errorMessage.value = 'Ошибка при загрузке данных'
+    }
 })
 
 async function applyFilters() {
+    if (!hasCurrentWorkspace.value) {
+        data.value = null
+        errorMessage.value = 'Не выбрано рабочее пространство'
+        return
+    }
     errorMessage.value = ''
     const params = new URLSearchParams()
     params.append('granularity', filters.granularity)
@@ -330,6 +380,11 @@ async function applyFilters() {
         chartOptionsWithTitles.value.xaxis.categories = data.value.timeseries.map(p => p.period)
         series.value[0].data = data.value.timeseries.map(p => p.value)
     } catch (err) {
+        if (isWorkspaceNotSelectedError(err)) {
+            data.value = null
+            errorMessage.value = 'Не выбрано рабочее пространство'
+            return
+        }
         if (err.response?.status === 404) {
             data.value = null
             errorMessage.value = 'Данных по выбранным фильтрам не найдено'
@@ -363,6 +418,7 @@ function buildParams(obj) {
 }
 
 async function downloadCsv() {
+    if (!hasCurrentWorkspace.value) return
     const params = buildParams(appliedFilters)
     params.append('format', 'csv')
     const blob = await analyticsStore.downloadGlobalCsv(params)
@@ -370,6 +426,7 @@ async function downloadCsv() {
 }
 
 async function downloadExcel() {
+    if (!hasCurrentWorkspace.value) return
     const params = buildParams(appliedFilters)
     params.append('format', 'excel')
     const blob = await analyticsStore.downloadGlobalExcel(params)
@@ -377,6 +434,7 @@ async function downloadExcel() {
 }
 
 async function downloadPdf() {
+    if (!hasCurrentWorkspace.value) return
     const params = buildParams(appliedFilters)
     params.append('format', 'pdf')
     const blob = await analyticsStore.downloadGlobalPdf(params)

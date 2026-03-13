@@ -110,4 +110,5 @@ class EstimateApprovalStep(Base):
         "User",
         foreign_keys=[decided_by_user_id],
         back_populates="approval_steps_decided",
+        overlaps="approval_steps_decided",
     )

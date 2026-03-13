@@ -29,6 +29,12 @@ class User(Base):
         nullable=True,
         index=True,
     )
+    default_organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     from app.models.estimate_favorite import EstimateFavorite
 
@@ -48,6 +54,7 @@ class User(Base):
 
     notes = relationship("Note", back_populates="user", cascade="all, delete-orphan")
     current_organization = relationship("Organization", foreign_keys=[current_organization_id])
+    default_organization = relationship("Organization", foreign_keys=[default_organization_id])
     organization_memberships = relationship(
         "OrganizationMembership",
         back_populates="user",
@@ -67,4 +74,16 @@ class User(Base):
         "EstimateApprovalStep",
         foreign_keys="EstimateApprovalStep.decided_by_user_id",
         back_populates="decided_by",
+    )
+    workspace_invitations_sent = relationship(
+        "WorkspaceInvitation",
+        foreign_keys="WorkspaceInvitation.invited_by_user_id",
+        back_populates="invited_by_user",
+        overlaps="invited_by_user",
+    )
+    workspace_invitations_accepted = relationship(
+        "WorkspaceInvitation",
+        foreign_keys="WorkspaceInvitation.accepted_by_user_id",
+        back_populates="accepted_by_user",
+        overlaps="accepted_by_user",
     )

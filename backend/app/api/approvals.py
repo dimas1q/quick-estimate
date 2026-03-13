@@ -9,7 +9,6 @@ from app.core.database import get_db
 from app.models.changelog import EstimateChangeLog
 from app.models.estimate import Estimate, EstimateStatus
 from app.models.estimate_approval import EstimateApprovalStep, EstimateApprovalWorkflow
-from app.models.user import User
 from app.schemas.approval import (
     ApprovalDecisionIn,
     ApprovalEstimatePreviewOut,
@@ -29,6 +28,11 @@ from app.services.approval_workflow import (
 )
 from app.services.audit_ledger import append_audit_ledger_entry
 from app.utils.auth import get_current_user
+from app.utils.workspace import (
+    WORKSPACE_PERMISSION_APPROVAL_SIGN,
+    WorkspaceContext,
+    require_workspace_permission,
+)
 
 router = APIRouter(tags=["approvals"], dependencies=[Depends(get_current_user)])
 
@@ -46,14 +50,18 @@ def _calculate_totals(estimate: Estimate) -> tuple[float, float]:
 async def get_my_approval_tasks(
     scope: str = Query(default="pending", pattern="^(pending|history|all)$"),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_APPROVAL_SIGN)
+    ),
 ):
+    user = context.user
     query = (
         select(EstimateApprovalStep)
         .join(
             EstimateApprovalWorkflow,
             EstimateApprovalWorkflow.id == EstimateApprovalStep.workflow_id,
         )
+        .join(Estimate, Estimate.id == EstimateApprovalWorkflow.estimate_id)
         .options(
             selectinload(EstimateApprovalStep.workflow)
             .selectinload(EstimateApprovalWorkflow.estimate)
@@ -65,7 +73,10 @@ async def get_my_approval_tasks(
             .selectinload(EstimateApprovalWorkflow.estimate)
             .selectinload(Estimate.items),
         )
-        .where(EstimateApprovalStep.approver_user_id == user.id)
+        .where(
+            EstimateApprovalStep.approver_user_id == user.id,
+            Estimate.organization_id == context.organization_id,
+        )
     )
 
     if scope == "pending":
@@ -116,7 +127,7 @@ async def get_my_approval_tasks(
                 total_external=total_external,
                 total_with_vat=total_with_vat,
                 items_preview=items_preview,
-                can_open_estimate=estimate.user_id == user.id,
+                can_open_estimate=True,
             )
         )
     return response
@@ -126,8 +137,11 @@ async def get_my_approval_tasks(
 async def get_approval_estimate_preview(
     estimate_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_APPROVAL_SIGN)
+    ),
 ):
+    user = context.user
     estimate_result = await db.execute(
         select(Estimate)
         .options(
@@ -139,23 +153,23 @@ async def get_approval_estimate_preview(
     estimate = estimate_result.scalar_one_or_none()
     if not estimate:
         raise HTTPException(status_code=404, detail="Смета не найдена")
+    if estimate.organization_id != context.organization_id:
+        raise HTTPException(status_code=403, detail="Нет доступа к предпросмотру сметы")
 
-    has_owner_access = estimate.user_id == user.id
-    if not has_owner_access:
-        access_result = await db.execute(
-            select(EstimateApprovalStep.id)
-            .join(
-                EstimateApprovalWorkflow,
-                EstimateApprovalWorkflow.id == EstimateApprovalStep.workflow_id,
-            )
-            .where(
-                EstimateApprovalWorkflow.estimate_id == estimate_id,
-                EstimateApprovalStep.approver_user_id == user.id,
-            )
-            .limit(1)
+    access_result = await db.execute(
+        select(EstimateApprovalStep.id)
+        .join(
+            EstimateApprovalWorkflow,
+            EstimateApprovalWorkflow.id == EstimateApprovalStep.workflow_id,
         )
-        if access_result.scalar_one_or_none() is None:
-            raise HTTPException(status_code=403, detail="Нет доступа к предпросмотру сметы")
+        .where(
+            EstimateApprovalWorkflow.estimate_id == estimate_id,
+            EstimateApprovalStep.approver_user_id == user.id,
+        )
+        .limit(1)
+    )
+    if access_result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=403, detail="Нет доступа к предпросмотру сметы")
 
     total_external, total_with_vat = _calculate_totals(estimate)
     items_preview = [
@@ -182,7 +196,7 @@ async def get_approval_estimate_preview(
         vat_rate=int(estimate.vat_rate or 0),
         read_only=bool(estimate.read_only),
         items_preview=items_preview,
-        can_open_estimate=has_owner_access,
+        can_open_estimate=True,
     )
 
 
@@ -192,8 +206,11 @@ async def sign_approval_step(
     payload: ApprovalDecisionIn,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    context: WorkspaceContext = Depends(
+        require_workspace_permission(WORKSPACE_PERMISSION_APPROVAL_SIGN)
+    ),
 ):
+    user = context.user
     result = await db.execute(
         select(EstimateApprovalStep)
         .options(
@@ -212,6 +229,8 @@ async def sign_approval_step(
 
     workflow = step.workflow
     estimate = workflow.estimate
+    if estimate.organization_id != context.organization_id:
+        raise HTTPException(status_code=403, detail="Нет доступа к шагу согласования")
 
     if step.approver_user_id != user.id:
         raise HTTPException(status_code=403, detail="Вы не назначены на этот шаг согласования")

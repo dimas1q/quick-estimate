@@ -65,7 +65,7 @@
         </div>
         <div v-if="filteredEstimates.length === 0"
           class="text-center text-gray-400 border border-gray-200 dark:border-qe-black2 p-6 rounded-2xl bg-white/70 dark:bg-qe-black2/80 mt-4">
-          <p>Сметы отсутствуют.</p>
+          <p>{{ hasCurrentWorkspace ? 'Сметы отсутствуют.' : 'Не выбрано рабочее пространство.' }}</p>
         </div>
         <QePagination :total="totalEstimates" :per-page="perPage" :page="currentPage" @update:page="changePage"
           class="mt-6" />
@@ -75,11 +75,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEstimatesStore } from '@/store/estimates'
 import { useClientsStore } from '@/store/clients'
+import { useAuthStore } from '@/store/auth'
+import { isWorkspaceNotSelectedError } from '@/lib/workspace-state'
 import { Star } from 'lucide-vue-next'
 
 import QeDatePicker from '@/components/QeDatePicker.vue'
@@ -89,6 +91,7 @@ import QeSingleSelect from '@/components/QeSingleSelect.vue'
 
 const router = useRouter()
 const toast = useToast()
+const auth = useAuthStore()
 
 const isLoading = ref(true)
 const viewMode = ref('my')
@@ -120,6 +123,11 @@ const estimatesStore = useEstimatesStore()
 const clientsStore = useClientsStore()
 
 const clients = computed(() => clientsStore.clients)
+const currentWorkspaceId = computed(() => {
+  const current = (auth.workspaces || []).find((workspace) => workspace.is_current)
+  return current?.organization_id ?? null
+})
+const hasCurrentWorkspace = computed(() => Boolean(currentWorkspaceId.value))
 
 const perPage = 8
 const currentPage = ref(1)
@@ -133,13 +141,57 @@ const filteredEstimates = computed(() => {
   return estimatesStore.estimates
 })
 
-onMounted(async () => {
+function resetWorkspaceBoundState() {
+  estimatesStore.estimates = []
+  estimatesStore.total = 0
+  clientsStore.clients = []
+  clientsStore.total = 0
+}
+
+async function loadInitialData() {
+  try {
+    await auth.fetchWorkspaces()
+  } catch {
+    auth.workspaces = []
+  }
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    isLoading.value = false
+    return
+  }
   isLoading.value = true
-  await clientsStore.fetchClients()
-  await estimatesStore.fetchEstimates({ page: currentPage.value, limit: perPage })
-  currentFilters.value = {}
-  isLoading.value = false
+  try {
+    await clientsStore.fetchClients()
+    await estimatesStore.fetchEstimates({ page: currentPage.value, limit: perPage })
+    currentFilters.value = {}
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      try {
+        await auth.fetchUser()
+      } catch {
+        auth.workspaces = []
+      }
+      resetWorkspaceBoundState()
+    } else {
+      toast.error('Не удалось загрузить список смет')
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  await loadInitialData()
 })
+
+watch(
+  () => currentWorkspaceId.value,
+  async () => {
+    currentPage.value = 1
+    currentFilters.value = {}
+    await loadInitialData()
+  }
+)
 
 const format = (date) => {
   if (!date) return ''
@@ -158,6 +210,10 @@ function formatDateToYYYYMMDD(date) {
 }
 
 async function applyFilters() {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    return
+  }
   isLoading.value = true
   const params = new URLSearchParams()
   if (filters.value.name) params.append('name', filters.value.name)
@@ -175,11 +231,23 @@ async function applyFilters() {
   currentPage.value = 1
   params.append('page', currentPage.value)
   params.append('limit', perPage)
-  await estimatesStore.fetchEstimates(params)
+  try {
+    await estimatesStore.fetchEstimates(params)
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось применить фильтры')
+  }
   isLoading.value = false
 }
 
 async function resetFilters() {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    return
+  }
   isLoading.value = true
   filters.value = {
     name: '',
@@ -190,7 +258,15 @@ async function resetFilters() {
   }
   currentFilters.value = {}
   currentPage.value = 1
-  await estimatesStore.fetchEstimates({ page: currentPage.value, limit: perPage })
+  try {
+    await estimatesStore.fetchEstimates({ page: currentPage.value, limit: perPage })
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось сбросить фильтры')
+  }
   isLoading.value = false
 }
 
@@ -257,6 +333,11 @@ function isValidEstimate(estimate) {
 }
 
 async function fetchEstimatesPage() {
+  if (!hasCurrentWorkspace.value) {
+    resetWorkspaceBoundState()
+    isLoading.value = false
+    return
+  }
   isLoading.value = true
   const params = new URLSearchParams()
   params.append('page', currentPage.value)
@@ -267,17 +348,27 @@ async function fetchEstimatesPage() {
   if (currentFilters.value.date_from) params.append('date_from', currentFilters.value.date_from)
   if (currentFilters.value.date_to) params.append('date_to', currentFilters.value.date_to)
   if (currentFilters.value.status) params.append('status', currentFilters.value.status)
-  await estimatesStore.fetchEstimates(params)
+  try {
+    await estimatesStore.fetchEstimates(params)
+  } catch (error) {
+    if (isWorkspaceNotSelectedError(error)) {
+      await loadInitialData()
+      return
+    }
+    toast.error('Не удалось загрузить список смет')
+  }
   isLoading.value = false
 }
 
 function setViewMode(mode) {
   viewMode.value = mode
   currentPage.value = 1
+  if (!hasCurrentWorkspace.value) return
   fetchEstimatesPage()
 }
 
 async function toggleFavorite(estimate) {
+  if (!hasCurrentWorkspace.value) return
   try {
     if (estimate.is_favorite) {
       await estimatesStore.removeFavorite(estimate.id)
